@@ -20,7 +20,7 @@ import {AmmAdapterIdLib} from "../../src/adapters/libs/AmmAdapterIdLib.sol";
 contract CVaultBatchSonicSkipOnCiTest is Test {
     address public constant PLATFORM = SonicConstantsLib.PLATFORM;
 
-    /// @dev This block is used if there is no SONIC_VAULT_BATCH_BLOCK env var set
+    /// @dev This block is used if there is no VAULT_BATCH_TEST_SONIC_BLOCK env var set
     //uint public constant FORK_BLOCK = 47248396; // Sep-18-2025 07:32:40 AM +UTC
     uint public constant FORK_BLOCK = 47714014; // Sep-22-2025 02:38:15 AM +UTC
 
@@ -78,8 +78,9 @@ contract CVaultBatchSonicSkipOnCiTest is Test {
                 uint snapshot = vm.snapshotState();
                 (address[] memory assets, uint[] memory depositAmounts) =
                     _dealAndApprove(IStabilityVault(_deployedVaults[i]), address(this), 0);
-                results[i] =
-                    CVaultBatchLib._testDepositWithdrawSingleVault(vm, _deployedVaults[i], true, assets, depositAmounts);
+                results[i] = CVaultBatchLib._testDepositWithdrawSingleVault(
+                    vm, _deployedVaults[i], true, assets, depositAmounts
+                );
                 vm.revertToState(snapshot);
             }
             if (skipped) {
@@ -159,6 +160,7 @@ contract CVaultBatchSonicSkipOnCiTest is Test {
         console.log("Withdrawn", withdrawn);
         assertNotEq(withdrawn, 0, "Withdraw some amount from vault");
     }
+
     //endregion ---------------------- Auxiliary tests
 
     //region ---------------------- Auxiliary functions
@@ -228,8 +230,8 @@ contract CVaultBatchSonicSkipOnCiTest is Test {
             ISwapper.PoolData[] memory pools = new ISwapper.PoolData[](1);
             pools[0] = ISwapper.PoolData({
                 pool: 0xE54DD58a6d4e04687f2034dd4dDAb49da55F8afF, // SonicConstantsLib.POOL_SHADOW_CL_scETH_WETH_100,
-                ammAdapter: (IPlatform(PLATFORM).ammAdapter(keccak256(bytes(AmmAdapterIdLib.BALANCER_COMPOSABLE_STABLE))))
-                    .proxy,
+                ammAdapter: (IPlatform(PLATFORM)
+                        .ammAdapter(keccak256(bytes(AmmAdapterIdLib.BALANCER_COMPOSABLE_STABLE)))).proxy,
                 tokenIn: address(SonicConstantsLib.TOKEN_SCETH),
                 tokenOut: address(SonicConstantsLib.TOKEN_WETH)
             });

@@ -78,13 +78,14 @@ contract KyberAdapter is Controllable, ICAmmAdapter {
             uint priceBefore = getPrice(pool, tokenIn, tokenOut, amount);
 
             //slither-disable-next-line unused-return
-            IPool(pool).swap(
-                recipient,
-                int(amount),
-                tokenIn == token0,
-                tokenIn == token0 ? UniswapV3MathLib.MIN_SQRT_RATIO : UniswapV3MathLib.MAX_SQRT_RATIO,
-                abi.encode(SwapCallbackData(tokenIn, amount))
-            );
+            IPool(pool)
+                .swap(
+                    recipient,
+                    int(amount),
+                    tokenIn == token0,
+                    tokenIn == token0 ? UniswapV3MathLib.MIN_SQRT_RATIO : UniswapV3MathLib.MAX_SQRT_RATIO,
+                    abi.encode(SwapCallbackData({tokenIn: tokenIn, amount: amount}))
+                );
 
             uint priceAfter = getPrice(pool, tokenIn, tokenOut, amount);
             // unreal but better to check
@@ -172,7 +173,13 @@ contract KyberAdapter is Controllable, ICAmmAdapter {
     }
 
     /// @inheritdoc IAmmAdapter
-    function getPrice(address pool, address tokenIn, address, /*tokenOut*/ uint amount) public view returns (uint) {
+    function getPrice(
+        address pool,
+        address tokenIn,
+        address,
+        /*tokenOut*/
+        uint amount
+    ) public view returns (uint) {
         address token0 = IPool(pool).token0();
         address token1 = IPool(pool).token1();
 

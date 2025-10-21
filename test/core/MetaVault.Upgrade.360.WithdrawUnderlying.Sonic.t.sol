@@ -272,9 +272,8 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
         uint expectedUnderlying = _getExpectedUnderlying(strategy, subMetaVault, stateBefore.maxWithdrawUnderlying);
 
         vm.prank(holder);
-        MetaVault(address(subMetaVault)).withdrawUnderlying(
-            address(vault), stateBefore.maxWithdrawUnderlying, 0, holder, holder
-        );
+        MetaVault(address(subMetaVault))
+            .withdrawUnderlying(address(vault), stateBefore.maxWithdrawUnderlying, 0, holder, holder);
         // console.log("amountToWithdraw", amountToWithdraw);
 
         State memory stateAfter =
@@ -370,9 +369,8 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
             bool[] memory paused = new bool[](1);
 
             vm.prank(multisig);
-            MetaVault(address(subMetaVault)).withdrawUnderlyingEmergency(
-                address(vault), owners, amounts, minUnderlyingOut, paused
-            );
+            MetaVault(address(subMetaVault))
+                .withdrawUnderlyingEmergency(address(vault), owners, amounts, minUnderlyingOut, paused);
         }
         // console.log("amountToWithdraw", amountToWithdraw);
 
@@ -420,6 +418,7 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
 
         assertEq(stateAfter.wrappedPrice, stateBefore.wrappedPrice, "MetaUSDC: wrapped price shouldn't change 2");
     }
+
     //endregion --------------------------------------- Tests for MetaUSDC/MetaScUSD (sub-meta-vaults)
 
     //region --------------------------------------- Tests for MetaUSD
@@ -455,9 +454,8 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
         uint expectedUnderlying = _getExpectedUnderlying(strategy, _metaVault, stateBefore.maxWithdrawUnderlying);
 
         vm.prank(holder);
-        MetaVault(address(_metaVault)).withdrawUnderlying(
-            address(vault), stateBefore.maxWithdrawUnderlying, 0, holder, holder
-        );
+        MetaVault(address(_metaVault))
+            .withdrawUnderlying(address(vault), stateBefore.maxWithdrawUnderlying, 0, holder, holder);
 
         State memory stateAfter =
             _getMetaVaultState(_metaVault, strategy, holder, SonicConstantsLib.WRAPPED_METAVAULT_METAUSD);
@@ -614,9 +612,8 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
                 abi.encodeWithSelector(IMetaVault.VaultNotFound.selector, SonicConstantsLib.VAULT_C_USDC_S_34)
             );
             vm.prank(holder);
-            MetaVault(address(_metaVault)).withdrawUnderlying(
-                SonicConstantsLib.VAULT_C_USDC_S_34, 1e18, 0, holder, holder
-            );
+            MetaVault(address(_metaVault))
+                .withdrawUnderlying(SonicConstantsLib.VAULT_C_USDC_S_34, 1e18, 0, holder, holder);
 
             vm.revertToState(snapshot);
         }
@@ -657,9 +654,8 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
 
             // vm.expectRevert(abi.encodeWithSelector(IMetaVault.TooHighAmount.selector));
             vm.prank(holder);
-            try MetaVault(address(_metaVault)).withdrawUnderlying(
-                address(vault), maxWithdrawUnderlying + 1, 0, holder, holder
-            ) {
+            try MetaVault(address(_metaVault))
+                .withdrawUnderlying(address(vault), maxWithdrawUnderlying + 1, 0, holder, holder) {
                 require(false, "Error IMetaVault.TooHighAmount wasn't thrown");
             } catch (bytes memory reason) {
                 require(
@@ -671,9 +667,8 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
             uint expectedUnderlying = _getExpectedUnderlying(strategy, _metaVault, maxWithdrawUnderlying);
 
             vm.prank(holder);
-            uint withdrawn = MetaVault(address(_metaVault)).withdrawUnderlying(
-                address(vault), maxWithdrawUnderlying, 0, holder, holder
-            );
+            uint withdrawn = MetaVault(address(_metaVault))
+                .withdrawUnderlying(address(vault), maxWithdrawUnderlying, 0, holder, holder);
 
             assertApproxEqAbs(withdrawn, expectedUnderlying, 1, "Withdrawn amount should match expected value 4");
             assertApproxEqAbs(
@@ -956,7 +951,7 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
             address[] memory owners2 = new address[](count);
             for (uint i = 0; i < count; ++i) {
                 owners2[i] = i == 0
-                    ? address(this) // (!) "this" has no meta vault tokens
+                    ? address(this)  // (!) "this" has no meta vault tokens
                     : LARGEST_META_USD_HOLDERS[i];
             }
 
@@ -974,7 +969,7 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
             uint[] memory amounts2 = new uint[](count);
             for (uint i = 0; i < count; ++i) {
                 amounts2[i] = i == 0
-                    ? 1 // (!) ask for 1 decimal only, so it should fail with ZeroSharesToBurn
+                    ? 1  // (!) ask for 1 decimal only, so it should fail with ZeroSharesToBurn
                     : 0; // by default withdraw all
             }
 
@@ -1038,8 +1033,9 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
 
             // vm.expectRevert(IStabilityVault.ExceedSlippage.selector);
             vm.prank(multisig);
-            try _metaVault.withdrawUnderlyingEmergency(address(vault), ar.owners, ar.amounts, minAmountsOut2, ar.paused)
-            {
+            try _metaVault.withdrawUnderlyingEmergency(
+                address(vault), ar.owners, ar.amounts, minAmountsOut2, ar.paused
+            ) {
                 require(false, "Error IStabilityVault.ExceedSlippage wasn't thrown 5");
             } catch (bytes memory reason) {
                 require(
@@ -1076,8 +1072,9 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
 
             // vm.expectRevert(IERC20Errors.ERC20InsufficientBalance.selector);
             vm.prank(multisig);
-            try _metaVault.withdrawUnderlyingEmergency(address(vault), ar.owners, amounts2, ar.minAmountsOut, ar.paused)
-            {
+            try _metaVault.withdrawUnderlyingEmergency(
+                address(vault), ar.owners, amounts2, ar.minAmountsOut, ar.paused
+            ) {
                 require(false, "Error IERC20Errors.ERC20InsufficientBalance wasn't thrown");
             } catch (bytes memory reason) {
                 require(
@@ -1089,6 +1086,7 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
             vm.revertToState(snapshot);
         }
     }
+
     //endregion --------------------------------------- Tests for MetaUSD
 
     //region --------------------------------------- Tests for WrappedMetaUSD
@@ -1225,13 +1223,12 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
                 "Total supply should decrease by total shares withdrawn 7"
             );
 
-            (uint priceAsset,) = IPriceReader(IPlatform(PLATFORM).priceReader()).getPrice(
-                IAToken(vault2.strategy().underlying()).UNDERLYING_ASSET_ADDRESS()
-            );
+            (uint priceAsset,) = IPriceReader(IPlatform(PLATFORM).priceReader())
+                .getPrice(IAToken(vault2.strategy().underlying()).UNDERLYING_ASSET_ADDRESS());
             assertApproxEqAbs(
                 (stateMiddle.totalAssets - stateAfter.totalAssets), // meta vault tokens, usd 18
-                stateBefore.totalAmountsOut * priceAsset
-                    / 10 ** IERC20Metadata(vault2.strategy().underlying()).decimals(), // usd 18
+                stateBefore.totalAmountsOut * priceAsset / 10
+                    ** IERC20Metadata(vault2.strategy().underlying()).decimals(), // usd 18
                 1e13, // < 1e-5 usd
                 "Total assets should decrease by total amounts out withdrawn 7"
             );
@@ -1387,6 +1384,7 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
             vm.revertToState(snapshot);
         }
     }
+
     //endregion --------------------------------------- Tests for WrappedMetaUSD
 
     //region ---------------------------------------------- States
@@ -1554,6 +1552,7 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
 
         return v;
     }
+
     //endregion ---------------------------------------------- States
 
     //region ---------------------------------------------- Internal
@@ -1568,15 +1567,13 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
 
         recoveryTokenMetaUSDC = _createRecoveryToken(SonicConstantsLib.METAVAULT_METAUSDC, bytes32(uint(0x2)));
         vm.prank(multisig);
-        IMetaVault(SonicConstantsLib.METAVAULT_METAUSDC).setRecoveryToken(
-            address(vault_), address(recoveryTokenMetaUSDC)
-        );
+        IMetaVault(SonicConstantsLib.METAVAULT_METAUSDC)
+            .setRecoveryToken(address(vault_), address(recoveryTokenMetaUSDC));
 
         recoveryTokenMetaScUsd = _createRecoveryToken(SonicConstantsLib.METAVAULT_METASCUSD, bytes32(uint(0x3)));
         vm.prank(multisig);
-        IMetaVault(SonicConstantsLib.METAVAULT_METASCUSD).setRecoveryToken(
-            address(vault_), address(recoveryTokenMetaScUsd)
-        );
+        IMetaVault(SonicConstantsLib.METAVAULT_METASCUSD)
+            .setRecoveryToken(address(vault_), address(recoveryTokenMetaScUsd));
 
         vm.prank(multisig);
         IMetaVault(SonicConstantsLib.METAVAULT_METAUSDC).changeWhitelist(SonicConstantsLib.METAVAULT_METAUSD, true);
@@ -1585,18 +1582,14 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
         IMetaVault(SonicConstantsLib.METAVAULT_METASCUSD).changeWhitelist(SonicConstantsLib.METAVAULT_METASCUSD, true);
     }
 
-    function _setUpRecoveryTokenWrapped(address[2] memory vaults_)
-        internal
-        returns (address[4] memory recoveryTokens)
-    {
+    function _setUpRecoveryTokenWrapped(address[2] memory vaults_) internal returns (address[4] memory recoveryTokens) {
         // ----------------------------------- set up recovery tokens
         recoveryTokens[0] = _createRecoveryToken(SonicConstantsLib.WRAPPED_METAVAULT_METAUSD, bytes32(uint(0x1)));
         for (uint i = 0; i < vaults_.length; ++i) {
             if (vaults_[i] != address(0)) {
                 vm.prank(multisig);
-                IMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_METAUSD).setRecoveryToken(
-                    vaults_[i], address(recoveryTokens[0])
-                );
+                IMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_METAUSD)
+                    .setRecoveryToken(vaults_[i], address(recoveryTokens[0]));
             }
         }
 
@@ -1612,9 +1605,8 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
         for (uint i = 0; i < vaults_.length; ++i) {
             if (vaults_[i] != address(0)) {
                 vm.prank(multisig);
-                IMetaVault(SonicConstantsLib.METAVAULT_METAUSDC).setRecoveryToken(
-                    vaults_[i], address(recoveryTokens[2])
-                );
+                IMetaVault(SonicConstantsLib.METAVAULT_METAUSDC)
+                    .setRecoveryToken(vaults_[i], address(recoveryTokens[2]));
             }
         }
 
@@ -1622,16 +1614,14 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
         for (uint i = 0; i < vaults_.length; ++i) {
             if (vaults_[i] != address(0)) {
                 vm.prank(multisig);
-                IMetaVault(SonicConstantsLib.METAVAULT_METASCUSD).setRecoveryToken(
-                    vaults_[i], address(recoveryTokens[3])
-                );
+                IMetaVault(SonicConstantsLib.METAVAULT_METASCUSD)
+                    .setRecoveryToken(vaults_[i], address(recoveryTokens[3]));
             }
         }
 
         vm.prank(multisig);
-        IMetaVault(SonicConstantsLib.METAVAULT_METAUSD).changeWhitelist(
-            SonicConstantsLib.WRAPPED_METAVAULT_METAUSD, true
-        );
+        IMetaVault(SonicConstantsLib.METAVAULT_METAUSD)
+            .changeWhitelist(SonicConstantsLib.WRAPPED_METAVAULT_METAUSD, true);
 
         vm.prank(multisig);
         IMetaVault(SonicConstantsLib.METAVAULT_METAUSDC).changeWhitelist(SonicConstantsLib.METAVAULT_METAUSD, true);
@@ -1647,9 +1637,8 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
         IMetaVault metaVault_,
         uint amountToWithdraw
     ) internal view returns (uint) {
-        (uint priceAsset,) = IPriceReader(IPlatform(PLATFORM).priceReader()).getPrice(
-            IAToken(strategy.underlying()).UNDERLYING_ASSET_ADDRESS()
-        );
+        (uint priceAsset,) = IPriceReader(IPlatform(PLATFORM).priceReader())
+            .getPrice(IAToken(strategy.underlying()).UNDERLYING_ASSET_ADDRESS());
         (uint priceMetaVault,) = metaVault_.price();
 
         // Assume here that AToken to asset is 1:1

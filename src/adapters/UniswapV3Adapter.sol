@@ -83,13 +83,14 @@ contract UniswapV3Adapter is Controllable, ICAmmAdapter {
             uint priceBefore = getPrice(pool, tokenIn, tokenOut, amount);
 
             //slither-disable-next-line unused-return
-            IUniswapV3Pool(pool).swap(
-                recipient,
-                tokenIn == token0,
-                int(amount),
-                tokenIn == token0 ? UniswapV3MathLib.MIN_SQRT_RATIO : UniswapV3MathLib.MAX_SQRT_RATIO,
-                abi.encode(SwapCallbackData(tokenIn, amount))
-            );
+            IUniswapV3Pool(pool)
+                .swap(
+                    recipient,
+                    tokenIn == token0,
+                    int(amount),
+                    tokenIn == token0 ? UniswapV3MathLib.MIN_SQRT_RATIO : UniswapV3MathLib.MAX_SQRT_RATIO,
+                    abi.encode(SwapCallbackData({tokenIn: tokenIn, amount: amount}))
+                );
 
             uint priceAfter = getPrice(pool, tokenIn, tokenOut, amount);
             // unreal but better to check
@@ -152,7 +153,13 @@ contract UniswapV3Adapter is Controllable, ICAmmAdapter {
 
     /// @inheritdoc IAmmAdapter
     //slither-disable-next-line divide-before-multiply
-    function getPrice(address pool, address tokenIn, address, /*tokenOut*/ uint amount) public view returns (uint) {
+    function getPrice(
+        address pool,
+        address tokenIn,
+        address,
+        /*tokenOut*/
+        uint amount
+    ) public view returns (uint) {
         address token0 = IUniswapV3Pool(pool).token0();
         address token1 = IUniswapV3Pool(pool).token1();
 

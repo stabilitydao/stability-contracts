@@ -259,5 +259,7 @@ contract MockMetaVaultUpgrade is Controllable, IMetaVault {
 
     function vaultManager() external view returns (address) {}
 
-    function setVaultManager(address /*newManager*/ ) external {}
+    function setVaultManager(
+        address /*newManager*/
+    ) external {}
 }

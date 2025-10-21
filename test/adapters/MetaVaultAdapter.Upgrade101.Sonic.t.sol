@@ -77,6 +77,7 @@ contract MetaVaultAdapterUpgrade101Test is SonicSetup {
 
         vm.revertToState(snapshot);
     }
+
     //endregion ------------------------------------ Tests for swaps
 
     //region ------------------------------------ Internal logic
@@ -95,6 +96,7 @@ contract MetaVaultAdapterUpgrade101Test is SonicSetup {
         adapter.swap(pool, tokenIn, tokenOut, address(this), priceImpact);
         return IERC20(tokenOut).balanceOf(address(this)) - balanceWas;
     }
+
     //endregion ------------------------------------ Internal logic
 
     //region ------------------------------------ Helper functions

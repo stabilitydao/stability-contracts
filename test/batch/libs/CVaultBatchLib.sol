@@ -251,6 +251,7 @@ library CVaultBatchLib {
         if (!vm.exists("./tmp")) {
             vm.createDir("./tmp", true);
         }
+        /// forge-lint: disable-next-line(unsafe-cheatcode)
         vm.writeFile(string.concat("./tmp/", fnOut), content);
     }
 
@@ -279,6 +280,7 @@ library CVaultBatchLib {
         vm.prank(multisig);
         strategy.setUniversalParams(params, addresses);
     }
+
     //endregion ---------------------- Auxiliary functions
 
     //region ---------------------- Deal assets
@@ -294,6 +296,7 @@ library CVaultBatchLib {
         /// forge-lint: disable-next-line
         IERC20(token_).transfer(to, amountToTransfer);
     }
+
     //endregion ---------------------- Deal assets
 
     //region ---------------------- Set up vaults behavior
