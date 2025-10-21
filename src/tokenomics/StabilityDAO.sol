@@ -3,8 +3,9 @@ pragma solidity ^0.8.28;
 
 import {Controllable, IControllable} from "../core/base/Controllable.sol";
 import {ERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
-import {ERC20BurnableUpgradeable} from
-    "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20BurnableUpgradeable.sol";
+import {
+    ERC20BurnableUpgradeable
+} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20BurnableUpgradeable.sol";
 import {IStabilityDAO} from "../interfaces/IStabilityDAO.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
@@ -15,7 +16,13 @@ import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/ut
 /// Tokens are non-transferable, can be only minted and burned by XStaking contract.
 /// @author Omriss (https://github.com/omriss)
 /// Changelog:
-contract StabilityDAO is Controllable, ERC20Upgradeable, ERC20BurnableUpgradeable, ReentrancyGuardUpgradeable, IStabilityDAO {
+contract StabilityDAO is
+    Controllable,
+    ERC20Upgradeable,
+    ERC20BurnableUpgradeable,
+    ReentrancyGuardUpgradeable,
+    IStabilityDAO
+{
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         CONSTANTS                          */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -32,7 +39,7 @@ contract StabilityDAO is Controllable, ERC20Upgradeable, ERC20BurnableUpgradeabl
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @custom:storage-location erc7201:stability.StabilityDAO
-    struct StabilityDAOStorage {
+    struct StabilityDaoStorage {
         /// @dev Mapping is used to be able to add new fields to DaoParams struct in future, only config[0] is used
         mapping(uint => DaoParams) config;
         /// @notice Address of XSTBL token
@@ -72,11 +79,12 @@ contract StabilityDAO is Controllable, ERC20Upgradeable, ERC20BurnableUpgradeabl
     function initialize(address platform_, address xStbl_, address xStaking_, DaoParams memory p) public initializer {
         __Controllable_init(platform_);
         __ERC20_init("Stability DAO", "STBL_DAO");
-        StabilityDAOStorage storage $ = _getStorage();
+        StabilityDaoStorage storage $ = _getStorage();
         $.xStaking = xStaking_;
         $.xStbl = xStbl_;
         $.config[0] = p;
     }
+
     //endregion ----------------------------------- Initialization and modifiers
 
     //region ----------------------------------- Actions
@@ -96,7 +104,7 @@ contract StabilityDAO is Controllable, ERC20Upgradeable, ERC20BurnableUpgradeabl
 
     /// @inheritdoc IStabilityDAO
     function updateConfig(DaoParams memory p) external onlyGovernanceOrMultisig {
-        StabilityDAOStorage storage $ = _getStorage();
+        StabilityDaoStorage storage $ = _getStorage();
         $.config[0] = p;
 
         emit ConfigUpdated(p);
@@ -106,7 +114,7 @@ contract StabilityDAO is Controllable, ERC20Upgradeable, ERC20BurnableUpgradeabl
     function setPowerDelegation(address to) external nonReentrant {
         // anyone can call this function
 
-        StabilityDAOStorage storage $ = _getStorage();
+        StabilityDaoStorage storage $ = _getStorage();
 
         if (to == msg.sender || to == address(0)) {
             address delegatee = $.delegatedTo[msg.sender];
@@ -140,6 +148,7 @@ contract StabilityDAO is Controllable, ERC20Upgradeable, ERC20BurnableUpgradeabl
 
         super._update(from, to, value);
     }
+
     //endregion ----------------------------------- ERC20 hooks
 
     //region ----------------------------------- View functions
@@ -189,7 +198,7 @@ contract StabilityDAO is Controllable, ERC20Upgradeable, ERC20BurnableUpgradeabl
 
     /// @inheritdoc IStabilityDAO
     function userPower(address user_) public view returns (uint) {
-        StabilityDAOStorage storage $ = _getStorage();
+        StabilityDaoStorage storage $ = _getStorage();
         uint power = $.delegatedTo[user_] == address(0) ? balanceOf(user_) : 0;
 
         address[] memory delegated = EnumerableSet.values($.delegatedFrom[user_]);
@@ -203,7 +212,7 @@ contract StabilityDAO is Controllable, ERC20Upgradeable, ERC20BurnableUpgradeabl
 
     /// @inheritdoc IStabilityDAO
     function delegates(address user_) external view returns (address delegatedTo, address[] memory delegatedFrom) {
-        StabilityDAOStorage storage $ = _getStorage();
+        StabilityDaoStorage storage $ = _getStorage();
         return ($.delegatedTo[user_], EnumerableSet.values($.delegatedFrom[user_]));
     }
 
@@ -218,7 +227,7 @@ contract StabilityDAO is Controllable, ERC20Upgradeable, ERC20BurnableUpgradeabl
         require(_getStorage().xStaking == msg.sender, IncorrectMsgSender());
     }
 
-    function _getStorage() internal pure returns (StabilityDAOStorage storage $) {
+    function _getStorage() internal pure returns (StabilityDaoStorage storage $) {
         //slither-disable-next-line assembly
         assembly {
             $.slot := _STABILITY_DAO_TOKEN_STORAGE_LOCATION

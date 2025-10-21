@@ -457,5 +457,4 @@ contract PlatformTest is Test {
         vm.expectRevert(abi.encodeWithSelector(IControllable.AlreadyExist.selector));
         platform.setupStabilityDAO(address(124));
     }
-
 }

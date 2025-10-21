@@ -56,7 +56,6 @@ interface IStabilityDAO is IERC20, IERC20Metadata {
     /// @return delegatedFrom The list of addresses that have delegated their voting power to the user
     function delegates(address user_) external view returns (address delegatedTo, address[] memory delegatedFrom);
 
-
     //endregion --------------------------------------- Read functions
 
     //region --------------------------------------- Write functions

@@ -49,7 +49,6 @@ interface IXStaking {
     /// otherwise user should receive 1 STBLDAO for each 1 xSTBL
     function syncStabilityDAOBalances(address[] calldata users) external;
 
-
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      VIEW FUNCTIONS                        */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/

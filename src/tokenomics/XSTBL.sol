@@ -95,6 +95,7 @@ contract XSTBL is Controllable, ERC20Upgradeable, IXSTBL {
         $.exempt.add(xStaking_);
         $.exemptTo.add(xStaking_);
     }
+
     //endregion ---------------------------- Initialization
 
     //region ---------------------------- Restricted actions
@@ -298,6 +299,7 @@ contract XSTBL is Controllable, ERC20Upgradeable, IXSTBL {
             emit ExitVesting(msg.sender, vestID_, _amount, exitedAmount);
         }
     }
+
     //endregion ---------------------------- User actions
 
     //region ---------------------------- View functions
@@ -314,9 +316,14 @@ contract XSTBL is Controllable, ERC20Upgradeable, IXSTBL {
     // solhint-disable-next-line func-name-mixedcase
     function SLASHING_PENALTY() public view returns (uint) {
         IStabilityDAO stabilityDao = getStabilityDAO();
-        return address(stabilityDao) == address(0)
-            ? DEFAULT_SLASHING_PENALTY
-            : getStabilityDAO().exitPenalty();
+        if (address(stabilityDao) != address(0)) {
+            uint penalty = getStabilityDAO().exitPenalty();
+
+            // @dev 0 penalty means that default value should be used
+            if (penalty != 0) return penalty;
+        }
+
+        return DEFAULT_SLASHING_PENALTY;
     }
 
     /// @inheritdoc IXSTBL

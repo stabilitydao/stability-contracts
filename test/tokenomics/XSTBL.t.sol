@@ -160,13 +160,12 @@ contract XSTBLTest is Test, MockSetup {
     }
 
     function testSlashingPenalty() public {
-        address multisig = platform.multisig();
-
         // --------------------- StabilityDAO is not initialized
         assertEq(xStbl.SLASHING_PENALTY(), 50_00, "50% by default");
 
         // --------------------- Set up StabilityDAO
         IStabilityDAO daoToken = _createStabilityDAOInstance();
+        platform.setupStabilityDAO(address(daoToken));
 
         _setSlashingPenalty(daoToken, 80_00);
         assertEq(xStbl.SLASHING_PENALTY(), 80_00, "80%");

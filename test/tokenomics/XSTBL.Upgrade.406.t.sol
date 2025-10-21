@@ -31,6 +31,7 @@ contract XstblUpgrade406SonicTest is Test {
         IStabilityDAO daoToken = _setupStblDao();
 
         uint baseAmount = 100e18;
+
         // -------------- get STBL on balance
         deal(SonicConstantsLib.TOKEN_STBL, address(this), baseAmount);
 
@@ -111,6 +112,31 @@ contract XstblUpgrade406SonicTest is Test {
         assertEq(exitedAmount20 + pendingRebaseDelta80, baseAmount, "total 100%");
     }
 
+    function testUpgradeXSTBLExitNoStabilityDao() public {
+        IXSTBL xstbl = IXSTBL(SonicConstantsLib.TOKEN_XSTBL);
+        _upgradePlatform();
+
+        // Stability DAO is not initialized
+
+        uint baseAmount = 100e18;
+        // -------------- get STBL on balance
+        deal(SonicConstantsLib.TOKEN_STBL, address(this), baseAmount);
+
+        // -------------- enter to xSTBL
+        IERC20(SonicConstantsLib.TOKEN_STBL).approve(address(xstbl), type(uint).max);
+        xstbl.enter(baseAmount);
+        uint xstblBalance = IERC20(address(xstbl)).balanceOf(address(this));
+        assertEq(xstblBalance, baseAmount, "xstbl balance after enter");
+
+        // -------------- try to exit vest with penalty 50% and check results
+        (uint exitedAmount50, uint pendingRebaseDelta50) = _tryToExit(xstbl, address(this), baseAmount);
+
+        // -------------- check results (14 days of 180 were passed)
+        assertEq(exitedAmount50, baseAmount * 50 / 100, "exitedAmount 50%");
+        assertEq(pendingRebaseDelta50, baseAmount * 50 / 100, "penalty 50%");
+        assertEq(exitedAmount50 + pendingRebaseDelta50, baseAmount, "total 100%");
+    }
+
     //region -------------------------------- Internal logic
     function _tryToExitVest(
         IXSTBL xstbl,
@@ -180,6 +206,8 @@ contract XstblUpgrade406SonicTest is Test {
 
     function _setupStblDao() internal returns (IStabilityDAO) {
         IStabilityDAO dest = _createStabilityDAOInstance();
+
+        vm.prank(SonicConstantsLib.MULTISIG);
         IPlatform(SonicConstantsLib.PLATFORM).setupStabilityDAO(address(dest));
         return dest;
     }
@@ -187,16 +215,17 @@ contract XstblUpgrade406SonicTest is Test {
     function _createStabilityDAOInstance() internal returns (IStabilityDAO) {
         IStabilityDAO.DaoParams memory p = IStabilityDAO.DaoParams({
             minimalPower: 4000e18,
-            exitPenalty: 80_00,
+            exitPenalty: 0, // default 50%
             quorum: 15_00,
             proposalThreshold: 25_00,
-            powerAllocationDelay : 86400
+            powerAllocationDelay: 86400
         });
 
         Proxy proxy = new Proxy();
         proxy.initProxy(address(new StabilityDAO()));
         IStabilityDAO token = IStabilityDAO(address(proxy));
         token.initialize(SonicConstantsLib.PLATFORM, SonicConstantsLib.TOKEN_STBL, SonicConstantsLib.XSTBL_XSTAKING, p);
+
         return token;
     }
     //endregion -------------------------------- Helpers

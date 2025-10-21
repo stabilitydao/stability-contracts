@@ -66,7 +66,6 @@ contract XStaking is Controllable, ReentrancyGuardUpgradeable, IXStaking {
 
     error StblDaoNotInitialized();
 
-
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      INITIALIZATION                        */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -113,9 +112,10 @@ contract XStaking is Controllable, ReentrancyGuardUpgradeable, IXStaking {
 
         uint len = users.length;
         for (uint i; i < len; ++i) {
-            _syncUser(daoToken, users[i], threshold);
+            _syncUser($, daoToken, users[i], threshold);
         }
     }
+
     //endregion ----------------------------------- Restricted actions
 
     //region ----------------------------------- User actions
@@ -333,7 +333,7 @@ contract XStaking is Controllable, ReentrancyGuardUpgradeable, IXStaking {
             // @dev assume here that 1 STBL_DAO = 1 staked xSTBL always
             uint threshold = daoToken.minimalPower();
 
-            _syncUser(daoToken, user_, threshold);
+            _syncUser($, daoToken, user_, threshold);
         }
     }
 
@@ -341,9 +341,7 @@ contract XStaking is Controllable, ReentrancyGuardUpgradeable, IXStaking {
     /// @param daoToken_ Address of the STBL_DAO token
     /// @param user_ Address of the user to sync
     /// @param threshold_ Minimal amount of staked xSTBL tokens required to have STBL_DAO
-    function _syncUser(IStabilityDAO daoToken_, address user_, uint threshold_) internal {
-        XStakingStorage storage $ = _getXStakingStorage();
-
+    function _syncUser(XStakingStorage storage $, IStabilityDAO daoToken_, address user_, uint threshold_) internal {
         uint balanceStakedXStbl = $.balanceOf[user_];
 
         /// @dev if user has too few xSTBL staked, their STBL_DAO balance will be 0
