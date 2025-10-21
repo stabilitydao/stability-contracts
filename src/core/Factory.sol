@@ -25,12 +25,8 @@ import {IStrategyLogic} from "../interfaces/IStrategyLogic.sol";
 ///         Provides the opportunity to upgrade vaults and strategies.
 /// Changelog:
 ///   2.0.0: BREAKING CHANGES
-///          * Removed `setVaultConfig` from IFactory
-///          * Removed `setStrategyLogicConfig` from IFactory
-///          - These functions are no longer available in the ABI
-///          - Governance/Operator config is now managed via `setVaultImplementation`
-///            and `setStrategyImplementation`
-///          * Integrations and deployment scripts must be updated accordingly
+///          * Removed `setVaultConfig` from IFactory; added `setVaultImplementation`
+///          * Removed `setStrategyLogicConfig` from IFactory; added `setStrategyImplementation`
 ///   1.3.1: setStrategyImplementation added to interface
 ///   1.3.0: vault can be built only by admin; setVaultImplementation, setStrategyImplementation;
 ///          remove setAliasName, getAliasName, whatToBuild; remove RVault and RMVault support
@@ -95,6 +91,7 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
         }
     }
 
+    /// @inheritdoc IFactory
     function setStrategyImplementation(string memory strategyId, address implementation) external onlyOperator {
         FactoryStorage storage $ = _getStorage();
         if (FactoryLib.setStrategyImplementation($, platform(), strategyId, implementation)) {

@@ -2,8 +2,6 @@
 pragma solidity ^0.8.28;
 
 import {IMetaVaultFactory} from "../../src/interfaces/IMetaVaultFactory.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
 import {IPriceReader} from "../../src/interfaces/IPriceReader.sol";
 import {IRecovery} from "../../src/interfaces/IRecovery.sol";
@@ -11,7 +9,7 @@ import {IMetaVault} from "../../src/interfaces/IMetaVault.sol";
 import {MetaVault} from "../../src/core/vaults/MetaVault.sol";
 import {Recovery} from "../../src/tokenomics/Recovery.sol";
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
-import {console, Test} from "forge-std/Test.sol";
+import {Test} from "forge-std/Test.sol";
 
 contract RecoveryUpgradeTestSonic is Test {
     uint public constant FORK_BLOCK = 48796315; // Sep-30-2025 02:52:14 AM +UTC

@@ -6,7 +6,7 @@ import {IPlatform} from "../../src/interfaces/IPlatform.sol";
 import {IStrategy} from "../../src/interfaces/IStrategy.sol";
 import {IFactory} from "../../src/interfaces/IFactory.sol";
 import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
-import {SiloLeverageStrategy, IERC20} from "../../src/strategies/SiloLeverageStrategy.sol";
+import {SiloLeverageStrategy} from "../../src/strategies/SiloLeverageStrategy.sol";
 import {Factory} from "../../src/core/Factory.sol";
 import {IProxy} from "../../src/interfaces/IProxy.sol";
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
@@ -34,7 +34,7 @@ contract SiLUpgrade3Test is Test {
 
         factory.upgradeStrategyProxy(STRATEGY);
 
-        uint balanceWas = IERC20(vault).balanceOf(SonicConstantsLib.REVENUE_ROUTER);
+        //uint balanceWas = IERC20(vault).balanceOf(SonicConstantsLib.REVENUE_ROUTER);
         vm.prank(vault);
         IStrategy(STRATEGY).doHardWork();
         //console.log("got", (IERC20(vault).balanceOf(SonicConstantsLib.REVENUE_ROUTER) - balanceWas) / 1e18);

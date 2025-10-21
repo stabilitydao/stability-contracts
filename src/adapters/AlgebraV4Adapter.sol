@@ -87,7 +87,7 @@ contract AlgebraV4Adapter is Controllable, ICAmmAdapter {
                     tokenIn == token0,
                     int(amount),
                     tokenIn == token0 ? UniswapV3MathLib.MIN_SQRT_RATIO : UniswapV3MathLib.MAX_SQRT_RATIO,
-                    abi.encode(SwapCallbackData(tokenIn, amount))
+                    abi.encode(SwapCallbackData({tokenIn: tokenIn, amount: amount}))
                 );
 
             uint priceAfter = getPrice(pool, tokenIn, tokenOut, amount);

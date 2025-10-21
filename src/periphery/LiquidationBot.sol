@@ -41,7 +41,7 @@ contract LiquidationBot is
     }
 
     modifier onlyWhitelisted() {
-        require(whitelisted(msg.sender), LiquidationBotLib.NotWhitelisted());
+        _requireWhitelisted();
         _;
     }
 
@@ -255,5 +255,13 @@ contract LiquidationBot is
     ) external onlyWhitelisted {
         LiquidationBotLib.AaveContracts memory ac = LiquidationBotLib.getAaveContracts(aavePool);
         LiquidationBotLib.liquidate(ac, users, debtAsset, debtToCover);
+    }
+
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                       INTERNAL LOGIC                       */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    function _requireWhitelisted() internal view {
+        require(whitelisted(msg.sender), LiquidationBotLib.NotWhitelisted());
     }
 }

@@ -434,6 +434,7 @@ contract LendingBatchSonicSkipOnCiTest is Test {
         if (!vm.exists("./tmp")) {
             vm.createDir("./tmp", true);
         }
+        /// forge-lint: disable-next-line
         vm.writeFile(string.concat("./tmp/", fnOut), content);
     }
 
