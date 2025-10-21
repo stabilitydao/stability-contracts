@@ -11,6 +11,7 @@ import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 import {Test} from "forge-std/Test.sol";
 import {StabilityDAO} from "../../src/tokenomics/StabilityDAO.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {Platform} from "../../src/core/Platform.sol";
 
 contract StabilityDAOSonicTest is Test {
     using SafeERC20 for IERC20;
@@ -21,10 +22,11 @@ contract StabilityDAOSonicTest is Test {
     constructor() {
         vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL"), FORK_BLOCK));
         multisig = IPlatform(SonicConstantsLib.PLATFORM).multisig();
+        _upgradePlatform();
 
-        console.logBytes32(
-            keccak256(abi.encode(uint(keccak256("erc7201:stability.StabilityDAO")) - 1)) & ~bytes32(uint(0xff))
-        );
+        //        console.logBytes32(
+        //            keccak256(abi.encode(uint(keccak256("erc7201:stability.StabilityDAO")) - 1)) & ~bytes32(uint(0xff))
+        //        );
     }
 
     //region --------------------------------- Unit tests
@@ -47,7 +49,7 @@ contract StabilityDAOSonicTest is Test {
         assertEq(token.xStbl(), address(1));
         assertEq(token.xStaking(), address(2));
         assertEq(token.name(), "Stability DAO");
-        assertEq(token.symbol(), "STBLDAO");
+        assertEq(token.symbol(), "STBL_DAO");
         assertEq(token.decimals(), 18);
 
         assertEq(token.minimalPower(), p.minimalPower);
@@ -89,11 +91,6 @@ contract StabilityDAOSonicTest is Test {
     }
 
     function testUpdateConfig() public {
-        IStabilityDAO token = _createStabilityDAOInstance();
-
-        vm.prank(multisig);
-        IPlatform(SonicConstantsLib.PLATFORM).setupStabilityDAO(address(token));
-
         IStabilityDAO.DaoParams memory p1 = IStabilityDAO.DaoParams({
             minimalPower: 4000e18,
             exitPenalty: 50_00, // 50%
@@ -110,33 +107,41 @@ contract StabilityDAOSonicTest is Test {
             powerAllocationDelay: 172800
         });
 
+        IStabilityDAO token = _createStabilityDAOInstance(p1);
+
+        vm.prank(multisig);
+        IPlatform(SonicConstantsLib.PLATFORM).setupStabilityDAO(address(token));
+
         IStabilityDAO.DaoParams memory config = token.config();
-        assertEq(config.minimalPower, p1.minimalPower);
-        assertEq(config.exitPenalty, p1.exitPenalty);
-        assertEq(config.proposalThreshold, p1.proposalThreshold);
-        assertEq(config.powerAllocationDelay, p1.powerAllocationDelay);
+        assertEq(config.minimalPower, p1.minimalPower, "minimalPower");
+        assertEq(config.exitPenalty, p1.exitPenalty, "exitPenalty");
+        assertEq(config.proposalThreshold, p1.proposalThreshold, "proposalThreshold");
+        assertEq(config.powerAllocationDelay, p1.powerAllocationDelay, "powerAllocationDelay");
+        assertEq(config.quorum, p1.quorum, "quorum");
 
         vm.prank(address(0x123));
-        vm.expectRevert(IControllable.NotMultisig.selector);
+        vm.expectRevert(IControllable.NotGovernanceAndNotMultisig.selector);
         token.updateConfig(p2);
 
         vm.prank(token.xStaking());
-        vm.expectRevert(IControllable.NotMultisig.selector);
+        vm.expectRevert(IControllable.NotGovernanceAndNotMultisig.selector);
         token.updateConfig(p2);
 
         config = _updateConfig(token, multisig, p2);
 
-        assertEq(config.minimalPower, p2.minimalPower);
-        assertEq(config.exitPenalty, p2.exitPenalty);
-        assertEq(config.proposalThreshold, p2.proposalThreshold);
-        assertEq(config.powerAllocationDelay, p2.powerAllocationDelay);
+        assertEq(config.minimalPower, p2.minimalPower, "minimalPower2");
+        assertEq(config.exitPenalty, p2.exitPenalty, "exitPenalty2");
+        assertEq(config.proposalThreshold, p2.proposalThreshold, "proposalThreshold2");
+        assertEq(config.powerAllocationDelay, p2.powerAllocationDelay, "powerAllocationDelay2");
+        assertEq(config.quorum, p2.quorum, "quorum2");
 
         config = _updateConfig(token, IPlatform(SonicConstantsLib.PLATFORM).governance(), p2);
 
-        assertEq(config.minimalPower, p2.minimalPower);
-        assertEq(config.exitPenalty, p2.exitPenalty);
-        assertEq(config.proposalThreshold, p2.proposalThreshold);
-        assertEq(config.powerAllocationDelay, p2.powerAllocationDelay);
+        assertEq(config.minimalPower, p2.minimalPower, "minimalPower3");
+        assertEq(config.exitPenalty, p2.exitPenalty, "exitPenalty3");
+        assertEq(config.proposalThreshold, p2.proposalThreshold, "proposalThreshold3");
+        assertEq(config.powerAllocationDelay, p2.powerAllocationDelay, "powerAllocationDelay3");
+        assertEq(config.quorum, p2.quorum, "quorum3");
     }
 
     function testNonTransferable() public {
@@ -164,16 +169,14 @@ contract StabilityDAOSonicTest is Test {
         IStabilityDAO token,
         address user,
         IStabilityDAO.DaoParams memory p2
-    ) internal returns (IStabilityDAO.DaoParams memory) {
+    ) internal returns (IStabilityDAO.DaoParams memory dest) {
         uint snapshot = vm.snapshotState();
-        vm.prank(IPlatform(SonicConstantsLib.PLATFORM).governance());
+        vm.prank(user);
         token.updateConfig(p2);
+        dest = token.config();
+
         vm.revertToState(snapshot);
-
-        vm.prank(multisig);
-        token.updateConfig(p2);
-
-        return token.config();
+        return dest;
     }
 
     function _createStabilityDAOInstance() internal returns (IStabilityDAO) {
@@ -184,12 +187,35 @@ contract StabilityDAOSonicTest is Test {
             proposalThreshold: 25_00,
             powerAllocationDelay: 86400
         });
+        return _createStabilityDAOInstance(p);
+    }
 
+    function _createStabilityDAOInstance(IStabilityDAO.DaoParams memory p) internal returns (IStabilityDAO) {
         Proxy proxy = new Proxy();
         proxy.initProxy(address(new StabilityDAO()));
         IStabilityDAO token = IStabilityDAO(address(proxy));
         token.initialize(SonicConstantsLib.PLATFORM, SonicConstantsLib.TOKEN_STBL, SonicConstantsLib.XSTBL_XSTAKING, p);
         return token;
+    }
+
+    function _upgradePlatform() internal {
+        rewind(1 days);
+
+        IPlatform platform = IPlatform(SonicConstantsLib.PLATFORM);
+
+        address[] memory proxies = new address[](1);
+        address[] memory implementations = new address[](1);
+
+        proxies[0] = SonicConstantsLib.PLATFORM;
+
+        implementations[0] = address(new Platform());
+
+        vm.startPrank(platform.multisig());
+        platform.announcePlatformUpgrade("2025.08.21-alpha", proxies, implementations);
+
+        skip(1 days);
+        platform.upgrade();
+        vm.stopPrank();
     }
     //endregion --------------------------------- Utils
 }

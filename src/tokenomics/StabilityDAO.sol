@@ -31,7 +31,8 @@ contract StabilityDAO is
     string public constant VERSION = "1.0.0";
 
     // keccak256(abi.encode(uint(keccak256("erc7201:stability.StabilityDAO")) - 1)) & ~bytes32(uint(0xff));
-    bytes32 private constant _STABILITY_DAO_TOKEN_STORAGE_LOCATION = 0; // todo
+    bytes32 private constant _STABILITY_DAO_TOKEN_STORAGE_LOCATION =
+        0xb41400b8ab7d5c4f4647f6397fc72c137345511eb9c9a0082de7fe729c2ae200;
 
     //region ----------------------------------- Data types
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
