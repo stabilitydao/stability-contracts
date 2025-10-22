@@ -14,6 +14,7 @@ import {UniswapV3MathLib} from "../strategies/libs/UniswapV3MathLib.sol";
 import {ICAmmAdapter} from "../interfaces/ICAmmAdapter.sol";
 import {IAmmAdapter} from "../interfaces/IAmmAdapter.sol";
 import {IUniswapV3Pool} from "../integrations/uniswapv3/IUniswapV3Pool.sol";
+import {console} from "forge-std/console.sol";
 
 /// @notice AMM adapter for working with Uniswap V3 AMMs.
 /// @author Uni3Swapper (https://github.com/tetu-io/tetu-liquidator/blob/master/contracts/swappers/Uni3Swapper.sol)

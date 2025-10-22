@@ -20,6 +20,7 @@ import {IBalancerAdapter} from "../interfaces/IBalancerAdapter.sol";
 
 /// @title AMM adapter for Balancer ComposableStable pools
 /// Changelog:
+///     1.0.2: add empty IAmmAdapter.getTwaPrice
 ///     1.0.1: refactor Balancer libs to improve coverage
 /// @author Alien Deployer (https://github.com/a17)
 /// @author Jude (https://github.com/iammrjude)
@@ -29,7 +30,7 @@ contract BalancerComposableStableAdapter is Controllable, IAmmAdapter, IBalancer
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.1";
+    string public constant VERSION = "1.0.2";
 
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.BalancerComposableStableAdapter")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant STORAGE_LOCATION = 0x4235c883b69d0c060f4f9a2c87fa015d10166773b6a97be421a79340d62c1e00;
@@ -274,6 +275,11 @@ contract BalancerComposableStableAdapter is Controllable, IAmmAdapter, IBalancer
             );
             return ScaleLib._downscaleDown(amountOutUpscaled, scalingFactors[tokenOutIndex]);
         }
+    }
+
+    /// @inheritdoc IAmmAdapter
+    function getTwaPrice(address /*pool*/, address /*tokenIn*/, address /*tokenOut*/, uint /*amount*/, uint32 /*period*/) external pure returns (uint) {
+        revert("Not supported");
     }
 
     /// @inheritdoc IERC165

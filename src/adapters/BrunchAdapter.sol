@@ -12,6 +12,7 @@ import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeE
 
 /// @title AMM adapter for contracts inherited from StakedERC20 interface
 /// Changelog:
+///     1.0.1: add empty IAmmAdapter.getTwaPrice
 /// @author dvpublic (https://github.com/dvpublic)
 contract BrunchAdapter is Controllable, IAmmAdapter {
     using SafeERC20 for IERC20;
@@ -21,7 +22,7 @@ contract BrunchAdapter is Controllable, IAmmAdapter {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.0";
+    string public constant VERSION = "1.0.1";
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       CUSTOM ERRORS                        */
@@ -164,5 +165,10 @@ contract BrunchAdapter is Controllable, IAmmAdapter {
         }
 
         revert IncorrectTokens();
+    }
+
+    /// @inheritdoc IAmmAdapter
+    function getTwaPrice(address /*pool*/, address /*tokenIn*/, address /*tokenOut*/, uint /*amount*/, uint32 /*period*/) external pure returns (uint) {
+        revert("Not supported");
     }
 }

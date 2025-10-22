@@ -20,6 +20,7 @@ import {IAlgebraPool} from "../integrations/algebrav4/IAlgebraPool.sol";
 /// @author JodsMigel (https://github.com/JodsMigel)
 /// @author dvpublic (https://github.com/dvpublic)
 /// Changelog:
+///  1.0.4: add empty IAmmAdapter.getTwaPrice
 ///  1.0.1: fix UniswapV3MathLib.calcPriceOut - #262
 contract AlgebraV4Adapter is Controllable, ICAmmAdapter {
     using SafeERC20 for IERC20;
@@ -29,7 +30,7 @@ contract AlgebraV4Adapter is Controllable, ICAmmAdapter {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.1";
+    string public constant VERSION = "1.0.2";
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      INITIALIZATION                        */
@@ -150,6 +151,11 @@ contract AlgebraV4Adapter is Controllable, ICAmmAdapter {
         (uint160 sqrtPriceX96,,,,,) = IAlgebraPool(pool).globalState();
 
         return UniswapV3MathLib.calcPriceOut(tokenIn, token0, sqrtPriceX96, tokenInDecimals, tokenOutDecimals, amount);
+    }
+
+    /// @inheritdoc IAmmAdapter
+    function getTwaPrice(address /*pool*/, address /*tokenIn*/, address /*tokenOut*/, uint /*amount*/, uint32 /*period*/) external pure returns (uint) {
+        revert("Not supported");
     }
 
     /// @inheritdoc IAmmAdapter

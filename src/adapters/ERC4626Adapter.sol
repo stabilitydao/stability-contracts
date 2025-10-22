@@ -12,6 +12,8 @@ import {AmmAdapterIdLib} from "./libs/AmmAdapterIdLib.sol";
 
 /// @title Adapter to wrap/unwrap ERC-4626 tokens through Swapper
 /// @author Alien Deployer (https://github.com/a17)
+/// Changelog:
+///     1.0.1: add empty IAmmAdapter.getTwaPrice
 contract ERC4626Adapter is Controllable, IAmmAdapter {
     using SafeERC20 for IERC20;
 
@@ -20,7 +22,7 @@ contract ERC4626Adapter is Controllable, IAmmAdapter {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.0";
+    string public constant VERSION = "1.0.1";
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      INITIALIZATION                        */
@@ -92,6 +94,11 @@ contract ERC4626Adapter is Controllable, IAmmAdapter {
         uint amount
     ) public view returns (uint) {
         return tokenIn == pool ? IERC4626(pool).convertToAssets(amount) : IERC4626(pool).convertToShares(amount);
+    }
+
+    /// @inheritdoc IAmmAdapter
+    function getTwaPrice(address /*pool*/, address /*tokenIn*/, address /*tokenOut*/, uint /*amount*/, uint32 /*period*/) external pure returns (uint) {
+        revert("Not supported");
     }
 
     /// @inheritdoc IERC165

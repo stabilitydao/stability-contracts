@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+import {console} from "forge-std/console.sol";
+import {Test} from "forge-std/Test.sol";
 import {UniswapV3Adapter} from "../../src/adapters/UniswapV3Adapter.sol";
 import {AmmAdapterIdLib} from "../../src/adapters/libs/AmmAdapterIdLib.sol";
-import {SonicSetup, SonicConstantsLib, IERC20} from "../base/chains/SonicSetup.sol";
-import {IMetaVault} from "../../src/interfaces/IMetaVault.sol";
+import {SonicSetup, SonicConstantsLib} from "../base/chains/SonicSetup.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
 
-contract MetaVaultAdapterUpgrade101Test is SonicSetup {
+contract UniswapV3AdapterUpgrade414SonicTest is Test {
     address public constant PLATFORM = SonicConstantsLib.PLATFORM;
     uint public constant FORK_BLOCK = 51512001; // Oct-22-2025 08:40:54 AM +UTC
 
@@ -15,8 +16,7 @@ contract MetaVaultAdapterUpgrade101Test is SonicSetup {
     address public multisig;
 
     constructor() {
-        vm.rollFork(FORK_BLOCK);
-        _init();
+        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL"), FORK_BLOCK));
 
         adapter = UniswapV3Adapter(IPlatform(PLATFORM).ammAdapter(keccak256(bytes(AmmAdapterIdLib.UNISWAPV3))).proxy);
         multisig = IPlatform(PLATFORM).multisig();
@@ -25,7 +25,14 @@ contract MetaVaultAdapterUpgrade101Test is SonicSetup {
     }
 
     //region ------------------------------------ Tests
+    function testGetTwaSqrtPrice() public view {
+        uint price = adapter.getPrice(SonicConstantsLib.POOL_SHADOW_CL_STBL_USDC, SonicConstantsLib.TOKEN_STBL, SonicConstantsLib.TOKEN_USDC, 1e18);
+        uint twaPrice5 = adapter.getTwaPrice(SonicConstantsLib.POOL_SHADOW_CL_STBL_USDC, SonicConstantsLib.TOKEN_STBL, SonicConstantsLib.TOKEN_USDC, 1e18, 300);
+        uint twaPrice1 = adapter.getTwaPrice(SonicConstantsLib.POOL_SHADOW_CL_STBL_USDC, SonicConstantsLib.TOKEN_STBL, SonicConstantsLib.TOKEN_USDC, 1e18, 60);
+        uint twaPrice10 = adapter.getTwaPrice(SonicConstantsLib.POOL_SHADOW_CL_STBL_USDC, SonicConstantsLib.TOKEN_STBL, SonicConstantsLib.TOKEN_USDC, 1e18, 6000);
 
+        console.log(price, twaPrice1, twaPrice5, twaPrice10);
+    }
 
     //endregion ------------------------------------ Tests
 
@@ -44,6 +51,9 @@ contract MetaVaultAdapterUpgrade101Test is SonicSetup {
 
         proxies[0] = platform.ammAdapter(keccak256(bytes(AmmAdapterIdLib.UNISWAPV3))).proxy;
         implementations[0] = address(new UniswapV3Adapter());
+
+        vm.startPrank(multisig);
+        platform.cancelUpgrade();
 
         vm.startPrank(multisig);
         platform.announcePlatformUpgrade("2025.08.0-alpha", proxies, implementations);

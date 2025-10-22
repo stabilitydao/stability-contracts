@@ -17,6 +17,7 @@ import {IBalancerAdapter} from "../interfaces/IBalancerAdapter.sol";
 
 /// @title AMM adapter for Balancer Weighted pools
 /// Changelog:
+///     1.0.2: add empty IAmmAdapter.getTwaPrice
 ///     1.0.1: refactor Balancer libs to improve coverage
 /// @author Alien Deployer (https://github.com/a17)
 /// @author Jude (https://github.com/iammrjude)
@@ -26,7 +27,7 @@ contract BalancerWeightedAdapter is Controllable, IAmmAdapter, IBalancerAdapter 
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.1";
+    string public constant VERSION = "1.0.2";
 
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.BalancerWeightedAdapter")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant STORAGE_LOCATION = 0xa4f6828e593c072b951693fc34ca2cd3971b69396d7ba6ed5b73febddd360b00;
@@ -195,6 +196,11 @@ contract BalancerWeightedAdapter is Controllable, IAmmAdapter, IBalancerAdapter 
         return WeightedMath._calcOutGivenIn(
             balances[tokenInIndex], weights[tokenInIndex], balances[tokenOutIndex], weights[tokenOutIndex], amount
         );
+    }
+
+    /// @inheritdoc IAmmAdapter
+    function getTwaPrice(address /*pool*/, address /*tokenIn*/, address /*tokenOut*/, uint /*amount*/, uint32 /*period*/) external pure returns (uint) {
+        revert("Not supported");
     }
 
     /// @inheritdoc IERC165

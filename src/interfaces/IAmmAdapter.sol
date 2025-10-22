@@ -81,7 +81,7 @@ interface IAmmAdapter is IERC165 {
     /// @param amount Amount of tokenIn. For zero value provided amount 1.0 (10 ** decimals of tokenIn) will be used.
     /// @param period Time period in seconds for TWA calculation. If 0 then current price will be returned.
     /// @return Amount of tokenOut with tokenOut decimals precision
-    function getTwaPrice(address pool, address tokenIn, address tokenOut, uint amount, uint period) external view returns (uint);
+    function getTwaPrice(address pool, address tokenIn, address tokenOut, uint amount, uint32 period) external view returns (uint);
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      WRITE FUNCTIONS                       */

@@ -24,6 +24,7 @@ import {IPermit2} from "../integrations/permit2/IPermit2.sol";
 
 /// @title AMM adapter for Balancer V3 stable pools
 /// Changelog:
+///     1.0.2: add empty IAmmAdapter.getTwaPrice
 ///     1.0.1: refactor Balancer libs to improve coverage
 /// @author Alien Deployer (https://github.com/a17)
 /// @author Jude (https://github.com/iammrjude)
@@ -35,7 +36,7 @@ contract BalancerV3StableAdapter is Controllable, IAmmAdapter, IBalancerAdapter 
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.1";
+    string public constant VERSION = "1.0.2";
 
     address internal constant PERMIT2 = 0x000000000022D473030F116dDEE9F6B43aC78BA3;
 
@@ -188,6 +189,11 @@ contract BalancerV3StableAdapter is Controllable, IAmmAdapter, IBalancerAdapter 
             decimalScalingFactors[tokenOutIndex],
             ScalingHelpers.computeRateRoundUp(tokenRates[tokenOutIndex])
         );
+    }
+
+    /// @inheritdoc IAmmAdapter
+    function getTwaPrice(address /*pool*/, address /*tokenIn*/, address /*tokenOut*/, uint /*amount*/, uint32 /*period*/) external pure returns (uint) {
+        revert("Not supported");
     }
 
     /// @inheritdoc IERC165

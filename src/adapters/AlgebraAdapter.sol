@@ -18,6 +18,8 @@ import {IAlgebraPool} from "../integrations/algebra/IAlgebraPool.sol";
 /// @notice AMM adapter for working with AlegbraV1 AMMs used in QuickSwapV3.
 /// @author Alien Deployer (https://github.com/a17)
 /// @author JodsMigel (https://github.com/JodsMigel)
+/// Changelog:
+///  1.0.4: add empty IAmmAdapter.getTwaPrice
 contract AlgebraAdapter is Controllable, ICAmmAdapter {
     using SafeERC20 for IERC20;
 
@@ -26,7 +28,7 @@ contract AlgebraAdapter is Controllable, ICAmmAdapter {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.3";
+    string public constant VERSION = "1.0.4";
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      INITIALIZATION                        */
@@ -133,8 +135,7 @@ contract AlgebraAdapter is Controllable, ICAmmAdapter {
     function getPrice(
         address pool,
         address tokenIn,
-        address,
-        /*tokenOut*/
+        address /*tokenOut*/,
         uint amount
     ) public view returns (uint) {
         address token0 = IAlgebraPool(pool).token0();
@@ -147,6 +148,11 @@ contract AlgebraAdapter is Controllable, ICAmmAdapter {
         (uint160 sqrtPriceX96,,,,,,) = IAlgebraPool(pool).globalState();
 
         return UniswapV3MathLib.calcPriceOut(tokenIn, token0, sqrtPriceX96, tokenInDecimals, tokenOutDecimals, amount);
+    }
+
+    /// @inheritdoc IAmmAdapter
+    function getTwaPrice(address /*pool*/, address /*tokenIn*/, address /*tokenOut*/, uint /*amount*/, uint32 /*period*/) external pure returns (uint) {
+        revert("Not supported");
     }
 
     /// @inheritdoc IAmmAdapter
