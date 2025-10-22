@@ -193,7 +193,8 @@ contract StabilityDAOSonicTest is Test {
 
         vm.prank(address(0x123));
         vm.expectRevert(StabilityDAO.NonTransferable.selector);
-        //slither-disable-next-line erc20-unchecked-transfer
+        // slither-disable-next-line erc20-unchecked-transfer
+        // forge-lint: disable-next-line(erc20-unchecked-transfer)
         token.transfer(address(0x456), 1e18);
 
         vm.prank(address(0x123));
@@ -201,7 +202,8 @@ contract StabilityDAOSonicTest is Test {
 
         vm.prank(address(0x456));
         vm.expectRevert(StabilityDAO.NonTransferable.selector);
-        //slither-disable-next-line erc20-unchecked-transfer
+        // slither-disable-next-line erc20-unchecked-transfer
+        // forge-lint: disable-next-line(erc20-unchecked-transfer)
         token.transferFrom(address(0x123), address(0x789), 1e18);
     }
 

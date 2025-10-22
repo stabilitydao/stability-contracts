@@ -17,7 +17,7 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 /// @author Alien Deployer (https://github.com/a17)
 /// @author Jude (https://github.com/iammrjude)
 /// Changelog:
-///  1.2.0: Integration with STBLDAO
+///  1.1.0: Integration with STBLDAO
 ///  1.0.1: use SafeERC20.safeTransfer/safeTransferFrom instead of ERC20 transfer/transferFrom
 contract XStaking is Controllable, ReentrancyGuardUpgradeable, IXStaking {
     using SafeERC20 for IERC20;
