@@ -74,6 +74,15 @@ interface IAmmAdapter is IERC165 {
     /// @return Amount of tokenOut with tokenOut decimals precision
     function getPrice(address pool, address tokenIn, address tokenOut, uint amount) external view returns (uint);
 
+    /// @notice Total weighted average price in pool without amount impact
+    /// @param pool Address of a pool supported by the adapter
+    /// @param tokenIn Token for sell
+    /// @param tokenOut Token for buy
+    /// @param amount Amount of tokenIn. For zero value provided amount 1.0 (10 ** decimals of tokenIn) will be used.
+    /// @param period Time period in seconds for TWA calculation. If 0 then current price will be returned.
+    /// @return Amount of tokenOut with tokenOut decimals precision
+    function getTwaPrice(address pool, address tokenIn, address tokenOut, uint amount, uint period) external view returns (uint);
+
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      WRITE FUNCTIONS                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/

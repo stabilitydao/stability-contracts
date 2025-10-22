@@ -20,7 +20,9 @@ import {IUniswapV3Pool} from "../integrations/uniswapv3/IUniswapV3Pool.sol";
 /// @author Alien Deployer (https://github.com/a17)
 /// @author JodsMigel (https://github.com/JodsMigel)
 /// @author dvpublic (https://github.com/dvpublic)
+/// @author Omriss (https://github.com/omriss)
 /// Changelog:
+///  1.1.0: add getTwaPrice - #414
 ///  1.0.4: fix UniswapV3MathLib.calcPriceOut - #262
 contract UniswapV3Adapter is Controllable, ICAmmAdapter {
     using SafeERC20 for IERC20;
@@ -30,7 +32,9 @@ contract UniswapV3Adapter is Controllable, ICAmmAdapter {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.4";
+    string public constant VERSION = "1.1.0";
+
+    error TwaTickOutOfRange();
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      INITIALIZATION                        */
@@ -156,21 +160,21 @@ contract UniswapV3Adapter is Controllable, ICAmmAdapter {
     function getPrice(
         address pool,
         address tokenIn,
-        address,
-        /*tokenOut*/
+        address /*tokenOut*/,
         uint amount
     ) public view returns (uint) {
-        address token0 = IUniswapV3Pool(pool).token0();
-        address token1 = IUniswapV3Pool(pool).token1();
+        return _getPrice(pool, tokenIn, amount, 0);
+    }
 
-        uint tokenInDecimals = tokenIn == token0 ? IERC20Metadata(token0).decimals() : IERC20Metadata(token1).decimals();
-        uint tokenOutDecimals =
-            tokenIn == token1 ? IERC20Metadata(token0).decimals() : IERC20Metadata(token1).decimals();
-
-        //slither-disable-next-line unused-return
-        (uint160 sqrtPriceX96,,,,,,) = IUniswapV3Pool(pool).slot0();
-
-        return UniswapV3MathLib.calcPriceOut(tokenIn, token0, sqrtPriceX96, tokenInDecimals, tokenOutDecimals, amount);
+    /// @inheritdoc IAmmAdapter
+    function getTwaPrice(
+        address pool,
+        address tokenIn,
+        address /*tokenOut*/,
+        uint amount,
+        uint32 period
+    ) public view returns (uint) {
+        return _getPrice(pool, tokenIn, amount, period);
     }
 
     /// @inheritdoc ICAmmAdapter
@@ -290,4 +294,40 @@ contract UniswapV3Adapter is Controllable, ICAmmAdapter {
     //     }
     //     upperTick = lowerTick + tickSpacing;
     // }
+
+    function _getPrice(address pool, address tokenIn, uint amount, uint32 period) view internal returns (uint) {
+        address token0 = IUniswapV3Pool(pool).token0();
+        address token1 = IUniswapV3Pool(pool).token1();
+
+        uint tokenInDecimals = tokenIn == token0 ? IERC20Metadata(token0).decimals() : IERC20Metadata(token1).decimals();
+        uint tokenOutDecimals =
+            tokenIn == token1 ? IERC20Metadata(token0).decimals() : IERC20Metadata(token1).decimals();
+
+        uint160 sqrtPriceX96;
+        if (period == 0) {
+            //slither-disable-next-line unused-return
+            (sqrtPriceX96,,,,,,) = IUniswapV3Pool(pool).slot0();
+        } else {
+            sqrtPriceX96 = _getTwaSqrtPrice(pool, period);
+        }
+
+        return UniswapV3MathLib.calcPriceOut(tokenIn, token0, sqrtPriceX96, tokenInDecimals, tokenOutDecimals, amount);
+    }
+
+    function _getTwaSqrtPrice(address pool, uint32 period) internal view returns (uint160 sqrtPriceX96) {
+        uint32[] memory secondsAgos = new uint32[](2);
+        secondsAgos[0] = uint32(period);
+        secondsAgos[1] = 0;
+
+        //slither-disable-next-line unused-return
+        (int56[] memory tickCumulatives, ) = IUniswapV3Pool(pool).observe(secondsAgos);
+        int56 tickCumulativesDelta = tickCumulatives[1] - tickCumulatives[0];
+
+        int56 period56 = int56(int32(uint32(period)));
+        int56 twaTick = tickCumulativesDelta / period56;
+        require(twaTick >= int56(type(int24).min) && twaTick <= int56(type(int24).max), TwaTickOutOfRange());
+        int24 timeWeightedAverageTick = int24(twaTick);
+
+        return UniswapV3MathLib.getSqrtRatioAtTick(timeWeightedAverageTick);
+    }
 }
