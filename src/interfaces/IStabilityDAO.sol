@@ -10,12 +10,12 @@ interface IStabilityDAO is IERC20, IERC20Metadata {
     struct DaoParams {
         /// @notice Minimal amount of xSTBL tokens required to have STBL_DAO tokens, decimals 18
         uint minimalPower;
-        /// @notice xSTBL instant exit penalty, i.e. 50_00 = 50%
+        /// @notice xSTBL instant exit penalty, decimals 1e4, i.e. 50_00 = 50%
         /// Set 0 to use default value XSTBL.DEFAULT_SLASHING_PENALTY
         uint exitPenalty;
-        /// @notice Min power that a user should have to be able to create new proposal. In percents, i.e. 50_00 = 50%
+        /// @notice Min percent of power that a user should have to be able to create new proposal. Decimals 1e5, i.e. 50_000 = 50%
         uint proposalThreshold;
-        /// @notice A percent of votes required to reach quorum for a proposal, i.e. 20_00 = 20%
+        /// @notice A percent of votes required to reach quorum for a proposal. Decimals 1e5, i.e. 20_000 = 20%
         /// If the total number of votes is less than this percent, proposal is rejected
         uint quorum;
         /// @notice Inter-chain power allocation delay, i.e. 1 day
@@ -38,10 +38,10 @@ interface IStabilityDAO is IERC20, IERC20Metadata {
     /// @notice xSTBL instant exit penalty (slashing penalty), decimals 1e4, i.e. 50_00 = 50%
     function exitPenalty() external view returns (uint);
 
-    /// @notice Min percent of power that a user should have to be able to create a new proposal, decimals 1e4, i.e. 50_00 = 50%
+    /// @notice Min percent of power that a user should have to be able to create a new proposal, decimals 1e5, i.e. 50_000 = 50%
     function proposalThreshold() external view returns (uint);
 
-    /// @notice A percent of votes required to reach quorum for a proposal, decimals 1e4, i.e. 20_00 = 20%
+    /// @notice A percent of votes required to reach quorum for a proposal, decimals 1e5, i.e. 20_000 = 20%
     /// If the total number of votes is less than this percent, proposal is rejected
     function quorum() external view returns (uint);
 

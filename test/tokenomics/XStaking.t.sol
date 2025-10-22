@@ -369,8 +369,8 @@ contract XStakingTest is Test, MockSetup {
         IStabilityDAO.DaoParams memory p = IStabilityDAO.DaoParams({
             minimalPower: 50e18,
             exitPenalty: 50_00,
-            proposalThreshold: 10_00,
-            quorum: 25_00,
+            proposalThreshold: 10_000,
+            quorum: 25_000,
             powerAllocationDelay: 86400
         });
 

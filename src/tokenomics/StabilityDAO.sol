@@ -9,6 +9,7 @@ import {
 import {IStabilityDAO} from "../interfaces/IStabilityDAO.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
+import {ConstantsLib} from "../core/libs/ConstantsLib.sol";
 
 /// @title Stability DAO Token contract
 /// Amount of tokens for each user represents their voting power in the DAO.
@@ -35,7 +36,7 @@ contract StabilityDAO is
         0xb41400b8ab7d5c4f4647f6397fc72c137345511eb9c9a0082de7fe729c2ae200;
 
     /// @dev Same to XSTBL.DENOMINATOR
-    uint internal constant DENOMINATOR = 10_000;
+    uint internal constant DENOMINATOR_XSTBL = 10_000;
 
     //region ----------------------------------- Data types
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -111,9 +112,8 @@ contract StabilityDAO is
     function updateConfig(DaoParams memory p) external onlyGovernanceOrMultisig {
         StabilityDaoStorage storage $ = _getStorage();
 
-        require(
-            p.quorum < DENOMINATOR && p.exitPenalty < DENOMINATOR && p.proposalThreshold < DENOMINATOR, WrongValue()
-        );
+        require(p.exitPenalty < DENOMINATOR_XSTBL, WrongValue());
+        require(p.quorum < ConstantsLib.DENOMINATOR && p.proposalThreshold < ConstantsLib.DENOMINATOR, WrongValue());
 
         $.config[0] = p;
 

@@ -288,8 +288,8 @@ contract XStakingUpgrade404SonicTest is Test {
         IStabilityDAO.DaoParams memory p = IStabilityDAO.DaoParams({
             minimalPower: 4000e18,
             exitPenalty: 50_00,
-            proposalThreshold: 10_00,
-            quorum: 20_00,
+            proposalThreshold: 10_000,
+            quorum: 20_000,
             powerAllocationDelay: 86400
         });
 

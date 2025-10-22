@@ -216,8 +216,8 @@ contract XstblUpgrade406SonicTest is Test {
         IStabilityDAO.DaoParams memory p = IStabilityDAO.DaoParams({
             minimalPower: 4000e18,
             exitPenalty: 0, // default 50%
-            quorum: 15_00,
-            proposalThreshold: 25_00,
+            quorum: 15_000,
+            proposalThreshold: 25_000,
             powerAllocationDelay: 86400
         });
 

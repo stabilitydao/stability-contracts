@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {console} from "forge-std/console.sol";
+// import {console} from "forge-std/console.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
 import {IControllable} from "../../src/interfaces/IControllable.sol";
@@ -35,8 +35,8 @@ contract StabilityDAOSonicTest is Test {
         IStabilityDAO.DaoParams memory p = IStabilityDAO.DaoParams({
             minimalPower: 4000e18,
             exitPenalty: 50_00,
-            quorum: 20_00,
-            proposalThreshold: 10_00,
+            quorum: 20_000,
+            proposalThreshold: 10_000,
             powerAllocationDelay: 86400
         });
 
@@ -104,16 +104,16 @@ contract StabilityDAOSonicTest is Test {
         IStabilityDAO.DaoParams memory p1 = IStabilityDAO.DaoParams({
             minimalPower: 4000e18,
             exitPenalty: 50_00, // 50%
-            proposalThreshold: 10_00, // 10%
-            quorum: 20_00, // 20%
+            quorum: 20_000, // 20%
+            proposalThreshold: 10_000, // 10%
             powerAllocationDelay: 86400
         });
 
         IStabilityDAO.DaoParams memory p2 = IStabilityDAO.DaoParams({
             minimalPower: 5000e18,
             exitPenalty: 80_00, // 80%
-            proposalThreshold: 20_00, // 20%
-            quorum: 35_00, // 35%
+            quorum: 35_000, // 35%
+            proposalThreshold: 20_000, // 20%
             powerAllocationDelay: 172800
         });
 
@@ -158,19 +158,19 @@ contract StabilityDAOSonicTest is Test {
         IStabilityDAO.DaoParams memory p1 = IStabilityDAO.DaoParams({
             minimalPower: 4000e18,
             exitPenalty: 50_00, // 50%
-            proposalThreshold: 10_00, // 10%
-            quorum: 20_00, // 20%
+            quorum: 20_000, // 20%
+            proposalThreshold: 10_000, // 10%
             powerAllocationDelay: 86400
         });
         IStabilityDAO token = _createStabilityDAOInstance(p1);
 
-        p1.proposalThreshold = 100_00; // 100%
+        p1.proposalThreshold = 100_000; // 100%
 
         vm.prank(multisig);
         vm.expectRevert(StabilityDAO.WrongValue.selector);
         token.updateConfig(p1);
 
-        p1.proposalThreshold = 10_00;
+        p1.proposalThreshold = 10_000;
         p1.exitPenalty = 100_00; // 100%
 
         vm.prank(multisig);
@@ -178,7 +178,7 @@ contract StabilityDAOSonicTest is Test {
         token.updateConfig(p1);
 
         p1.exitPenalty = 50_00;
-        p1.quorum = 100_00; // 100%
+        p1.quorum = 100_000; // 100%
 
         vm.prank(multisig);
         vm.expectRevert(StabilityDAO.WrongValue.selector);
@@ -301,8 +301,8 @@ contract StabilityDAOSonicTest is Test {
         IStabilityDAO.DaoParams memory p = IStabilityDAO.DaoParams({
             minimalPower: 4000e18,
             exitPenalty: 80_00,
-            quorum: 15_00,
-            proposalThreshold: 25_00,
+            quorum: 15_000,
+            proposalThreshold: 25_000,
             powerAllocationDelay: 86400
         });
         return _createStabilityDAOInstance(p);
