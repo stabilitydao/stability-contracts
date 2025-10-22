@@ -27,7 +27,7 @@ contract XStaking is Controllable, ReentrancyGuardUpgradeable, IXStaking {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.2.0";
+    string public constant VERSION = "1.1.0";
 
     /// @notice decimal precision of 1e18
     uint public constant PRECISION = 10 ** 18;
