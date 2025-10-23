@@ -42,7 +42,7 @@ import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
 import {SwapXFarmStrategy} from "../../src/strategies/SwapXFarmStrategy.sol";
 import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
 import {CompoundV2Strategy} from "../../src/strategies/CompoundV2Strategy.sol";
-import {IVaultPriceOracle} from "../../src/interfaces/IVaultPriceOracle.sol";
+import {IPriceAggregator} from "../../src/interfaces/IPriceAggregator.sol";
 import {EulerMerklFarmStrategy} from "../../src/strategies/EulerMerklFarmStrategy.sol";
 import {SiloManagedMerklFarmStrategy} from "../../src/strategies/SiloManagedMerklFarmStrategy.sol";
 import {SiloMerklFarmStrategy} from "../../src/strategies/SiloMerklFarmStrategy.sol";

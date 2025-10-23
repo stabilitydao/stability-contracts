@@ -147,14 +147,22 @@ contract SolidlyAdapter is Controllable, IAmmAdapter {
     function getPrice(
         address pool,
         address tokenIn,
-        address /*tokenOut*/,
+        address,
+        /*tokenOut*/
         uint amount
     ) public view returns (uint) {
         return ISolidlyPool(pool).getAmountOut(amount, tokenIn);
     }
 
     /// @inheritdoc IAmmAdapter
-    function getTwaPrice(address pool, address tokenIn, address /*tokenOut*/, uint amount, uint32 period) external view returns (uint) {
+    function getTwaPrice(
+        address pool,
+        address tokenIn,
+        address,
+        /*tokenOut*/
+        uint amount,
+        uint32 period
+    ) external view returns (uint) {
         if (period == 0) {
             // Return the current (spot) price.
             return ISolidlyPool(pool).getAmountOut(amount, tokenIn);

@@ -192,7 +192,17 @@ contract BalancerV3StableAdapter is Controllable, IAmmAdapter, IBalancerAdapter 
     }
 
     /// @inheritdoc IAmmAdapter
-    function getTwaPrice(address /*pool*/, address /*tokenIn*/, address /*tokenOut*/, uint /*amount*/, uint32 /*period*/) external pure returns (uint) {
+    function getTwaPrice(
+        address,
+        /*pool*/
+        address,
+        /*tokenIn*/
+        address,
+        /*tokenOut*/
+        uint,
+        /*amount*/
+        uint32 /*period*/
+    ) external pure returns (uint) {
         revert("Not supported");
     }
 

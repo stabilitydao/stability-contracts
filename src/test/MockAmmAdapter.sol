@@ -111,10 +111,19 @@ contract MockAmmAdapter is IAmmAdapter {
         return 2e18;
     }
 
-    function getTwaPrice(address /*pool*/, address /*tokenIn*/, address /*tokenOut*/, uint /*amount*/, uint32 /*period*/) external pure returns (uint) {
+    function getTwaPrice(
+        address,
+        /*pool*/
+        address,
+        /*tokenIn*/
+        address,
+        /*tokenOut*/
+        uint,
+        /*amount*/
+        uint32 /*period*/
+    ) external pure returns (uint) {
         return 3e18;
     }
-
 
     /// @inheritdoc IAmmAdapter
     function ammAdapterId() external pure returns (string memory) {

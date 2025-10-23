@@ -12,14 +12,14 @@ interface IPriceAggregator {
 
     error InvalidRoundId();
     error ValidatorAlreadyAuthorized();
-    error InvalidVaultAddress();
+    error InvalidEntityAddress();
     error MinQuorumMustBeGreaterThanZero();
     error MaxPriceAgeMustBeGreaterThanZero();
     error NoDataAvailable();
     error PriceTooOld();
     error IndexOutOfBounds();
     error NotAuthorizedValidator();
-    error VaultNotFound();
+    error EntityNotFound();
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         DATA TYPES                         */
@@ -95,24 +95,24 @@ interface IPriceAggregator {
     /*                       VIEW FUNCTIONS                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    /// @notice Retrieves the aggregated price data for a specific vault.
-    /// @param vault_ The address of the vault.
-    /// @return price The aggregated median price.
+    /// @notice Retrieves the aggregated price data for a specific vault or asset.
+    /// @param entity_ The address of the vault.
+    /// @return _price The aggregated median price.
     /// @return timestamp The timestamp of the aggregation.
     /// @return roundId The ID of the aggregated round.
-    function vaultPrice(address vault_) external view returns (uint price, uint timestamp, uint roundId);
+    function price(address entity_) external view returns (uint _price, uint timestamp, uint roundId);
 
-    /// @notice Retrieves a specific observation for a vault, round, and oracle.
-    /// @param vault_ The address of the vault.
+    /// @notice Retrieves a specific observation for a vault | asset, round, and oracle.
+    /// @param entity_ The address of the vault or asset.
     /// @param roundId_ The ID of the round.
     /// @param validator_ The address of the validator.
-    /// @return price The submitted price.
+    /// @return _price The submitted price.
     /// @return timestamp The submission timestamp.
     function observations(
-        address vault_,
+        address entity_,
         uint roundId_,
         address validator_
-    ) external view returns (uint price, uint timestamp);
+    ) external view returns (uint _price, uint timestamp);
 
     /// @notice Checks if an address is an authorized validator.
     /// @param validator_ The address to check.
@@ -142,6 +142,17 @@ interface IPriceAggregator {
     /// @notice Returns the number of vaults being monitored by this oracle.
     function vaultsLength() external view returns (uint);
 
+    /// @notice Retrieves an asset address from the list by index.
+    /// @param index_ The index in the assets list.
+    function assetByIndex(uint index_) external view returns (address);
+
+    /// @notice Returns the list of all assets being monitored by this oracle.
+    /// @return An array of addresses representing the assets.
+    function assets() external view returns (address[] memory);
+
+    /// @notice Returns the number of assets being monitored by this oracle.
+    function assetsLength() external view returns (uint);
+
     /// @notice Returns the minimum quorum required for aggregation.
     /// @return The minimum number of submissions needed.
     function minQuorum() external view returns (uint);
@@ -150,30 +161,30 @@ interface IPriceAggregator {
     /// @return The maximum age in seconds.
     function maxPriceAge() external view returns (uint);
 
-    /// @notice Retrieves the latest valid aggregated price for a vault.
+    /// @notice Retrieves the latest valid aggregated price for a vault or asset.
     /// @dev Reverts if no data is available or if the price is too old.
-    /// @param vault_ The address of the vault.
+    /// @param entity_ The address of the entity.
     /// @return price The latest aggregated price.
     /// @return timestamp The aggregation timestamp.
     /// @return roundId The associated round ID.
-    function getLatestPrice(address vault_) external view returns (uint price, uint timestamp, uint roundId);
+    function getLatestPrice(address entity_) external view returns (uint price, uint timestamp, uint roundId);
 
-    /// @notice Retrieves the price threshold and staleness for a specific vault.
-    /// @param vault_ The address of the vault.
+    /// @notice Retrieves the price threshold and staleness for a specific vault or asset.
+    /// @param entity_ The address of the vault or asset.
     /// @return priceThreshold The price threshold for the vault.
     /// @return staleness The staleness period for the vault.
-    function vaultData(address vault_) external view returns (uint priceThreshold, uint staleness);
+    function entityData(address entity_) external view returns (uint priceThreshold, uint staleness);
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      WRITE FUNCTIONS                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    /// @notice Submits a price for a vault in the current round.
+    /// @notice Submits a price for a vault/asset in the current round.
     /// @dev Can only be called by authorized validators.
-    /// @param vault_ The address of the vault.
+    /// @param entity_ The address of the vault or asset.
     /// @param price_ The price to submit.
     /// @param roundId_ The ID of the round (must match current), starting from 1 and incrementing by 1 each round.
-    function submitPrice(address vault_, uint price_, uint roundId_) external;
+    function submitPrice(address entity_, uint price_, uint roundId_) external;
 
     /// @notice Adds a new validator to the authorized list.
     /// @dev Restricted to governance or multisig.
@@ -204,4 +215,16 @@ interface IPriceAggregator {
     /// @dev Restricted to governance or multisig.
     /// @param vault_ The address of the vault to remove.
     function removeVault(address vault_) external;
+
+    /// @notice Adds a new asset to be monitored by the oracle.
+    /// @dev Restricted to governance or multisig.
+    /// @param asset_ The address of the vault to add.
+    /// @param priceThreshold_ The price threshold for the asset.
+    /// @param staleness_ The staleness period for the asset.
+    function addAsset(address asset_, uint priceThreshold_, uint staleness_) external;
+
+    /// @notice Removes an asset from being monitored by the oracle.
+    /// @dev Restricted to governance or multisig.
+    /// @param asset_ The address of the asset to remove.
+    function removeAsset(address asset_) external;
 }

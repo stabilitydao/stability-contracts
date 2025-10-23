@@ -135,7 +135,8 @@ contract AlgebraAdapter is Controllable, ICAmmAdapter {
     function getPrice(
         address pool,
         address tokenIn,
-        address /*tokenOut*/,
+        address,
+        /*tokenOut*/
         uint amount
     ) public view returns (uint) {
         address token0 = IAlgebraPool(pool).token0();
@@ -151,7 +152,17 @@ contract AlgebraAdapter is Controllable, ICAmmAdapter {
     }
 
     /// @inheritdoc IAmmAdapter
-    function getTwaPrice(address /*pool*/, address /*tokenIn*/, address /*tokenOut*/, uint /*amount*/, uint32 /*period*/) external pure returns (uint) {
+    function getTwaPrice(
+        address,
+        /*pool*/
+        address,
+        /*tokenIn*/
+        address,
+        /*tokenOut*/
+        uint,
+        /*amount*/
+        uint32 /*period*/
+    ) external pure returns (uint) {
         revert("Not supported");
     }
 

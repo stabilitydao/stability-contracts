@@ -123,7 +123,7 @@ contract Platform is Controllable, IPlatform {
         /// @inheritdoc IPlatform
         address metaVaultFactory;
         /// @inheritdoc IPlatform
-        address vaultPriceOracle;
+        address priceAggregator;
         /// @inheritdoc IPlatform
         address recovery;
     }
@@ -162,7 +162,7 @@ contract Platform is Controllable, IPlatform {
         $.zap = addresses.zap;
         $.revenueRouter = addresses.revenueRouter;
         $.metaVaultFactory = addresses.metaVaultFactory;
-        $.vaultPriceOracle = addresses.vaultPriceOracle;
+        $.priceAggregator = addresses.vaultPriceOracle;
         // $.recovery is not set by default, use setupRecovery if needed
         $.minTvlForFreeHardWork = 100e18;
         emit Addresses(
@@ -356,10 +356,10 @@ contract Platform is Controllable, IPlatform {
     }
 
     /// @inheritdoc IPlatform
-    function setupVaultPriceOracle(address vaultPriceOracle_) external onlyGovernanceOrMultisig {
+    function setupPriceAggregator(address priceAggregator_) external onlyGovernanceOrMultisig {
         PlatformStorage storage $ = _getStorage();
-        emit VaultPriceOracle(vaultPriceOracle_);
-        $.vaultPriceOracle = vaultPriceOracle_;
+        emit PriceAggregator(priceAggregator_);
+        $.priceAggregator = priceAggregator_;
     }
 
     /// @inheritdoc IPlatform
@@ -578,8 +578,8 @@ contract Platform is Controllable, IPlatform {
     }
 
     /// @inheritdoc IPlatform
-    function vaultPriceOracle() external view returns (address) {
-        return _getStorage().vaultPriceOracle;
+    function priceAggregator() external view returns (address) {
+        return _getStorage().priceAggregator;
     }
 
     /// @inheritdoc IPlatform

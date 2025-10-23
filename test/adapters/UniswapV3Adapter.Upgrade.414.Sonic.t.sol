@@ -26,22 +26,37 @@ contract UniswapV3AdapterUpgrade414SonicTest is Test {
 
     //region ------------------------------------ Tests
     function testGetTwaSqrtPrice() public view {
-        uint price = adapter.getPrice(SonicConstantsLib.POOL_SHADOW_CL_STBL_USDC, SonicConstantsLib.TOKEN_STBL, SonicConstantsLib.TOKEN_USDC, 1e18);
-        uint twaPrice5 = adapter.getTwaPrice(SonicConstantsLib.POOL_SHADOW_CL_STBL_USDC, SonicConstantsLib.TOKEN_STBL, SonicConstantsLib.TOKEN_USDC, 1e18, 300);
+        uint price = adapter.getPrice(
+            SonicConstantsLib.POOL_SHADOW_CL_STBL_USDC, SonicConstantsLib.TOKEN_STBL, SonicConstantsLib.TOKEN_USDC, 1e18
+        );
+        uint twaPrice5 = adapter.getTwaPrice(
+            SonicConstantsLib.POOL_SHADOW_CL_STBL_USDC,
+            SonicConstantsLib.TOKEN_STBL,
+            SonicConstantsLib.TOKEN_USDC,
+            1e18,
+            300
+        );
 
         assertApproxEqAbs(price, twaPrice5, price * 3 / 10, "current price ~ twa price");
         assertNotEq(price, twaPrice5, "current price != twa price");
     }
 
     function testGetTwaSqrtPriceZeroPeriod() public view {
-        uint price = adapter.getPrice(SonicConstantsLib.POOL_SHADOW_CL_STBL_USDC, SonicConstantsLib.TOKEN_STBL, SonicConstantsLib.TOKEN_USDC, 1e18);
-        uint twaPrice = adapter.getTwaPrice(SonicConstantsLib.POOL_SHADOW_CL_STBL_USDC, SonicConstantsLib.TOKEN_STBL, SonicConstantsLib.TOKEN_USDC, 1e18, 0);
+        uint price = adapter.getPrice(
+            SonicConstantsLib.POOL_SHADOW_CL_STBL_USDC, SonicConstantsLib.TOKEN_STBL, SonicConstantsLib.TOKEN_USDC, 1e18
+        );
+        uint twaPrice = adapter.getTwaPrice(
+            SonicConstantsLib.POOL_SHADOW_CL_STBL_USDC,
+            SonicConstantsLib.TOKEN_STBL,
+            SonicConstantsLib.TOKEN_USDC,
+            1e18,
+            0
+        );
 
         assertEq(price, twaPrice, "current price == twa price");
     }
 
     //endregion ------------------------------------ Tests
-
 
     //region ------------------------------------ Helper functions
     function _upgradePlatform() internal {

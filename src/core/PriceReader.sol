@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {console} from "forge-std/console.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import {Controllable, IPlatform} from "./base/Controllable.sol";
@@ -264,8 +263,12 @@ contract PriceReader is Controllable, IPriceReader {
     }
 
     /// @inheritdoc IPriceReader
-    function getTwaPrice(address asset, address pool, string memory ammAdapterId, uint32 period) external view returns (uint price, bool trusted) {
-
+    function getTwaPrice(
+        address asset,
+        address pool,
+        string memory ammAdapterId,
+        uint32 period
+    ) external view returns (uint price, bool trusted) {
         // ------------------ get TWAP for the asset in terms of token out from the given pool
 
         IAmmAdapter ammAdapter = IAmmAdapter(IPlatform(platform()).ammAdapter(keccak256(bytes(ammAdapterId))).proxy);

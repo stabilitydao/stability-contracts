@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {IPriceAggregator} from "../interfaces/IVaultPriceOracle.sol";
+import {IPriceAggregator} from "../interfaces/IPriceAggregator.sol";
 import {Controllable, IControllable} from "./base/Controllable.sol";
 
 /// @dev A contract for aggregating vault prices from multiple validators using a quorum-based median mechanism.
@@ -10,7 +10,7 @@ import {Controllable, IControllable} from "./base/Controllable.sol";
 ///   1.0.1: review fixes
 /// @author ruby (https://github.com/alexandersazonof)
 /// @author Omriss (https://github.com/omriss)
-contract VaultPriceOracle is Controllable, IPriceAggregator {
+contract PriceAggregator is Controllable, IPriceAggregator {
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         CONSTANTS                          */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -31,10 +31,10 @@ contract VaultPriceOracle is Controllable, IPriceAggregator {
     /// @dev Originally contract had name VaultPriceOracle, so storage wasn't renamed to PriceAggregator
     /// @dev entity = vault | asset
     struct VaultPriceOracleStorage {
-        mapping(address entity => AggregatedData) vaultPrices;
+        mapping(address entity => AggregatedData) entityPrices;
         mapping(address entity => mapping(uint roundId => mapping(address validator => Observation))) observations;
         mapping(address validator => bool authorized) authorizedValidators;
-        mapping(address entity => EntityData) vaultData;
+        mapping(address entity => EntityData) entityData;
         address[] validators;
         /// @notice List of all registered vaults
         address[] vaults;
@@ -64,37 +64,38 @@ contract VaultPriceOracle is Controllable, IPriceAggregator {
         __Controllable_init(platform_);
     }
 
+    //region ------------------------------------ Restricted actions
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      RESTRICTED ACTIONS                    */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    /// @inheritdoc IVaultPriceOracle
-    function submitPrice(address vault_, uint price_, uint roundId_) external onlyValidator {
+    /// @inheritdoc IPriceAggregator
+    function submitPrice(address entity_, uint price_, uint roundId_) external onlyValidator {
         VaultPriceOracleStorage storage $ = _getStorage();
-        uint currentRoundId = $.vaultPrices[vault_].roundId == 0 ? 1 : $.vaultPrices[vault_].roundId;
-        require(roundId_ == currentRoundId, IVaultPriceOracle.InvalidRoundId());
+        uint currentRoundId = $.entityPrices[entity_].roundId == 0 ? 1 : $.entityPrices[entity_].roundId;
+        require(roundId_ == currentRoundId, IPriceAggregator.InvalidRoundId());
 
-        $.observations[vault_][currentRoundId][msg.sender] = Observation({price: price_, timestamp: block.timestamp});
-        emit PriceSubmitted(vault_, msg.sender, price_, currentRoundId);
+        $.observations[entity_][currentRoundId][msg.sender] = Observation({price: price_, timestamp: block.timestamp});
+        emit PriceSubmitted(entity_, msg.sender, price_, currentRoundId);
 
-        if (_countSubmissions(vault_, currentRoundId) >= $.minQuorum) {
-            _aggregateAndUpdate(vault_, currentRoundId);
+        if (_countSubmissions(entity_, currentRoundId) >= $.minQuorum) {
+            _aggregateAndUpdate(entity_, currentRoundId);
         }
     }
 
-    /// @inheritdoc IVaultPriceOracle
+    /// @inheritdoc IPriceAggregator
     function addValidator(address validator_) external onlyGovernanceOrMultisig {
         VaultPriceOracleStorage storage $ = _getStorage();
-        require(!$.authorizedValidators[validator_], IVaultPriceOracle.ValidatorAlreadyAuthorized());
+        require(!$.authorizedValidators[validator_], IPriceAggregator.ValidatorAlreadyAuthorized());
         $.authorizedValidators[validator_] = true;
         $.validators.push(validator_);
         emit ValidatorAdded(validator_);
     }
 
-    /// @inheritdoc IVaultPriceOracle
+    /// @inheritdoc IPriceAggregator
     function removeValidator(address validator_) external onlyGovernanceOrMultisig {
         VaultPriceOracleStorage storage $ = _getStorage();
-        require($.authorizedValidators[validator_], IVaultPriceOracle.NotAuthorizedValidator());
+        require($.authorizedValidators[validator_], IPriceAggregator.NotAuthorizedValidator());
         $.authorizedValidators[validator_] = false;
         address[] memory _validators = $.validators;
         for (uint i = 0; i < _validators.length; i++) {
@@ -107,20 +108,20 @@ contract VaultPriceOracle is Controllable, IPriceAggregator {
         emit ValidatorRemoved(validator_);
     }
 
-    /// @inheritdoc IVaultPriceOracle
+    /// @inheritdoc IPriceAggregator
     function addVault(address vault_, uint priceThreshold_, uint staleness_) external onlyGovernanceOrMultisig {
         VaultPriceOracleStorage storage $ = _getStorage();
-        require(vault_ != address(0), IVaultPriceOracle.InvalidVaultAddress());
+        require(vault_ != address(0), IPriceAggregator.InvalidEntityAddress());
 
-        $.vaultData[vault_] = EntityData({priceThreshold: priceThreshold_, staleness: staleness_});
+        $.entityData[vault_] = EntityData({priceThreshold: priceThreshold_, staleness: staleness_});
         $.vaults.push(vault_);
         emit VaultAdded(vault_);
     }
 
-    /// @inheritdoc IVaultPriceOracle
+    /// @inheritdoc IPriceAggregator
     function removeVault(address vault_) external onlyGovernanceOrMultisig {
         VaultPriceOracleStorage storage $ = _getStorage();
-        require(vault_ != address(0), IVaultPriceOracle.InvalidVaultAddress());
+        require(vault_ != address(0), IPriceAggregator.InvalidEntityAddress());
 
         bool found = false;
         address[] memory _vaults = $.vaults;
@@ -132,149 +133,204 @@ contract VaultPriceOracle is Controllable, IPriceAggregator {
                 break;
             }
         }
-        require(found, IVaultPriceOracle.VaultNotFound());
-        delete $.vaultData[vault_];
+        require(found, IPriceAggregator.EntityNotFound());
+        delete $.entityData[vault_];
         emit VaultRemoved(vault_);
     }
 
-    /// @inheritdoc IVaultPriceOracle
+    /// @inheritdoc IPriceAggregator
+    function addAsset(address asset_, uint priceThreshold_, uint staleness_) external onlyGovernanceOrMultisig {
+        VaultPriceOracleStorage storage $ = _getStorage();
+        require(asset_ != address(0), IPriceAggregator.InvalidEntityAddress());
+
+        $.entityData[asset_] = EntityData({priceThreshold: priceThreshold_, staleness: staleness_});
+        $.assets.push(asset_);
+        emit AssetAdded(asset_);
+    }
+
+    /// @inheritdoc IPriceAggregator
+    function removeAsset(address asset_) external onlyGovernanceOrMultisig {
+        VaultPriceOracleStorage storage $ = _getStorage();
+        require(asset_ != address(0), IPriceAggregator.InvalidEntityAddress());
+
+        bool found = false;
+        address[] memory _assets = $.assets;
+        for (uint i = 0; i < _assets.length; i++) {
+            if (_assets[i] == asset_) {
+                $.assets[i] = _assets[_assets.length - 1];
+                $.assets.pop();
+                found = true;
+                break;
+            }
+        }
+        require(found, IPriceAggregator.EntityNotFound());
+        delete $.entityData[asset_];
+        emit AssetRemoved(asset_);
+    }
+
+    /// @inheritdoc IPriceAggregator
     function setMinQuorum(uint minQuorum_) external onlyGovernanceOrMultisig {
         VaultPriceOracleStorage storage $ = _getStorage();
-        require(minQuorum_ != 0, IVaultPriceOracle.MinQuorumMustBeGreaterThanZero());
+        require(minQuorum_ != 0, IPriceAggregator.MinQuorumMustBeGreaterThanZero());
         $.minQuorum = minQuorum_;
     }
 
-    /// @inheritdoc IVaultPriceOracle
+    /// @inheritdoc IPriceAggregator
     function setMaxPriceAge(uint maxPriceAge_) external onlyGovernanceOrMultisig {
         VaultPriceOracleStorage storage $ = _getStorage();
-        require(maxPriceAge_ > 0, IVaultPriceOracle.MaxPriceAgeMustBeGreaterThanZero());
+        require(maxPriceAge_ > 0, IPriceAggregator.MaxPriceAgeMustBeGreaterThanZero());
         $.maxPriceAge = maxPriceAge_;
     }
 
+    //endregion ------------------------------------ Restricted actions
+
+    //region ------------------------------------ View
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      VIEW FUNCTIONS                        */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    /// @inheritdoc IVaultPriceOracle
-    function getLatestPrice(address vault_) external view returns (uint price, uint timestamp, uint roundId) {
+    /// @inheritdoc IPriceAggregator
+    function getLatestPrice(address entity_) external view returns (uint _price, uint timestamp, uint roundId) {
         VaultPriceOracleStorage storage $ = _getStorage();
-        AggregatedData memory data = $.vaultPrices[vault_];
-        require(data.timestamp > 0, IVaultPriceOracle.NoDataAvailable());
-        require(block.timestamp <= data.timestamp + $.maxPriceAge, IVaultPriceOracle.PriceTooOld());
+        AggregatedData memory data = $.entityPrices[entity_];
+        require(data.timestamp > 0, IPriceAggregator.NoDataAvailable());
+        require(block.timestamp <= data.timestamp + $.maxPriceAge, IPriceAggregator.PriceTooOld());
         return (data.price, data.timestamp, data.roundId);
     }
 
-    /// @inheritdoc IVaultPriceOracle
-    function vaultPrice(address vault_) external view returns (uint price, uint timestamp, uint roundId) {
+    /// @inheritdoc IPriceAggregator
+    function price(address entity_) external view returns (uint _price, uint timestamp, uint roundId) {
         VaultPriceOracleStorage storage $ = _getStorage();
-        AggregatedData memory data = $.vaultPrices[vault_];
+        AggregatedData memory data = $.entityPrices[entity_];
         return (data.price, data.timestamp, data.roundId);
     }
 
-    /// @inheritdoc IVaultPriceOracle
+    /// @inheritdoc IPriceAggregator
     function observations(
-        address vault_,
+        address entity_,
         uint roundId_,
         address validator_
-    ) external view returns (uint price, uint timestamp) {
+    ) external view returns (uint _price, uint timestamp) {
         VaultPriceOracleStorage storage $ = _getStorage();
-        Observation memory data = $.observations[vault_][roundId_][validator_];
+        Observation memory data = $.observations[entity_][roundId_][validator_];
         return (data.price, data.timestamp);
     }
 
-    /// @inheritdoc IVaultPriceOracle
+    /// @inheritdoc IPriceAggregator
     function authorizedValidator(address validator_) external view returns (bool) {
         VaultPriceOracleStorage storage $ = _getStorage();
         return $.authorizedValidators[validator_];
     }
 
-    /// @inheritdoc IVaultPriceOracle
+    /// @inheritdoc IPriceAggregator
     function vaultByIndex(uint index_) external view returns (address) {
         VaultPriceOracleStorage storage $ = _getStorage();
-        require(index_ < $.vaults.length, IVaultPriceOracle.IndexOutOfBounds());
+        require(index_ < $.vaults.length, IPriceAggregator.IndexOutOfBounds());
         return $.vaults[index_];
     }
 
-    /// @inheritdoc IVaultPriceOracle
+    /// @inheritdoc IPriceAggregator
     function vaults() external view returns (address[] memory) {
         VaultPriceOracleStorage storage $ = _getStorage();
         return $.vaults;
     }
 
-    /// @inheritdoc IVaultPriceOracle
+    /// @inheritdoc IPriceAggregator
     function vaultsLength() external view returns (uint) {
         VaultPriceOracleStorage storage $ = _getStorage();
         return $.vaults.length;
     }
 
-    /// @inheritdoc IVaultPriceOracle
+    /// @inheritdoc IPriceAggregator
+    function assetByIndex(uint index_) external view returns (address) {
+        VaultPriceOracleStorage storage $ = _getStorage();
+        require(index_ < $.assets.length, IPriceAggregator.IndexOutOfBounds());
+        return $.assets[index_];
+    }
+
+    /// @inheritdoc IPriceAggregator
+    function assets() external view returns (address[] memory) {
+        VaultPriceOracleStorage storage $ = _getStorage();
+        return $.assets;
+    }
+
+    /// @inheritdoc IPriceAggregator
+    function assetsLength() external view returns (uint) {
+        VaultPriceOracleStorage storage $ = _getStorage();
+        return $.assets.length;
+    }
+
+    /// @inheritdoc IPriceAggregator
     function validatorByIndex(uint index_) external view returns (address) {
         VaultPriceOracleStorage storage $ = _getStorage();
-        require(index_ < $.validators.length, IVaultPriceOracle.IndexOutOfBounds());
+        require(index_ < $.validators.length, IPriceAggregator.IndexOutOfBounds());
         return $.validators[index_];
     }
 
-    /// @inheritdoc IVaultPriceOracle
+    /// @inheritdoc IPriceAggregator
     function validators() external view returns (address[] memory) {
         VaultPriceOracleStorage storage $ = _getStorage();
         return $.validators;
     }
 
-    /// @inheritdoc IVaultPriceOracle
+    /// @inheritdoc IPriceAggregator
     function validatorsLength() external view returns (uint) {
         VaultPriceOracleStorage storage $ = _getStorage();
         return $.validators.length;
     }
 
-    /// @inheritdoc IVaultPriceOracle
+    /// @inheritdoc IPriceAggregator
     function minQuorum() external view returns (uint) {
         VaultPriceOracleStorage storage $ = _getStorage();
         return $.minQuorum;
     }
 
-    /// @inheritdoc IVaultPriceOracle
+    /// @inheritdoc IPriceAggregator
     function maxPriceAge() external view returns (uint) {
         VaultPriceOracleStorage storage $ = _getStorage();
         return $.maxPriceAge;
     }
 
-    /// @inheritdoc IVaultPriceOracle
-    function vaultData(address vault_) external view returns (uint priceThreshold, uint staleness) {
+    /// @inheritdoc IPriceAggregator
+    function entityData(address entity_) external view returns (uint priceThreshold, uint staleness) {
         VaultPriceOracleStorage storage $ = _getStorage();
-        EntityData memory data = $.vaultData[vault_];
+        EntityData memory data = $.entityData[entity_];
         return (data.priceThreshold, data.staleness);
     }
 
+    //endregion ------------------------------------ View
+
+    //region ------------------------------------ Internal logic
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INTERNAL LOGIC                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @notice Counts the number of valid price submissions for a vault in a specific round.
     /// @dev Iterates through the list of validators to check if they have submitted a price (non-zero timestamp).
-    /// @param vault_ The address of the vault to check submissions for.
+    /// @param entity_ The address of the vault or asset to check submissions for.
     /// @param roundId_ The ID of the round to count submissions for.
     /// @return count The number of valid submissions in the specified round.
-    function _countSubmissions(address vault_, uint roundId_) internal view returns (uint) {
+    function _countSubmissions(address entity_, uint roundId_) internal view returns (uint) {
         VaultPriceOracleStorage storage $ = _getStorage();
         uint count;
         address[] memory _validators = $.validators;
         for (uint i; i < _validators.length; i++) {
-            if ($.observations[vault_][roundId_][_validators[i]].timestamp != 0) {
+            if ($.observations[entity_][roundId_][_validators[i]].timestamp != 0) {
                 count++;
             }
         }
         return count;
     }
 
-    /// @notice Aggregates submitted prices for a vault in a specific round and updates the vault's price data.
-    /// @dev Collects valid prices from validators, computes the median, and updates the vault's aggregated data.
+    /// @notice Aggregates submitted prices for an entity (vault or asset) in a specific round and updates the entity's price data.
+    /// @dev Collects valid prices from validators, computes the median, and updates the entity's aggregated data.
     ///      Emits a PriceUpdated event upon successful aggregation.
-    /// @param vault_ The address of the vault to aggregate prices for.
+    /// @param entity_ The address of the vault or asset to aggregate prices for.
     /// @param roundId_ The ID of the round to aggregate.
-    function _aggregateAndUpdate(address vault_, uint roundId_) internal {
+    function _aggregateAndUpdate(address entity_, uint roundId_) internal {
         VaultPriceOracleStorage storage $ = _getStorage();
         address[] memory _validators = $.validators;
-        mapping(address => Observation) storage _observations = $.observations[vault_][roundId_];
+        mapping(address => Observation) storage _observations = $.observations[entity_][roundId_];
 
         uint validCount;
         for (uint i; i < _validators.length; i++) {
@@ -296,23 +352,23 @@ contract VaultPriceOracle is Controllable, IPriceAggregator {
         uint medianPrice = _getMedian(prices);
 
         uint newRoundId = roundId_ + 1;
-        $.vaultPrices[vault_] = AggregatedData({price: medianPrice, timestamp: block.timestamp, roundId: newRoundId});
-        emit PriceUpdated(vault_, medianPrice, roundId_, block.timestamp);
+        $.entityPrices[entity_] = AggregatedData({price: medianPrice, timestamp: block.timestamp, roundId: newRoundId});
+        emit PriceUpdated(entity_, medianPrice, roundId_, block.timestamp);
     }
 
     /// @notice Calculates the median value from a list of prices.
     /// @dev Sorts the array using quicksort and returns the median.
     ///      For even counts, returns the average of the two middle values; for odd counts, returns the middle value.
-    /// @param prices The array containing valid prices.
+    /// @param prices_ The array containing valid prices.
     /// @return The median price, or 0 if no valid prices are provided.
-    function _getMedian(uint[] memory prices) internal pure returns (uint) {
-        uint count = prices.length;
+    function _getMedian(uint[] memory prices_) internal pure returns (uint) {
+        uint count = prices_.length;
         if (count == 0) return 0;
-        _quickSort(prices, 0, count - 1);
+        _quickSort(prices_, 0, count - 1);
         if (count % 2 == 0) {
-            return (prices[count / 2 - 1] + prices[count / 2]) / 2;
+            return (prices_[count / 2 - 1] + prices_[count / 2]) / 2;
         } else {
-            return prices[count / 2];
+            return prices_[count / 2];
         }
     }
 
@@ -360,6 +416,7 @@ contract VaultPriceOracle is Controllable, IPriceAggregator {
 
     function _requireValidator() internal view {
         VaultPriceOracleStorage storage $ = _getStorage();
-        require($.authorizedValidators[msg.sender], IVaultPriceOracle.NotAuthorizedValidator());
+        require($.authorizedValidators[msg.sender], IPriceAggregator.NotAuthorizedValidator());
     }
+    //endregion ------------------------------------ Internal logic
 }

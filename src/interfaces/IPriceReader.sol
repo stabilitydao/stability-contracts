@@ -50,7 +50,12 @@ interface IPriceReader {
     /// @param period Time desirable period in seconds for TWA calculation. Pass 0 to get current price
     /// @return price of the asset in USD with 18 decimals
     /// @return trusted True if the price is from a trusted source
-    function getTwaPrice(address asset, address pool, string memory ammAdapterId, uint32 period) external view returns (uint price, bool trusted);
+    function getTwaPrice(
+        address asset,
+        address pool,
+        string memory ammAdapterId,
+        uint32 period
+    ) external view returns (uint price, bool trusted);
 
     /// @notice Get vaults that have organic safe share price that can be used on-chain
     function vaultsWithSafeSharePrice() external view returns (address[] memory vaults);

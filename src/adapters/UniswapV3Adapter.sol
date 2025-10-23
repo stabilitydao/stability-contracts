@@ -160,7 +160,8 @@ contract UniswapV3Adapter is Controllable, ICAmmAdapter {
     function getPrice(
         address pool,
         address tokenIn,
-        address /*tokenOut*/,
+        address,
+        /*tokenOut*/
         uint amount
     ) public view returns (uint) {
         return _getPrice(pool, tokenIn, amount, 0);
@@ -170,7 +171,8 @@ contract UniswapV3Adapter is Controllable, ICAmmAdapter {
     function getTwaPrice(
         address pool,
         address tokenIn,
-        address /*tokenOut*/,
+        address,
+        /*tokenOut*/
         uint amount,
         uint32 period
     ) public view returns (uint) {
@@ -295,7 +297,7 @@ contract UniswapV3Adapter is Controllable, ICAmmAdapter {
     //     upperTick = lowerTick + tickSpacing;
     // }
 
-    function _getPrice(address pool, address tokenIn, uint amount, uint32 period) view internal returns (uint) {
+    function _getPrice(address pool, address tokenIn, uint amount, uint32 period) internal view returns (uint) {
         address token0 = IUniswapV3Pool(pool).token0();
         address token1 = IUniswapV3Pool(pool).token1();
 
@@ -320,7 +322,7 @@ contract UniswapV3Adapter is Controllable, ICAmmAdapter {
         secondsAgos[1] = 0;
 
         //slither-disable-next-line unused-return
-        (int56[] memory tickCumulatives, ) = IUniswapV3Pool(pool).observe(secondsAgos);
+        (int56[] memory tickCumulatives,) = IUniswapV3Pool(pool).observe(secondsAgos);
         int56 tickCumulativesDelta = tickCumulatives[1] - tickCumulatives[0];
 
         int56 period56 = int56(int32(uint32(period)));
