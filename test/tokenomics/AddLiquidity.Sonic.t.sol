@@ -110,10 +110,7 @@ contract AddLiquidityTestSonic is Test {
         console.log("to", multisig);
         console.log("deadLine", deadLine);
         console.log("");*/
-        ISolidlyRouter(SonicConstantsLib.SHADOW_ROUTER)
-        .addLiquidityETH{
-            value: sAmount
-        }(
+        ISolidlyRouter(SonicConstantsLib.SHADOW_ROUTER).addLiquidityETH{value: sAmount}(
             SonicConstantsLib.TOKEN_STBL,
             false,
             needAddSTBL,
