@@ -13,6 +13,7 @@
 * **VaultManager** `0x589a504f2ee9d054b483c700fa814863d639381e` [sonicscan](https://sonicscan.org/address/0x589a504f2ee9d054b483c700fa814863d639381e)
 * **StrategyLogic** `0xe0e71b484bb20e37d18ab51fb60c32dec778478a` [sonicscan](https://sonicscan.org/address/0xe0e71b484bb20e37d18ab51fb60c32dec778478a)
 * **Zap** `0x029dfd1a79e0ad9305d773fb8f3c01d8ef9b913d` [sonicscan](https://sonicscan.org/address/0x029dfd1a79e0ad9305d773fb8f3c01d8ef9b913d)
+* **ProxyFactory** `0xab82117689541c4B893D0021Cd168cAb566D92E1` [sonicscan](https://sonicscan.org/address/0xab82117689541c4b893d0021cd168cab566d92e1#readProxyContract)
 
 ### Periphery
 

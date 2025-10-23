@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {console} from "forge-std/Test.sol";
 import {EthereumSetup} from "../base/chains/EthereumSetup.sol";
 import {ProxyFactory, IProxyFactory, Proxy} from "../../src/core/ProxyFactory.sol";
 import {Swapper} from "../../src/core/Swapper.sol";
@@ -11,7 +10,6 @@ contract ProxyFactoryEthereumTest is EthereumSetup {
 
     constructor() {
         vm.rollFork(23600000); // Oct-17-2025 09:15:23 PM +UTC
-
         _init();
     }
 
