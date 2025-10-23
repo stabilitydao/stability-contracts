@@ -43,6 +43,15 @@ interface IPriceReader {
         uint[] memory amounts_
     ) external view returns (uint total, uint[] memory assetAmountPrice, uint[] memory assetPrice, bool trusted);
 
+    /// @notice Get time-weighted average price from AMM pool
+    /// @param asset Address of asset
+    /// @param pool Address of AMM pool. The pool must have two tokens, one of them is the asset.
+    /// @param ammAdapterId String ID of AMM adapter
+    /// @param period Time desirable period in seconds for TWA calculation. Pass 0 to get current price
+    /// @return price of the asset in USD with 18 decimals
+    /// @return trusted True if the price is from a trusted source
+    function getTwaPrice(address asset, address pool, string memory ammAdapterId, uint32 period) external view returns (uint price, bool trusted);
+
     /// @notice Get vaults that have organic safe share price that can be used on-chain
     function vaultsWithSafeSharePrice() external view returns (address[] memory vaults);
 

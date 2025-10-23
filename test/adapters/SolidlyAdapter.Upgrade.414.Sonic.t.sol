@@ -3,22 +3,22 @@ pragma solidity ^0.8.28;
 
 // import {console} from "forge-std/console.sol";
 import {Test} from "forge-std/Test.sol";
-import {UniswapV3Adapter} from "../../src/adapters/UniswapV3Adapter.sol";
+import {SolidlyAdapter} from "../../src/adapters/SolidlyAdapter.sol";
 import {AmmAdapterIdLib} from "../../src/adapters/libs/AmmAdapterIdLib.sol";
 import {SonicConstantsLib} from "../base/chains/SonicSetup.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
 
-contract UniswapV3AdapterUpgrade414SonicTest is Test {
+contract SolidlyAdapterUpgrade414SonicTest is Test {
     address public constant PLATFORM = SonicConstantsLib.PLATFORM;
-    uint public constant FORK_BLOCK = 51512001; // Oct-22-2025 08:40:54 AM +UTC
+    uint public constant FORK_BLOCK = 51622705; // Oct-23-2025 06:32:10 AM +UTC
 
-    UniswapV3Adapter public adapter;
+    SolidlyAdapter public adapter;
     address public multisig;
 
     constructor() {
         vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL"), FORK_BLOCK));
 
-        adapter = UniswapV3Adapter(IPlatform(PLATFORM).ammAdapter(keccak256(bytes(AmmAdapterIdLib.UNISWAPV3))).proxy);
+        adapter = SolidlyAdapter(IPlatform(PLATFORM).ammAdapter(keccak256(bytes(AmmAdapterIdLib.SOLIDLY))).proxy);
         multisig = IPlatform(PLATFORM).multisig();
 
         _upgradePlatform();
@@ -26,22 +26,23 @@ contract UniswapV3AdapterUpgrade414SonicTest is Test {
 
     //region ------------------------------------ Tests
     function testGetTwaSqrtPrice() public view {
-        uint price = adapter.getPrice(SonicConstantsLib.POOL_SHADOW_CL_STBL_USDC, SonicConstantsLib.TOKEN_STBL, SonicConstantsLib.TOKEN_USDC, 1e18);
-        uint twaPrice5 = adapter.getTwaPrice(SonicConstantsLib.POOL_SHADOW_CL_STBL_USDC, SonicConstantsLib.TOKEN_STBL, SonicConstantsLib.TOKEN_USDC, 1e18, 300);
+        uint price = adapter.getPrice(SonicConstantsLib.POOL_SHADOW_STBL_USDC, SonicConstantsLib.TOKEN_STBL, SonicConstantsLib.TOKEN_USDC, 1e18);
+        uint twaPrice = adapter.getTwaPrice(SonicConstantsLib.POOL_SHADOW_STBL_USDC, SonicConstantsLib.TOKEN_STBL, SonicConstantsLib.TOKEN_USDC, 1e18, 1);
 
-        assertApproxEqAbs(price, twaPrice5, price * 3 / 10, "current price ~ twa price");
-        assertNotEq(price, twaPrice5, "current price != twa price");
+        assertApproxEqAbs(price, twaPrice, price * 3 / 100, "current price ~ twa price");
+        assertNotEq(price, twaPrice, "current price != twa price");
+
+        // console.log(price, twaPrice);
     }
 
     function testGetTwaSqrtPriceZeroPeriod() public view {
-        uint price = adapter.getPrice(SonicConstantsLib.POOL_SHADOW_CL_STBL_USDC, SonicConstantsLib.TOKEN_STBL, SonicConstantsLib.TOKEN_USDC, 1e18);
-        uint twaPrice = adapter.getTwaPrice(SonicConstantsLib.POOL_SHADOW_CL_STBL_USDC, SonicConstantsLib.TOKEN_STBL, SonicConstantsLib.TOKEN_USDC, 1e18, 0);
+        uint price = adapter.getPrice(SonicConstantsLib.POOL_SHADOW_STBL_USDC, SonicConstantsLib.TOKEN_STBL, SonicConstantsLib.TOKEN_USDC, 1e18);
+        uint twaPrice = adapter.getTwaPrice(SonicConstantsLib.POOL_SHADOW_STBL_USDC, SonicConstantsLib.TOKEN_STBL, SonicConstantsLib.TOKEN_USDC, 1e18, 0);
 
         assertEq(price, twaPrice, "current price == twa price");
     }
 
     //endregion ------------------------------------ Tests
-
 
     //region ------------------------------------ Helper functions
     function _upgradePlatform() internal {
@@ -55,8 +56,8 @@ contract UniswapV3AdapterUpgrade414SonicTest is Test {
         address[] memory proxies = new address[](1);
         address[] memory implementations = new address[](1);
 
-        proxies[0] = platform.ammAdapter(keccak256(bytes(AmmAdapterIdLib.UNISWAPV3))).proxy;
-        implementations[0] = address(new UniswapV3Adapter());
+        proxies[0] = platform.ammAdapter(keccak256(bytes(AmmAdapterIdLib.SOLIDLY))).proxy;
+        implementations[0] = address(new SolidlyAdapter());
 
         vm.startPrank(multisig);
         platform.cancelUpgrade();

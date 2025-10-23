@@ -182,4 +182,8 @@ interface ISolidlyPool {
     /// @param granularity .
     /// @return amountOut .
     function quote(address tokenIn, uint256 amountIn, uint256 granularity) external view returns (uint256 amountOut);
+
+    /// @dev gives the current twap price measured from amountIn * tokenIn gives amountOut
+    function current(address tokenIn, uint256 amountIn) external view returns (uint256 amountOut);
+
 }

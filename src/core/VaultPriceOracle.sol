@@ -1,22 +1,25 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {IVaultPriceOracle} from "../interfaces/IVaultPriceOracle.sol";
+import {IPriceAggregator} from "../interfaces/IVaultPriceOracle.sol";
 import {Controllable, IControllable} from "./base/Controllable.sol";
 
 /// @dev A contract for aggregating vault prices from multiple validators using a quorum-based median mechanism.
 /// Changelog:
+///   1.1.0: VaultPriceOracle => PriceAggregator - #414
 ///   1.0.1: review fixes
 /// @author ruby (https://github.com/alexandersazonof)
-contract VaultPriceOracle is Controllable, IVaultPriceOracle {
+/// @author Omriss (https://github.com/omriss)
+contract VaultPriceOracle is Controllable, IPriceAggregator {
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         CONSTANTS                          */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.1";
+    string public constant VERSION = "1.1.0";
 
-    // keccak256(abi.encode(uint256(keccak256("erc7201:stability.VaultPriceOracle")) - 1)) & ~bytes32(uint256(0xff));
+    /// @notice keccak256(abi.encode(uint256(keccak256("erc7201:stability.VaultPriceOracle")) - 1)) & ~bytes32(uint256(0xff));
+    /// @dev Originally contract had name VaultPriceOracle, so storage wasn't renamed to PriceAggregator
     bytes32 private constant VAULT_PRICE_ORACLE_STORAGE_LOCATION =
         0xa68171b251d015e5a139782486873a18b874637da10a73c080418fb52ac37300;
 
@@ -25,17 +28,22 @@ contract VaultPriceOracle is Controllable, IVaultPriceOracle {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @custom:storage-location erc7201:stability.VaultPriceOracle
+    /// @dev Originally contract had name VaultPriceOracle, so storage wasn't renamed to PriceAggregator
+    /// @dev entity = vault | asset
     struct VaultPriceOracleStorage {
-        mapping(address vault => AggregatedData) vaultPrices;
-        mapping(address vault => mapping(uint roundId => mapping(address validator => Observation))) observations;
+        mapping(address entity => AggregatedData) vaultPrices;
+        mapping(address entity => mapping(uint roundId => mapping(address validator => Observation))) observations;
         mapping(address validator => bool authorized) authorizedValidators;
-        mapping(address vault => VaultData) vaultData;
+        mapping(address entity => EntityData) vaultData;
         address[] validators;
+        /// @notice List of all registered vaults
         address[] vaults;
         /// @notice Minimum number of validator submissions required to aggregate a price
         uint minQuorum;
         /// @notice Maximum age of a price before it is considered stale (in seconds)
         uint maxPriceAge;
+        /// @notice List of all registered assets
+        address[] assets;
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -104,7 +112,7 @@ contract VaultPriceOracle is Controllable, IVaultPriceOracle {
         VaultPriceOracleStorage storage $ = _getStorage();
         require(vault_ != address(0), IVaultPriceOracle.InvalidVaultAddress());
 
-        $.vaultData[vault_] = VaultData({priceThreshold: priceThreshold_, staleness: staleness_});
+        $.vaultData[vault_] = EntityData({priceThreshold: priceThreshold_, staleness: staleness_});
         $.vaults.push(vault_);
         emit VaultAdded(vault_);
     }
@@ -233,7 +241,7 @@ contract VaultPriceOracle is Controllable, IVaultPriceOracle {
     /// @inheritdoc IVaultPriceOracle
     function vaultData(address vault_) external view returns (uint priceThreshold, uint staleness) {
         VaultPriceOracleStorage storage $ = _getStorage();
-        VaultData memory data = $.vaultData[vault_];
+        EntityData memory data = $.vaultData[vault_];
         return (data.priceThreshold, data.staleness);
     }
 

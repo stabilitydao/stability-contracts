@@ -147,16 +147,24 @@ contract SolidlyAdapter is Controllable, IAmmAdapter {
     function getPrice(
         address pool,
         address tokenIn,
-        address,
-        /*tokenOut*/
+        address /*tokenOut*/,
         uint amount
     ) public view returns (uint) {
         return ISolidlyPool(pool).getAmountOut(amount, tokenIn);
     }
 
     /// @inheritdoc IAmmAdapter
-    function getTwaPrice(address /*pool*/, address /*tokenIn*/, address /*tokenOut*/, uint /*amount*/, uint32 /*period*/) external pure returns (uint) {
-        revert("Not supported");
+    function getTwaPrice(address pool, address tokenIn, address /*tokenOut*/, uint amount, uint32 period) external view returns (uint) {
+        if (period == 0) {
+            // Return the current (spot) price.
+            return ISolidlyPool(pool).getAmountOut(amount, tokenIn);
+        } else {
+            // Return the TWAP price.
+            // The `current` function returns the TWAP over the maximum safe period
+            // (>= 30 minutes, see periodSize constant in the pool code), ignoring the requested `period` value.
+            // {period} is only used as a flag to select the TWAP mode.
+            return ISolidlyPool(pool).current(tokenIn, amount);
+        }
     }
 
     /// @inheritdoc IERC165

@@ -4,7 +4,8 @@ pragma solidity ^0.8.28;
 /// @title Oracle Vault Price Interface
 /// @author ruby (https://github.com/alexandersazonof)
 /// @notice Interface for the VaultPriceOracle contract, which aggregates prices from multiple oracles for vaults using a quorum-based median mechanism.
-interface IVaultPriceOracle {
+/// @dev original IVaultPriceOracle was renamed to IPriceAggregator
+interface IPriceAggregator {
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       CUSTOM ERRORS                        */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -39,9 +40,9 @@ interface IVaultPriceOracle {
         uint roundId;
     }
 
-    /// @notice Structure representing the data for a vault in the oracle.
+    /// @notice Structure representing the data for a vault/asset in the oracle.
     /// @dev Contains the price threshold and staleness period for the vault.
-    struct VaultData {
+    struct EntityData {
         /// @notice Percentage change when the price should be updated, in basis points (e.g., 100 = 0.1%)
         uint priceThreshold;
         /// @notice Maximum age of price before considered stale, in seconds
@@ -52,19 +53,19 @@ interface IVaultPriceOracle {
     /*                           EVENTS                           */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    /// @notice Emitted when an oracle submits a price for a vault in a specific round.
-    /// @param vault The address of the vault.
+    /// @notice Emitted when an oracle submits a price for a entity in a specific round.
+    /// @param entity The address of the vault or asset.
     /// @param oracle The address of the oracle submitting the price.
     /// @param price The submitted price.
     /// @param roundId The ID of the round for this submission.
-    event PriceSubmitted(address indexed vault, address indexed oracle, uint price, uint roundId);
+    event PriceSubmitted(address indexed entity, address indexed oracle, uint price, uint roundId);
 
-    /// @notice Emitted when the price for a vault is updated after aggregation.
-    /// @param vault The address of the vault.
+    /// @notice Emitted when the price for a entity is updated after aggregation.
+    /// @param entity The address of the vault or asset.
     /// @param price The aggregated median price.
     /// @param roundId The ID of the round that was aggregated.
     /// @param timestamp The timestamp of the aggregation.
-    event PriceUpdated(address indexed vault, uint price, uint roundId, uint timestamp);
+    event PriceUpdated(address indexed entity, uint price, uint roundId, uint timestamp);
 
     /// @notice Emitted when a new validator is added.
     /// @param validator The address of the added validator.
@@ -81,6 +82,14 @@ interface IVaultPriceOracle {
     /// @notice Emitted when vault is removed from the oracle.
     /// @param vault The address of the removed vault.
     event VaultRemoved(address indexed vault);
+
+    /// @notice Emitted when asset is added to the oracle.
+    /// @param asset The address of the added asset.
+    event AssetAdded(address indexed asset);
+
+    /// @notice Emitted when asset is removed from the oracle.
+    /// @param asset The address of the removed asset.
+    event AssetRemoved(address indexed asset);
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       VIEW FUNCTIONS                       */
