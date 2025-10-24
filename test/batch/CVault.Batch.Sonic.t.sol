@@ -231,7 +231,8 @@ contract CVaultBatchSonicSkipOnCiTest is Test {
             pools[0] = ISwapper.PoolData({
                 pool: 0xE54DD58a6d4e04687f2034dd4dDAb49da55F8afF, // SonicConstantsLib.POOL_SHADOW_CL_scETH_WETH_100,
                 ammAdapter: (IPlatform(PLATFORM)
-                        .ammAdapter(keccak256(bytes(AmmAdapterIdLib.BALANCER_COMPOSABLE_STABLE)))).proxy,
+                        .ammAdapter(keccak256(bytes(AmmAdapterIdLib.BALANCER_COMPOSABLE_STABLE))))
+                .proxy,
                 tokenIn: address(SonicConstantsLib.TOKEN_SCETH),
                 tokenOut: address(SonicConstantsLib.TOKEN_WETH)
             });

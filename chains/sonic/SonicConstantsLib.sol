@@ -11,6 +11,7 @@ library SonicConstantsLib {
     address public constant FEE_TREASURY = 0xDa9c8035aA67a8cf9BF5477e0D937F74566F9039;
     address public constant LIQUIDATION_BOT = 0xed3EE1e63D5f93EFDC623f3336271ECFA75135FE;
     address public constant RECOVERY = 0xB8d6019eD82a9e6216c9Bf87cAf145fFe4439b40;
+    address public constant XSTBL_XSTAKING = 0x17a7Cf838A7C91DE47552a9f65822B547F9A6997;
 
     // MetaVaults
     address public constant METAVAULT_METAUSD = 0x1111111199558661Bf7Ff27b4F1623dC6b91Aa3e;
@@ -141,6 +142,7 @@ library SonicConstantsLib {
     address public constant TOKEN_WSTKSCETH = 0xE8a41c62BB4d5863C6eadC96792cFE90A1f37C47;
     address public constant TOKEN_WOS = 0x9F0dF7799f6FDAd409300080cfF680f5A23df4b1;
     address public constant TOKEN_STBL = 0x78a76316F66224CBaCA6e70acB24D5ee5b2Bd2c7;
+    address public constant TOKEN_XSTBL = 0x902215dd96a291b256a3Aef6c4Dee62d2A9B80Cb;
     address public constant TOKEN_ANS = 0x0C4E186Eae8aCAA7F7de1315D5AD174BE39Ec987;
     address public constant TOKEN_WANS = 0xfA85Fe5A8F5560e9039C04f2b0a90dE1415aBD70;
     //address public constant TOKEN_FBOMB = 0xEdF8b632b537d5993Adb5e2E15882CD791c284cB;
