@@ -133,6 +133,9 @@ interface IRevenueRouter {
     /// @notice Get vault addresses that contract hold on balance, but not withdrew yet
     function vaultsAccumulated() external view returns (address[] memory);
 
+    /// @notice Addresses of STBL, xSTBL, xStaking and feeTreasure token
+    function addresses() external view returns (address[] memory);
+
     /// @notice Get assets that contract hold on balance
     function assetsAccumulated() external view returns (address[] memory);
 }

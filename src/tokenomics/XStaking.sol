@@ -6,7 +6,9 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import {Controllable} from "../core/base/Controllable.sol";
 import {IControllable} from "../interfaces/IControllable.sol";
+import {IStabilityDAO} from "../interfaces/IStabilityDAO.sol";
 import {IXStaking} from "../interfaces/IXStaking.sol";
+import {IPlatform} from "../interfaces/IPlatform.sol";
 import {IXSTBL} from "../interfaces/IXSTBL.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
@@ -15,6 +17,7 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 /// @author Alien Deployer (https://github.com/a17)
 /// @author Jude (https://github.com/iammrjude)
 /// Changelog:
+///  1.1.0: Integration with STBLDAO
 ///  1.0.1: use SafeERC20.safeTransfer/safeTransferFrom instead of ERC20 transfer/transferFrom
 contract XStaking is Controllable, ReentrancyGuardUpgradeable, IXStaking {
     using SafeERC20 for IERC20;
@@ -24,7 +27,7 @@ contract XStaking is Controllable, ReentrancyGuardUpgradeable, IXStaking {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.1";
+    string public constant VERSION = "1.1.0";
 
     /// @notice decimal precision of 1e18
     uint public constant PRECISION = 10 ** 18;
@@ -61,6 +64,8 @@ contract XStaking is Controllable, ReentrancyGuardUpgradeable, IXStaking {
         mapping(address user => uint amount) balanceOf;
     }
 
+    error StabilityDaoNotInitialized();
+
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      INITIALIZATION                        */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -83,6 +88,7 @@ contract XStaking is Controllable, ReentrancyGuardUpgradeable, IXStaking {
         _;
     }
 
+    //region ----------------------------------- Restricted actions
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      RESTRICTED ACTIONS                    */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -95,6 +101,24 @@ contract XStaking is Controllable, ReentrancyGuardUpgradeable, IXStaking {
         emit NewDuration(oldDuration, newDuration);
     }
 
+    /// @inheritdoc IXStaking
+    function syncStabilityDAOBalances(address[] calldata users) external onlyGovernanceOrMultisig {
+        XStakingStorage storage $ = _getXStakingStorage();
+        IStabilityDAO stabilityDao = getStabilityDAO();
+        require(address(stabilityDao) != address(0), StabilityDaoNotInitialized());
+
+        // @dev assume here that 1 STBL_DAO = 1 staked xSTBL always
+        uint threshold = stabilityDao.minimalPower();
+
+        uint len = users.length;
+        for (uint i; i < len; ++i) {
+            _syncUser($, stabilityDao, users[i], threshold);
+        }
+    }
+
+    //endregion ----------------------------------- Restricted actions
+
+    //region ----------------------------------- User actions
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       USER ACTIONS                         */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -118,6 +142,9 @@ contract XStaking is Controllable, ReentrancyGuardUpgradeable, IXStaking {
         /// @dev update accounting
         $.totalSupply += amount;
         $.balanceOf[msg.sender] += amount;
+
+        /// @dev sync STBLDAO balances
+        _syncDaoTokensToBalance($, msg.sender);
 
         emit Deposit(msg.sender, amount);
     }
@@ -153,6 +180,9 @@ contract XStaking is Controllable, ReentrancyGuardUpgradeable, IXStaking {
         /// @dev transfer the xSTBL to the caller
         // slither-disable-next-line unchecked-transfer
         IERC20($.xSTBL).safeTransfer(msg.sender, amount);
+
+        /// @dev sync STBLDAO balances
+        _syncDaoTokensToBalance($, msg.sender);
 
         emit Withdraw(msg.sender, amount);
     }
@@ -196,6 +226,9 @@ contract XStaking is Controllable, ReentrancyGuardUpgradeable, IXStaking {
         emit NotifyReward(msg.sender, amount);
     }
 
+    //endregion ----------------------------------- User actions
+
+    //region ----------------------------------- View functions
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      VIEW FUNCTIONS                        */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -285,9 +318,45 @@ contract XStaking is Controllable, ReentrancyGuardUpgradeable, IXStaking {
             + $.storedRewardsPerUser[account];
     }
 
+    //endregion ----------------------------------- View functions
+
+    //region ----------------------------------- Internal logic
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INTERNAL LOGIC                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    /// @dev Sync balance of Stability DAO token according to the current user's balance of xSTBL
+    /// after depositing or withdrawing xSTBL
+    function _syncDaoTokensToBalance(XStakingStorage storage $, address user_) internal {
+        IStabilityDAO daoToken = getStabilityDAO();
+        if (address(daoToken) != address(0)) {
+            // @dev assume here that 1 STBL_DAO = 1 staked xSTBL always
+            uint threshold = daoToken.minimalPower();
+
+            _syncUser($, daoToken, user_, threshold);
+        }
+    }
+
+    /// @dev Sync balance of Stability DAO token for a specific user according to his current power
+    /// @param stabilityDao Address of the STBL_DAO token
+    /// @param user_ Address of the user to sync
+    /// @param threshold Minimal amount of staked xSTBL tokens required to have STBL_DAO
+    function _syncUser(XStakingStorage storage $, IStabilityDAO stabilityDao, address user_, uint threshold) internal {
+        uint balanceStakedXStbl = $.balanceOf[user_];
+
+        /// @dev if user has too few xSTBL staked, their STBL_DAO balance will be 0
+        /// @dev otherwise user should receive 1 STBL_DAO for each 1 staked xSTBL
+        uint toMint = balanceStakedXStbl < threshold ? 0 : balanceStakedXStbl;
+        uint balanceStabilityDao = IERC20(stabilityDao).balanceOf(user_);
+
+        if (toMint > balanceStabilityDao) {
+            /// @dev mint the difference
+            stabilityDao.mint(user_, toMint - balanceStabilityDao);
+        } else if (balanceStabilityDao > toMint) {
+            /// @dev burn the difference
+            stabilityDao.burn(user_, balanceStabilityDao - toMint);
+        }
+    }
 
     /// @dev common multirewarder-esque modifier for updating on interactions
     function _updateReward(address account) internal {
@@ -339,4 +408,10 @@ contract XStaking is Controllable, ReentrancyGuardUpgradeable, IXStaking {
             $.slot := XSTAKING_STORAGE_LOCATION
         }
     }
+
+    function getStabilityDAO() internal view returns (IStabilityDAO) {
+        return IStabilityDAO(IPlatform(IControllable(address(this)).platform()).stabilityDAO());
+    }
+
+    //endregion ----------------------------------- Internal logic
 }

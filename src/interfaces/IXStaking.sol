@@ -16,6 +16,8 @@ interface IXStaking {
 
     event NewDuration(uint oldDuration, uint newDuration);
 
+    event InitializeStabilityDAO(address stblDao);
+
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      WRITE FUNCTIONS                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -41,6 +43,11 @@ interface IXStaking {
 
     /// @notice Change duration period
     function setNewDuration(uint) external;
+
+    /// @notice Updates STBL_DAO balances for the given users.
+    /// @dev If a user has less than the minimum staking power of xSTBL, his STBL_DAO balance will be zero.
+    /// Otherwise, the user receives 1 STBL_DAO for each 1 xSTBL staked.
+    function syncStabilityDAOBalances(address[] calldata users) external;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      VIEW FUNCTIONS                        */
