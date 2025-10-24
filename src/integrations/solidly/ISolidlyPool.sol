@@ -2,6 +2,13 @@
 pragma solidity ^0.8.23;
 
 interface ISolidlyPool {
+    // Struct to capture time period obervations every 30 minutes, used for local oracles
+    struct Observation {
+        uint256 timestamp;
+        uint256 reserve0Cumulative;
+        uint256 reserve1Cumulative;
+    }
+
     /// @notice True if pool is stable, false if volatile
     function stable() external view returns (bool);
 
@@ -130,5 +137,53 @@ interface ISolidlyPool {
         bytes32 r,
         bytes32 s
     ) external;
+
+    /// @notice Get the number of observations recorded
+    function observationLength() external view returns (uint256);
+
+    /// @notice Get the value of the most recent observation
+    function lastObservation() external view returns (Observation memory);
+
+    /// @notice Produces the cumulative price using counterfactuals to save gas and avoid a call to sync.
+    function currentCumulativePrices()
+    external
+    view
+    returns (uint256 reserve0Cumulative, uint256 reserve1Cumulative, uint256 blockTimestamp);
+
+    /// @notice Cumulative of reserve0 factoring in time elapsed
+    function reserve0CumulativeLast() external view returns (uint256);
+
+    /// @notice Cumulative of reserve1 factoring in time elapsed
+    function reserve1CumulativeLast() external view returns (uint256);
+
+    /// @notice Returns a memory set of TWAP prices
+    ///         Same as calling sample(tokenIn, amountIn, points, 1)
+    /// @param tokenIn .
+    /// @param amountIn .
+    /// @param points Number of points to return
+    /// @return Array of TWAP prices
+    function prices(address tokenIn, uint256 amountIn, uint256 points) external view returns (uint256[] memory);
+
+    /// @notice Same as prices with with an additional window argument.
+    ///         Window = 2 means 2 * 30min (or 1 hr) between observations
+    /// @param tokenIn .
+    /// @param amountIn .
+    /// @param points .
+    /// @param window .
+    /// @return Array of TWAP prices
+    function sample(address tokenIn, uint256 amountIn, uint256 points, uint256 window)
+    external
+    view
+    returns (uint256[] memory);
+
+    /// @notice Provides twap price with user configured granularity, up to the full window size
+    /// @param tokenIn .
+    /// @param amountIn .
+    /// @param granularity .
+    /// @return amountOut .
+    function quote(address tokenIn, uint256 amountIn, uint256 granularity) external view returns (uint256 amountOut);
+
+    /// @dev gives the current twap price measured from amountIn * tokenIn gives amountOut
+    function current(address tokenIn, uint256 amountIn) external view returns (uint256 amountOut);
 
 }

@@ -8,9 +8,11 @@ import {IPriceReader} from "../interfaces/IPriceReader.sol";
 import {IOracleAdapter} from "../interfaces/IOracleAdapter.sol";
 import {ISwapper} from "../interfaces/ISwapper.sol";
 import {IStabilityVault} from "../interfaces/IStabilityVault.sol";
+import {IAmmAdapter} from "../interfaces/IAmmAdapter.sol";
 
 /// @dev Combining oracle and DeX spot prices
 /// Changelog:
+///     1.3.0: Add getTwaPrice - #414
 ///     1.2.0: Implement transient cache for asset and vault prices - #348
 ///     1.1.0: IPriceReader.getVaultPrice; IPriceReader.vaultsWithSafeSharePrice
 /// @author Alien Deployer (https://github.com/a17)
@@ -22,7 +24,7 @@ contract PriceReader is Controllable, IPriceReader {
     //region ---------------------------- Constants
 
     /// @dev Version of PriceReader implementation
-    string public constant VERSION = "1.2.0";
+    string public constant VERSION = "1.3.0";
 
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.PriceReader")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant PRICEREADER_STORAGE_LOCATION =
@@ -30,7 +32,7 @@ contract PriceReader is Controllable, IPriceReader {
 
     //endregion ---------------------------- Constants
 
-    //region ---------------------------- Storage
+    //region ---------------------------- Data types
 
     /// @custom:storage-location erc7201:stability.PriceReader
     struct PriceReaderStorage {
@@ -40,7 +42,11 @@ contract PriceReader is Controllable, IPriceReader {
         EnumerableSet.AddressSet whitelistTransientCache;
     }
 
-    //endregion ---------------------------- Storage
+    error UnknownAMMAdapter();
+    error WrongNumberPoolTokens();
+    error TokenNotFound();
+
+    //endregion ---------------------------- Data types
 
     //region ---------------------------- Transient cache
     /// @dev Transient cache allows to cache price of single asset (wrapped meta vault)
@@ -254,6 +260,54 @@ contract PriceReader is Controllable, IPriceReader {
             }
         }
         trusted = !notTrustedPrices;
+    }
+
+    /// @inheritdoc IPriceReader
+    function getTwaPrice(
+        address asset,
+        address pool,
+        string memory ammAdapterId,
+        uint32 period
+    ) external view returns (uint price, bool trusted) {
+        // ------------------ get TWAP for the asset in terms of token out from the given pool
+
+        IAmmAdapter ammAdapter = IAmmAdapter(IPlatform(platform()).ammAdapter(keccak256(bytes(ammAdapterId))).proxy);
+        if (address(ammAdapter) == address(0)) {
+            revert UnknownAMMAdapter();
+        }
+        uint amount = 10 ** IERC20Metadata(asset).decimals();
+
+        // slither-disable-next-line uninitialized-local
+        address tokenOut;
+
+        {
+            address[] memory tokens = ammAdapter.poolTokens(pool);
+            require(tokens.length == 2, WrongNumberPoolTokens());
+            for (uint i; i < tokens.length; ++i) {
+                if (tokens[i] != asset) {
+                    tokenOut = tokens[i];
+                    require(asset == (i == 0 ? tokens[1] : tokens[0]), TokenNotFound());
+                    break;
+                }
+            }
+        }
+
+        // out price in terms of token out
+        uint twaPrice = ammAdapter.getTwaPrice(pool, asset, tokenOut, amount, period);
+
+        // ------------------ recalculate price to USD with 18 decimals
+
+        // get price of token out in USD, decimals 18
+        (uint priceTokenOut, bool _trusted) = getPrice(tokenOut);
+        if (priceTokenOut == 0) {
+            return (0, false);
+        }
+        uint tokenOutDecimals = IERC20Metadata(tokenOut).decimals();
+
+        // final price in USD with 18 decimals
+        price = twaPrice * priceTokenOut / 10 ** tokenOutDecimals;
+
+        return (price, _trusted);
     }
 
     function adapters() external view returns (address[] memory) {

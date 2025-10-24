@@ -18,7 +18,8 @@ import {ConstantsLib} from "../core/libs/ConstantsLib.sol";
 
 /// @title AMM adapter for Pendle
 /// Changelog:
-///   1.1.0: swap is able to redeem from expired PT-markets - #352
+///     1.1.1: add empty IAmmAdapter.getTwaPrice
+///     1.1.0: swap is able to redeem from expired PT-markets - #352
 /// @author Alien Deployer (https://github.com/a17)
 /// @author dvpublic (https://github.com/dvpublic)
 contract PendleAdapter is Controllable, IAmmAdapter {
@@ -34,7 +35,7 @@ contract PendleAdapter is Controllable, IAmmAdapter {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.1.0";
+    string public constant VERSION = "1.1.1";
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       CUSTOM ERRORS                        */
@@ -194,6 +195,21 @@ contract PendleAdapter is Controllable, IAmmAdapter {
         }
 
         revert IncorrectTokens();
+    }
+
+    /// @inheritdoc IAmmAdapter
+    function getTwaPrice(
+        address,
+        /*pool*/
+        address,
+        /*tokenIn*/
+        address,
+        /*tokenOut*/
+        uint,
+        /*amount*/
+        uint32 /*period*/
+    ) external pure returns (uint) {
+        revert("Not supported");
     }
 
     /// @inheritdoc IERC165

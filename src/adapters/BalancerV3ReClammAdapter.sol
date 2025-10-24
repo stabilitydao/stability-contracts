@@ -18,6 +18,8 @@ import {ScalingHelpers} from "./libs/balancerv3/ScalingHelpers.sol";
 
 /// @title AMM adapter for Balancer V3 ReCLAMM pools
 /// @author Alien Deployer (https://github.com/a17)
+/// Changelog:
+///     1.0.1: add empty IAmmAdapter.getTwaPrice
 contract BalancerV3ReClammAdapter is Controllable, IAmmAdapter, IBalancerAdapter {
     using SafeERC20 for IERC20;
 
@@ -26,7 +28,7 @@ contract BalancerV3ReClammAdapter is Controllable, IAmmAdapter, IBalancerAdapter
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.0";
+    string public constant VERSION = "1.0.1";
 
     address internal constant PERMIT2 = 0x000000000022D473030F116dDEE9F6B43aC78BA3;
 
@@ -200,6 +202,21 @@ contract BalancerV3ReClammAdapter is Controllable, IAmmAdapter, IBalancerAdapter
             imData.decimalScalingFactors[tokenOutIndex],
             ScalingHelpers.computeRateRoundUp(dynData.tokenRates[tokenOutIndex])
         );
+    }
+
+    /// @inheritdoc IAmmAdapter
+    function getTwaPrice(
+        address,
+        /*pool*/
+        address,
+        /*tokenIn*/
+        address,
+        /*tokenOut*/
+        uint,
+        /*amount*/
+        uint32 /*period*/
+    ) external pure returns (uint) {
+        revert("Not supported");
     }
 
     /// @inheritdoc IERC165

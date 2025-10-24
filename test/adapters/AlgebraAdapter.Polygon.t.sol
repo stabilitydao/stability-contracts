@@ -71,4 +71,9 @@ contract AlgebraAdapterTest is PolygonSetup {
         assertEq(adapter.supportsInterface(type(IAmmAdapter).interfaceId), true);
         assertEq(adapter.supportsInterface(type(IERC165).interfaceId), true);
     }
+
+    function testGetTwaPrice() public {
+        vm.expectRevert("Not supported");
+        adapter.getTwaPrice(address(0), address(0), address(0), 0, 0);
+    }
 }

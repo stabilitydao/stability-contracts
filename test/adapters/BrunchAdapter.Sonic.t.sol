@@ -72,6 +72,11 @@ contract BrunchAdapterTest is SonicSetup {
         adapter.getPrice(pool, SonicConstantsLib.TOKEN_AUSDC, SonicConstantsLib.TOKEN_STAKED_BRUNCH_USD, 0);
     }
 
+    function testGetTwaPrice() public {
+        vm.expectRevert("Not supported");
+        adapter.getTwaPrice(address(0), address(0), address(0), 0, 0);
+    }
+
     //endregion ------------------------------------ Tests for view functions
 
     //region ------------------------------------ Tests for swaps

@@ -89,6 +89,11 @@ contract PendleAdapterTest is SonicSetup {
         );
     }
 
+    function testGetTwaPrice() public {
+        vm.expectRevert("Not supported");
+        adapter.getTwaPrice(address(0), address(0), address(0), 0, 0);
+    }
+
     function testSwaps() public {
         uint got;
 

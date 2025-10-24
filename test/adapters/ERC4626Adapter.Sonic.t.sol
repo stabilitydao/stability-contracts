@@ -144,6 +144,13 @@ contract ERC4626AdapterTest is Test {
         assertEq(adapter.supportsInterface(type(IERC165).interfaceId), true);
     }
 
+    function testGetTwaPrice() public {
+        _addAdapter();
+
+        vm.expectRevert("Not supported");
+        adapter.getTwaPrice(address(0), address(0), address(0), 0, 0);
+    }
+
     function _makePoolData(
         address pool,
         string memory ammAdapterId,
