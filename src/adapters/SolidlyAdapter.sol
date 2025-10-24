@@ -23,9 +23,6 @@ import {ConstantsLib} from "../core/libs/ConstantsLib.sol";
 contract SolidlyAdapter is Controllable, IAmmAdapter {
     using SafeERC20 for IERC20;
 
-    // Exclude from coverage report
-    function test() public {}
-
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         CONSTANTS                          */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/

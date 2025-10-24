@@ -276,7 +276,10 @@ contract PriceReader is Controllable, IPriceReader {
             revert UnknownAMMAdapter();
         }
         uint amount = 10 ** IERC20Metadata(asset).decimals();
+
+        // slither-disable-next-line uninitialized-local
         address tokenOut;
+
         {
             address[] memory tokens = ammAdapter.poolTokens(pool);
             require(tokens.length == 2, WrongNumberPoolTokens());

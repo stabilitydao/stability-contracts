@@ -145,6 +145,8 @@ contract ERC4626AdapterTest is Test {
     }
 
     function testGetTwaPrice() public {
+        _addAdapter();
+
         vm.expectRevert("Not supported");
         adapter.getTwaPrice(address(0), address(0), address(0), 0, 0);
     }

@@ -17,6 +17,7 @@ import {ISwapper} from "../interfaces/ISwapper.sol";
 ///         ┗┓ ┃ ┣┫┣┫┃┃ ┃ ┃ ┗┫  ┃┃┃ ┣┫ ┃ ┣ ┃┃┣┫┃┃┃
 ///         ┗┛ ┻ ┛┗┻┛┻┗┛┻ ┻ ┗┛  ┣┛┗┛┛┗ ┻ ┻ ┗┛┛┗┛ ┗
 /// Changelog:
+///   1.6.2: rename vaultPriceOracle to priceAggregator - #414
 ///   1.6.1: IPlatform.recovery()
 ///   1.6.0: remove buildingPermitToken, buildingPayPerVaultToken, BB and boost related; init with MetaVaultFactory;
 ///   1.5.1: IPlatform.vaultPriceOracle()
@@ -41,7 +42,7 @@ contract Platform is Controllable, IPlatform {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @dev Version of Platform contract implementation
-    string public constant VERSION = "1.6.1";
+    string public constant VERSION = "1.6.2";
 
     /// @inheritdoc IPlatform
     uint public constant TIME_LOCK = 16 hours;

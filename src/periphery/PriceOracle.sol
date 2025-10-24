@@ -2,7 +2,6 @@
 pragma solidity ^0.8.28;
 
 import {IAggregatorInterfaceMinimal} from "../integrations/chainlink/IAggregatorInterfaceMinimal.sol";
-import {IVault} from "../interfaces/IVault.sol";
 import {IPriceAggregator} from "../interfaces/IPriceAggregator.sol";
 
 /// @title Chainlink-compatible vault trusted price feed

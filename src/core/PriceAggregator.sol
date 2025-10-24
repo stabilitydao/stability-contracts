@@ -59,7 +59,7 @@ contract PriceAggregator is Controllable, IPriceAggregator {
     /*                      INITIALIZATION                        */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    /// @dev Initializes the VaultPriceOracle contract with the platform address
+    /// @inheritdoc IPriceAggregator
     function initialize(address platform_) public initializer {
         __Controllable_init(platform_);
     }

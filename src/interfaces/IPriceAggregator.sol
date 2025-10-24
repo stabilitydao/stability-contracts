@@ -164,10 +164,10 @@ interface IPriceAggregator {
     /// @notice Retrieves the latest valid aggregated price for a vault or asset.
     /// @dev Reverts if no data is available or if the price is too old.
     /// @param entity_ The address of the entity.
-    /// @return price The latest aggregated price.
+    /// @return _price The latest aggregated price.
     /// @return timestamp The aggregation timestamp.
     /// @return roundId The associated round ID.
-    function getLatestPrice(address entity_) external view returns (uint price, uint timestamp, uint roundId);
+    function getLatestPrice(address entity_) external view returns (uint _price, uint timestamp, uint roundId);
 
     /// @notice Retrieves the price threshold and staleness for a specific vault or asset.
     /// @param entity_ The address of the vault or asset.
@@ -178,6 +178,9 @@ interface IPriceAggregator {
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      WRITE FUNCTIONS                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    /// @dev Initializes the VaultPriceOracle contract with the platform address
+    function initialize(address platform_) external;
 
     /// @notice Submits a price for a vault/asset in the current round.
     /// @dev Can only be called by authorized validators.
