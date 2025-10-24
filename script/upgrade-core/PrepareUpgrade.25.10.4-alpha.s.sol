@@ -10,9 +10,13 @@ import {SolidlyAdapter} from "../../src/adapters/SolidlyAdapter.sol";
 import {PriceReader} from "../../src/core/PriceReader.sol";
 import {PriceAggregator} from "../../src/core/PriceAggregator.sol";
 import {Recovery} from "../../src/tokenomics/Recovery.sol";
+import {ChainlinkMinimal2V3Adapter} from "../../src/adapters/ChainlinkMinimal2V3Adapter.sol";
+import {PriceOracle} from "../../src/periphery/PriceOracle.sol";
 
 contract PrepareUpgrade25104alpha is Script {
     address public constant PLATFORM = SonicConstantsLib.PLATFORM;
+
+    address public constant PRICE_AGGREGATOR_SONIC = 0x3137a6498D03dF485D75aF9a866BbE73FD1124EA;
 
     function run() external {
         uint deployerPrivateKey = vm.envUint("PRIVATE_KEY");
@@ -34,9 +38,15 @@ contract PrepareUpgrade25104alpha is Script {
         new Recovery();
 
         // PriceAggregator 1.1.0
-        Proxy proxy = new Proxy();
-        proxy.initProxy(address(new PriceAggregator()));
-        PriceAggregator(address(proxy)).initialize(PLATFORM);
+        new PriceAggregator();
+
+        // Price oracle + ChainlinkMinimal2V3Adapter for the oracle
+        PriceOracle priceOracle = new PriceOracle(SonicConstantsLib.TOKEN_STBL, PRICE_AGGREGATOR_SONIC);
+        new ChainlinkMinimal2V3Adapter(address(priceOracle));
+
+        //        Proxy proxy = new Proxy();
+        //        proxy.initProxy(address(new PriceAggregator()));
+        //        PriceAggregator(address(proxy)).initialize(PLATFORM);
 
         vm.stopBroadcast();
     }
