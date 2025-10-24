@@ -76,8 +76,19 @@ contract PriceAggregatorUpgrade414SonicTest is Test {
     }
 
     function testUpgrade() public {
-        // ----------------------- data before upgrade
         IVaultPriceOracle vaultPriceOracle = IVaultPriceOracle(IPlatformBeforeUpdate(PLATFORM).vaultPriceOracle());
+
+        // ----------------------- add data to old version of the price aggregator
+        vm.prank(multisig);
+        vaultPriceOracle.addValidator(multisig);
+
+        vm.prank(multisig);
+        vaultPriceOracle.addVault(address(1), 7000, 2 hours);
+
+        vm.prank(multisig);
+        vaultPriceOracle.submitPrice(address(1), 17e18, 1);
+
+        // ----------------------- data before upgrade
         address[] memory validators = vaultPriceOracle.validators();
         address[] memory vaults = vaultPriceOracle.vaults();
         uint maxPriceAge = vaultPriceOracle.maxPriceAge();
@@ -86,12 +97,15 @@ contract PriceAggregatorUpgrade414SonicTest is Test {
         // ----------------------- do upgrade
         _upgradePlatform();
 
+        IPriceAggregator priceAggregator = IPriceAggregator(IPlatform(PLATFORM).priceAggregator());
+        assertEq(address(priceAggregator), address(vaultPriceOracle), "price aggregator address");
+
         // ----------------------- ensure that data after upgrade wasn't changed
         {
-            address[] memory validatorsAfter = vaultPriceOracle.validators();
-            address[] memory vaultsAfter = vaultPriceOracle.vaults();
-            uint maxPriceAgeAfter = vaultPriceOracle.maxPriceAge();
-            uint minQuorumAfter = vaultPriceOracle.minQuorum();
+            address[] memory validatorsAfter = priceAggregator.validators();
+            address[] memory vaultsAfter = priceAggregator.vaults();
+            uint maxPriceAgeAfter = priceAggregator.maxPriceAge();
+            uint minQuorumAfter = priceAggregator.minQuorum();
 
             assertEq(validators.length, validatorsAfter.length, "validators length after upgrade");
             for (uint i = 0; i < validators.length; i++) {
@@ -103,12 +117,13 @@ contract PriceAggregatorUpgrade414SonicTest is Test {
             }
             assertEq(maxPriceAge, maxPriceAgeAfter, "maxPriceAge after upgrade");
             assertEq(minQuorum, minQuorumAfter, "minQuorum after upgrade");
+
+            (uint priceThreshold, uint staleness) = priceAggregator.entityData(address(1));
+            assertEq(priceThreshold, 7000, "vault priceThreshold after upgrade");
+            assertEq(staleness, 2 hours, "vault staleness after upgrade");
         }
 
         // ----------------------- do actions after upgrade
-        IPriceAggregator priceAggregator = IPriceAggregator(IPlatform(PLATFORM).priceAggregator());
-        assertEq(address(priceAggregator), address(vaultPriceOracle), "price aggregator address");
-
         vm.prank(multisig);
         priceAggregator.addValidator(address(this));
 
@@ -153,6 +168,9 @@ contract PriceAggregatorUpgrade414SonicTest is Test {
 
             assertEq(maxPriceAgeAfter, 5001, "maxPriceAge after change");
             assertEq(minQuorumAfter, 177, "minQuorum after change");
+
+            (uint price,,) = priceAggregator.price(address(1));
+            assertEq(price, 17e18, "vault price after change");
         }
     }
 
