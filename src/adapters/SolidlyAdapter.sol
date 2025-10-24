@@ -19,7 +19,7 @@ import {ConstantsLib} from "../core/libs/ConstantsLib.sol";
 /// @custom:deprecated The adapter was used on Real only and now it's not used anymore
 /// If we decided to use it on other chain we need to add new tests for it
 /// Changelog:
-///  1.0.1: implement IAmmAdapter.getTwaPrice
+///  1.1.0: implement IAmmAdapter.getTwaPrice
 contract SolidlyAdapter is Controllable, IAmmAdapter {
     using SafeERC20 for IERC20;
 
@@ -28,7 +28,7 @@ contract SolidlyAdapter is Controllable, IAmmAdapter {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.1";
+    string public constant VERSION = "1.1.0";
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      INITIALIZATION                        */

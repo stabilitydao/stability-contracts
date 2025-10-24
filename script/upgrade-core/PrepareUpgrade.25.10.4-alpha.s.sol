@@ -24,7 +24,7 @@ contract PrepareUpgrade25104alpha is Script {
         // UniswapV3Adapter 1.1.0
         new UniswapV3Adapter();
 
-        // SolidlyAdapter 1.0.1
+        // SolidlyAdapter 1.1.0
         new SolidlyAdapter();
 
         // PriceReader 1.3.0
