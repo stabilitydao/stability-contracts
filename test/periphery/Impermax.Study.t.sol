@@ -8,6 +8,8 @@ import {IImpermaxV2SolidlyRouter01} from "../../src/integrations/impermax/IImper
 import {IImpermaxBorrowableV2} from "../../src/integrations/impermax/IImpermaxBorrowableV2.sol";
 import {Vm} from "forge-std/Vm.sol";
 import {IERC20Permit} from "../../lib/openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Permit.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
 /// @dev Borrow tx: https://sonicscan.org/tx/0x4486f0cc158d7ada27a5f72dc4a8cfbe0ab5b73329298e6be20b65ced28ec5a4
 /// @dev Supply tx: https://sonicscan.org/tx/0x60a9a6447befa55d47eecf0dd5737768e824cd6a51231c79800d893dee2863b1
@@ -17,7 +19,7 @@ contract ImpermaxStudySonicTest is Test {
     uint internal constant FORK_BORROW_TX_BLOCK = 51314094; // Oct-20-2025 01:29:00 PM UTC
     uint internal constant FORK_SUPPLY_TX_BLOCK = 51314070; // Oct-20-2025 01:28:30 PM UTC
 
-    address internal constant LENDING_POOL_USDC_STBL = 0x7195d62a9e388ae21c7881ca29be8fadeb09379f;
+    address internal constant LENDING_POOL_USDC_STBL = 0x7195d62A9E388ae21c7881CA29be8fadEb09379f;
 
     bytes internal constant BORROW_ACTION_DATA = hex"0000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000e00000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000186a000000000000000000000000088888887c3ebd4a33e34a15db4254c74c75e5d4a0000000000000000000000000000000000000000000000000000000000000000";
     bytes internal constant BORROW_PERMITS_DATA = hex"0000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000e00000000000000000000000000000000000000000000000000000000000000060000000000000000000000000c2285af4f918c9bfd364cd7a5c403fba0f201a4300000000000000000000000000000000000000000000000000000000000186a00000000000000000000000000000000000000000000000000000000068ff67f400000000000000000000000000000000000000000000000000000000000000412d4498afde7893618241e30b773d1a883de0437dbf8988eab1fae343b8ba3703662e80e32503daf94b88c96e4b92cba9e20183940a0d3c668aa720c9a17fc6861b00000000000000000000000000000000000000000000000000000000000000";
@@ -57,7 +59,16 @@ contract ImpermaxStudySonicTest is Test {
     bytes internal constant SIGNATURE_SUPPLY_USDC = hex"a843b54a3c3f8b760c534f1afa4de2799ed80ce51ee8bb16bd17f99f4dade13834879f4bcf6e833f826c3c5227ea19ede6a19cb3c1b3f7e277e72c73d8ca324e1b";
     bytes internal constant SIGNATURE_SUPPLY_STBL = hex"44526f83431c213b44290e7ebe8fe7be5afb255a1930cd304b2cd7efbe6775b03be2ca7b740c515ac4b087e381f03d5aabe6c841e3fbe4644b26e06ad9dd4e521b";
 
-    uint internal constant TEST_PRIVATE_KEY = 1;
+    uint internal constant TEST_PRIVATE_KEY = 15;
+    /// @notice special stub-value to use predefined {OWNER_ADDR}
+    uint internal constant SIGNER_PRIVATE_KEY_888 = 888;
+
+    struct CreateSupplyPermitsDataLocal {
+        address token;
+        uint nonce;
+        bytes32 digest;
+        bytes signature;
+    }
 
     constructor() {
         // in each test
@@ -120,7 +131,7 @@ contract ImpermaxStudySonicTest is Test {
 
         // ---------------------- create actionData and permitsData
         bytes memory actionData = _createBorrowActionData();
-        bytes memory permitsData = _createBorrowPermitsData(1);
+        bytes memory permitsData = _createBorrowPermitsData(SIGNER_PRIVATE_KEY_888);
 
         // ---------------------- ensure that we get same data as original tx
         assertEq(actionData, BORROW_ACTION_DATA, "borrow action data");
@@ -132,7 +143,7 @@ contract ImpermaxStudySonicTest is Test {
 
         // ---------------------- create actionData and permitsData
         bytes memory actionData = _createSupplyActionData();
-        bytes memory permitsData = _createSupplyPermitsData(1);
+        bytes memory permitsData = _createSupplyPermitsData(SIGNER_PRIVATE_KEY_888);
 
         // ---------------------- ensure that we get same data as original tx
         assertEq(actionData, SUPPLY_ACTION_DATA, "supply action data");
@@ -158,14 +169,23 @@ contract ImpermaxStudySonicTest is Test {
         deal(TOKEN_A_USDC, owner, amount0);
         deal(TOKEN_B_STBL, owner, amount1);
 
-        vm.startPrank(owner);
+        vm.prank(owner);
         IERC20(TOKEN_A_USDC).approve(ROUTER_ADDR, amount0);
 
-        vm.startPrank(owner);
+        vm.prank(owner);
         IERC20(TOKEN_B_STBL).approve(ROUTER_ADDR, amount1);
 
         //------------------------------- supply
+        bytes memory actionsData = _createSupplyActionData(amount0, amount1, 0, 0);
+        bytes memory permitsData = _createSupplyPermitsData(
+            TEST_PRIVATE_KEY,
+            amount0,
+            amount1,
+            block.timestamp + 600000
+        );
 
+        vm.prank(owner);
+        router.execute(LENDING_POOL_USDC_STBL, actionsData, permitsData);
     }
 
     //region ----------------------------------------- Internal logic
@@ -234,10 +254,14 @@ contract ImpermaxStudySonicTest is Test {
     //region ----------------------------------------- Action data utils
 
     function _createBorrowActionData() internal pure returns (bytes memory actionData) {
+        return _createBorrowActionData(PERMIT_AMOUNT, OWNER_ADDR);
+    }
+
+    function _createBorrowActionData(uint permitAmount, address to_) internal pure returns (bytes memory actionData) {
         IImpermaxV2SolidlyRouter01.BorrowData memory borrowData = IImpermaxV2SolidlyRouter01.BorrowData({
             index: 0,
-            amount: PERMIT_AMOUNT,
-            to: OWNER_ADDR
+            amount: permitAmount,
+            to: to_
         });
 
         IImpermaxV2SolidlyRouter01.Action memory action = IImpermaxV2SolidlyRouter01.Action({
@@ -253,12 +277,16 @@ contract ImpermaxStudySonicTest is Test {
     }
 
     function _createSupplyActionData() internal pure returns (bytes memory actionData) {
+        return _createSupplyActionData(PERMIT_SUPPLY_AMOUNT_USDC, PERMIT_SUPPLY_AMOUNT_STBL, PERMIT_SUPPLY_AMOUNT0_MIN, PERMIT_SUPPLY_AMOUNT1_MIN);
+    }
+
+    function _createSupplyActionData(uint amount0Desired, uint amount1Desired, uint amount0Min, uint amount1Min) internal pure returns (bytes memory actionData) {
         IImpermaxV2SolidlyRouter01.MintUniV2Data memory supplyData = IImpermaxV2SolidlyRouter01.MintUniV2Data({
             lpAmountUser: 0,
-            amount0Desired: PERMIT_SUPPLY_AMOUNT_USDC,
-            amount1Desired: PERMIT_SUPPLY_AMOUNT_STBL,
-            amount0Min: PERMIT_SUPPLY_AMOUNT0_MIN,
-            amount1Min: PERMIT_SUPPLY_AMOUNT1_MIN
+            amount0Desired: amount0Desired,
+            amount1Desired: amount1Desired,
+            amount0Min: amount0Min,
+            amount1Min: amount1Min
         });
 
         IImpermaxV2SolidlyRouter01.Action memory action = IImpermaxV2SolidlyRouter01.Action({
@@ -279,7 +307,7 @@ contract ImpermaxStudySonicTest is Test {
     /// NOTE: In production, the token's name must be retrieved via token.name()
     /// We use a placeholder for name and version as the exact EIP-712 setup
     /// of the token's Domain Separator is required for an exact match.
-    function _getDomainSeparator(address token) internal view returns (bytes32 domainSeparator) {
+    function _getDomainSeparator(address token, string memory version_) internal view returns (bytes32 domainSeparator) {
         // This is the EIP-712 Domain Separator hashing schema
         bytes32 EIP712_DOMAIN_TYPEHASH = keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
 
@@ -287,8 +315,8 @@ contract ImpermaxStudySonicTest is Test {
         // NOTE: Replace "IMX_TOKEN_NAME" with the actual token name for live testing.
         domainSeparator = keccak256(abi.encode(
             EIP712_DOMAIN_TYPEHASH,
-            keccak256(bytes("IMX_TOKEN_NAME")),
-            keccak256(bytes("1")),
+            keccak256(bytes(IERC20Metadata(token).name())),
+            keccak256(bytes(version_)),
             block.chainid,
             token
         ));
@@ -303,7 +331,7 @@ contract ImpermaxStudySonicTest is Test {
         uint256 deadline
     ) internal view returns (bytes32 digest) {
         // 1. Get Domain Separator
-        bytes32 domainSeparator = _getDomainSeparator(token);
+        bytes32 domainSeparator = _getDomainSeparator(token, "1"); // todo: USDC has version "2"
 
         // 2. Hash the BorrowPermit Message
         // Format: BorrowPermit(address owner, address spender, uint256 value, uint256 nonce, uint256 deadline)
@@ -328,10 +356,14 @@ contract ImpermaxStudySonicTest is Test {
     /// @param signerPrivateKey The private key ID used for vm.sign. Use 1 to simulate OWNER_ADDR + SIGNATURE_OF_OWNER
     /// @return permitsData The abi-encoded array of Permit structs
     function _createBorrowPermitsData(uint256 signerPrivateKey) internal view returns (bytes memory permitsData) {
-        Vm vm = Vm(address(0x7109709eCFAA0d3ae091f80bC988a967c2Ae4807)); // reserved magic address to access VM cheatcodes
+        return _createBorrowPermitsData(signerPrivateKey, PERMIT_AMOUNT, DEADLINE);
+    }
+
+    function _createBorrowPermitsData(uint256 signerPrivateKey, uint permitAmount, uint deadline) internal view returns (bytes memory permitsData) {
+        Vm vm = Vm(address(VM_ADDRESS));
 
         address owner;
-        if (signerPrivateKey == 1) {
+        if (signerPrivateKey == SIGNER_PRIVATE_KEY_888) {
             owner = OWNER_ADDR;
         } else {
             owner = vm.addr(signerPrivateKey);
@@ -344,14 +376,14 @@ contract ImpermaxStudySonicTest is Test {
         bytes32 digest = _getBorrowPermitDigest(
             TOKEN_ADDR,
             owner,
-            PERMIT_AMOUNT,
+            permitAmount,
             nonce,
-            DEADLINE
+            deadline
         );
 
         // 3. Sign the Digest using Forge cheat
         bytes memory signature;
-        if (signerPrivateKey == 1) {
+        if (signerPrivateKey == SIGNER_PRIVATE_KEY_888) {
             signature = SIGNATURE_BORROW;
         } else {
             (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerPrivateKey, digest);
@@ -359,7 +391,7 @@ contract ImpermaxStudySonicTest is Test {
         }
 
         // 4. Encode the Permit Data (for the permitData field)
-        bytes memory permitData = abi.encode(TOKEN_ADDR, PERMIT_AMOUNT, DEADLINE);
+        bytes memory permitData = abi.encode(TOKEN_ADDR, permitAmount, deadline);
 
         // 5. Assemble the Permit Structure
         IImpermaxV2SolidlyRouter01.Permit memory permit = IImpermaxV2SolidlyRouter01.Permit({
@@ -381,10 +413,11 @@ contract ImpermaxStudySonicTest is Test {
         address owner,
         uint256 value,
         uint256 nonce,
-        uint256 deadline
+        uint256 deadline,
+        string memory version_
     ) internal view returns (bytes32 digest) {
         // 1. Get Domain Separator (Assumed to be the same logic as _getDomainSeparator)
-        bytes32 domainSeparator = _getDomainSeparator(token);
+        bytes32 domainSeparator = _getDomainSeparator(token, version_);
 
         // 2. Hash the Permit Message (EIP-2612)
         // Format: Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)
@@ -406,10 +439,15 @@ contract ImpermaxStudySonicTest is Test {
     }
 
     function _createSupplyPermitsData(uint256 signerPrivateKey) internal view returns (bytes memory permitsData) {
-        Vm vm = Vm(address(0x7109709eCFAA0d3ae091f80bC988a967c2Ae4807));
+        return _createSupplyPermitsData(signerPrivateKey, PERMIT_SUPPLY_AMOUNT_USDC, PERMIT_SUPPLY_AMOUNT_STBL, DEADLINE);
+    }
+
+    function _createSupplyPermitsData(uint256 signerPrivateKey, uint amountUsd, uint amountStbl, uint deadline) internal view returns (bytes memory permitsData) {
+        CreateSupplyPermitsDataLocal memory local;
+        Vm vm = Vm(address(VM_ADDRESS));
 
         address owner;
-        if (signerPrivateKey == 1) {
+        if (signerPrivateKey == SIGNER_PRIVATE_KEY_888) {
             owner = OWNER_ADDR;
         } else {
             owner = vm.addr(signerPrivateKey);
@@ -420,56 +458,55 @@ contract ImpermaxStudySonicTest is Test {
 
         // --- Permit 0: TOKEN_0 ---
         {
-            address token = TOKEN_A_USDC;
-            uint256 value = PERMIT_SUPPLY_AMOUNT_USDC;
-            uint256 nonce = IERC20Permit(token).nonces(owner);
+            local.token = TOKEN_A_USDC;
+            local.nonce = IERC20Permit(local.token).nonces(owner);
 
             // Calculate Digest
-            bytes32 digest = _getSupplyPermitDigest(token, owner, value, nonce, DEADLINE);
+            local.digest = _getSupplyPermitDigest(local.token, owner, amountUsd, local.nonce, deadline, "2");
 
             // Sign the Digest
-            bytes memory signature;
-            if (signerPrivateKey == 1) {
-                signature = SIGNATURE_SUPPLY_USDC;
+            if (signerPrivateKey == SIGNER_PRIVATE_KEY_888) {
+                local.signature = SIGNATURE_SUPPLY_USDC;
             } else {
-                (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerPrivateKey, digest);
+                (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerPrivateKey, local.digest);
+                local.signature = abi.encodePacked(r, s, v);
             }
 
             // Assemble Permit 0
             permits[0] = IImpermaxV2SolidlyRouter01.Permit({
                 permitType: IImpermaxV2SolidlyRouter01.PermitType.PERMIT1, // Type 0
-                permitData: abi.encode(token, value, DEADLINE),
-                signature: signature
+                permitData: abi.encode(local.token, amountUsd, deadline),
+                signature: local.signature
             });
         }
 
         // --- Permit 1: TOKEN_1 ---
         {
-            address token = TOKEN_B_STBL;
-            uint256 value = PERMIT_SUPPLY_AMOUNT_STBL;
-            uint256 nonce = IERC20Permit(token).nonces(owner);
+            local.token = TOKEN_B_STBL;
+            local.nonce = IERC20Permit(local.token).nonces(owner);
 
             // Calculate Digest
-            bytes32 digest = _getSupplyPermitDigest(token, owner, value, nonce, DEADLINE);
+            local.digest = _getSupplyPermitDigest(local.token, owner, amountStbl, local.nonce, deadline, "1");
 
             // Sign the Digest
-            bytes memory signature;
-            if (signerPrivateKey == 1) {
-                signature = SIGNATURE_SUPPLY_STBL;
+            if (signerPrivateKey == SIGNER_PRIVATE_KEY_888) {
+                local.signature = SIGNATURE_SUPPLY_STBL;
             } else {
-                (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerPrivateKey, digest);
+                (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerPrivateKey, local.digest);
+                local.signature = abi.encodePacked(r, s, v);
             }
 
             // Assemble Permit 1
             permits[1] = IImpermaxV2SolidlyRouter01.Permit({
                 permitType: IImpermaxV2SolidlyRouter01.PermitType.PERMIT1, // Type 0
-                permitData: abi.encode(token, value, DEADLINE),
-                signature: signature
+                permitData: abi.encode(local.token, amountStbl, deadline),
+                signature: local.signature
             });
         }
 
         // ABI-encode the array for the Router
         return abi.encode(permits);
     }
+
     //endregion ---------------------------------------- Permit utils
 }
