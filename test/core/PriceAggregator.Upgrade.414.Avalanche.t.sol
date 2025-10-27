@@ -59,7 +59,7 @@ interface IVaultPriceOracle {
 }
 
 /// @notice #348
-contract PriceAggregatorUpgrade414SonicTest is Test {
+contract PriceAggregatorUpgrade414AvalancheTest is Test {
     uint public constant FORK_BLOCK_C_CHAIN = 70820228; // Oct-24-2025 06:53:05 UTC
 
     address public constant PLATFORM = AvalancheConstantsLib.PLATFORM;
