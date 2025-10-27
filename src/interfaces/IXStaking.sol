@@ -45,6 +45,7 @@ interface IXStaking {
     function setNewDuration(uint) external;
 
     /// @notice Updates STBL_DAO balances for the given users.
+    /// @custom:restricted Only operator
     /// @dev If a user has less than the minimum staking power of xSTBL, his STBL_DAO balance will be zero.
     /// Otherwise, the user receives 1 STBL_DAO for each 1 xSTBL staked.
     function syncStabilityDAOBalances(address[] calldata users) external;

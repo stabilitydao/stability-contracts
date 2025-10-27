@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {console} from "forge-std/console.sol";
+// import {console} from "forge-std/console.sol";
 import {Test} from "forge-std/Test.sol";
 import {IPriceReader, IPlatform} from "../../src/core/PriceReader.sol";
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
@@ -31,7 +31,7 @@ interface IVaultPriceOracle {
         uint staleness;
     }
 
-    function vaultPrice(address vault_) external view returns (uint price, uint timestamp, uint roundId);
+    function vaultPrices(address vault_) external view returns (uint price, uint timestamp, uint roundId);
     function observations(
         address vault_,
         uint roundId_,
@@ -85,10 +85,8 @@ contract PriceAggregatorUpgrade414SonicTest is Test {
         uint maxPriceAge = vaultPriceOracle.maxPriceAge();
         uint minQuorum = vaultPriceOracle.minQuorum();
         (uint priceThresholdBefore, uint stalenessBefore) = vaultPriceOracle.vaultData(vaults[0]);
-        console.log("1");
-        (uint priceBefore,,) = vaultPriceOracle.vaultPrice(vaults[0]);
+        (uint priceBefore,,) = vaultPriceOracle.vaultPrices(vaults[0]);
 
-        console.log("1");
         // ----------------------- do upgrade
         _upgradePlatform();
 
@@ -187,8 +185,8 @@ contract PriceAggregatorUpgrade414SonicTest is Test {
         implementations[0] = address(new PriceAggregator());
         implementations[1] = address(new Platform());
 
-        vm.startPrank(multisig);
-        platform.cancelUpgrade();
+        //        vm.startPrank(multisig);
+        //        platform.cancelUpgrade();
 
         vm.startPrank(multisig);
         IPlatform(PLATFORM).announcePlatformUpgrade("2025.05.0-alpha", proxies, implementations);
