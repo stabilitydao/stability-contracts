@@ -10,11 +10,12 @@ import {Vm} from "forge-std/Vm.sol";
 import {IERC20Permit} from "../../lib/openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Permit.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import {IImpermaxCollateral} from "../../src/integrations/impermax/IImpermaxCollateral.sol";
 
 /// @dev Borrow tx: https://sonicscan.org/tx/0x4486f0cc158d7ada27a5f72dc4a8cfbe0ab5b73329298e6be20b65ced28ec5a4
 /// @dev Supply tx: https://sonicscan.org/tx/0x60a9a6447befa55d47eecf0dd5737768e824cd6a51231c79800d893dee2863b1
 contract ImpermaxStudySonicTest is Test {
-    uint internal constant FORK_BLOCK = 52025575; // Oct-27-2025 09:42:56 AM +UTC
+    uint internal constant FORK_BLOCK = 52188237; // Oct-28-2025 08:07:34 AM +UTC
 
     uint internal constant FORK_BORROW_TX_BLOCK = 51314094; // Oct-20-2025 01:29:00 PM UTC
     uint internal constant FORK_SUPPLY_TX_BLOCK = 51314070; // Oct-20-2025 01:28:30 PM UTC
@@ -68,6 +69,24 @@ contract ImpermaxStudySonicTest is Test {
         uint nonce;
         bytes32 digest;
         bytes signature;
+    }
+
+    struct AccountState {
+        uint liquidity;
+        uint shortfall;
+
+        uint twapPrice112x112;
+        uint collateralAmount;
+        uint collateralExchangeRate;
+
+        uint borrowBalance;
+        uint borrowExchangeRate;
+
+        uint price0;
+        uint price1;
+
+        uint debtValueInCollateral;
+        uint ltv;
     }
 
     constructor() {
@@ -150,7 +169,7 @@ contract ImpermaxStudySonicTest is Test {
         assertEq(permitsData, SUPPLY_PERMITS_DATA, "supply permits data");
     }
 
-    function testBorrow() public {
+    function testBorrowByTestUser() public {
         vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL"), FORK_BLOCK));
 
         address owner = vm.addr(TEST_PRIVATE_KEY);
@@ -176,21 +195,205 @@ contract ImpermaxStudySonicTest is Test {
         IERC20(TOKEN_B_STBL).approve(ROUTER_ADDR, amount1);
 
         //------------------------------- supply
-        bytes memory actionsData = _createSupplyActionData(amount0, amount1, 0, 0);
-        bytes memory permitsData = _createSupplyPermitsData(
-            TEST_PRIVATE_KEY,
-            amount0,
-            amount1,
-            block.timestamp + 600000
+        {
+            bytes memory actionsData = _createSupplyActionData(amount0, amount1, 0, 0);
+            bytes memory permitsData = _createSupplyPermitsData(
+                TEST_PRIVATE_KEY,
+                amount0,
+                amount1,
+                block.timestamp + 600000
+            );
+
+            vm.prank(owner);
+            router.execute(LENDING_POOL_USDC_STBL, actionsData, permitsData);
+
+            console.log("amount0", amount0);
+            console.log("amount1", amount1);
+        }
+
+        //------------------------------- check position status
+        AccountState memory stateAfterSupply = _getAccountState(owner);
+        _showAccountState(stateAfterSupply);
+
+        //------------------------------- borrow in several steps
+        {
+            uint snapshot = vm.snapshotState();
+            for (uint i; i < 4; ++i) {
+                uint amountToBorrow = 0.0275e6;
+                bytes memory actionsData = _createBorrowActionData(amountToBorrow, owner);
+                bytes memory permitsData = _createBorrowPermitsData(
+                    TEST_PRIVATE_KEY,
+                    amountToBorrow,
+                    block.timestamp + 600000
+                );
+
+                vm.prank(owner);
+                router.execute(LENDING_POOL_USDC_STBL, actionsData, permitsData);
+
+                //------------------------------- check position status
+                console.log("==========================", i);
+                AccountState memory stateAfterBorrow = _getAccountState(owner);
+                _showAccountState(stateAfterBorrow);
+                console.log("==========================");
+            }
+            vm.revertToState(snapshot);
+        }
+
+        //------------------------------- borrow max
+        {
+            uint amountToBorrow = _getMaxAmountToBorrow(owner);
+            console.log("amountToBorrow", amountToBorrow);
+            bytes memory actionsData = _createBorrowActionData(amountToBorrow, owner);
+            bytes memory permitsData = _createBorrowPermitsData(
+                TEST_PRIVATE_KEY,
+                amountToBorrow,
+                block.timestamp + 600000
+            );
+
+            vm.prank(owner);
+            router.execute(LENDING_POOL_USDC_STBL, actionsData, permitsData);
+
+            //------------------------------- check position status
+            AccountState memory stateAfterBorrow = _getAccountState(owner);
+            _showAccountState(stateAfterBorrow);
+        }
+    }
+
+    function testBorrowByTestMultisig() public {
+        address owner = makeAddr("test multisig");
+        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL"), FORK_BLOCK));
+
+        //------------------------------- Calculate desired amounts
+        IImpermaxV2SolidlyRouter01 router = IImpermaxV2SolidlyRouter01(ROUTER_ADDR);
+        (uint256 amount0, uint256 amount1) = router._optimalLiquidityUniV2(
+            LENDING_POOL_USDC_STBL,
+            PERMIT_SUPPLY_AMOUNT_USDC,
+            PERMIT_SUPPLY_AMOUNT_STBL,
+            PERMIT_SUPPLY_AMOUNT0_MIN,
+            PERMIT_SUPPLY_AMOUNT1_MIN
         );
 
+        //------------------------------- Deal and approve
+        deal(TOKEN_A_USDC, owner, amount0);
+        deal(TOKEN_B_STBL, owner, amount1);
+
         vm.prank(owner);
-        router.execute(LENDING_POOL_USDC_STBL, actionsData, permitsData);
+        IERC20(TOKEN_A_USDC).approve(ROUTER_ADDR, amount0);
+
+        vm.prank(owner);
+        IERC20(TOKEN_B_STBL).approve(ROUTER_ADDR, amount1);
+
+        //------------------------------- supply
+        {
+            bytes memory actionsData = _createSupplyActionData(amount0, amount1, 0, 0);
+            bytes memory permitsData = _createPermitsDataEmpty();
+
+            vm.prank(owner);
+            router.execute(LENDING_POOL_USDC_STBL, actionsData, permitsData);
+
+            console.log("amount0", amount0);
+            console.log("amount1", amount1);
+        }
+
+        //------------------------------- check position status
+        AccountState memory stateAfterSupply = _getAccountState(owner);
+        _showAccountState(stateAfterSupply);
+
+        //------------------------------- borrow in several steps
+        address borrow0 = _getTokenBorrow0(LENDING_POOL_USDC_STBL);
+
+        {
+
+            uint snapshot = vm.snapshotState();
+            for (uint i; i < 4; ++i) {
+                uint amountToBorrow = 0.0275e6;
+                bytes memory actionsData = _createBorrowActionData(amountToBorrow, owner);
+                bytes memory permitsData = _createPermitsDataEmpty();
+
+                vm.prank(owner);
+                IImpermaxBorrowableV2(borrow0).borrowApprove(ROUTER_ADDR, amountToBorrow);
+
+                vm.prank(owner);
+                router.execute(LENDING_POOL_USDC_STBL, actionsData, permitsData);
+
+                //------------------------------- check position status
+                console.log("==========================", i);
+                AccountState memory stateAfterBorrow = _getAccountState(owner);
+                _showAccountState(stateAfterBorrow);
+                console.log("==========================");
+            }
+            vm.revertToState(snapshot);
+        }
+
+        //------------------------------- borrow max
+        {
+            uint amountToBorrow = _getMaxAmountToBorrow(owner);
+            console.log("amountToBorrow", amountToBorrow);
+            bytes memory actionsData = _createBorrowActionData(amountToBorrow, owner);
+            bytes memory permitsData = _createPermitsDataEmpty();
+
+            vm.prank(owner);
+            IImpermaxBorrowableV2(borrow0).borrowApprove(ROUTER_ADDR, amountToBorrow);
+
+            vm.prank(owner);
+            router.execute(LENDING_POOL_USDC_STBL, actionsData, permitsData);
+
+            //------------------------------- check position status
+            AccountState memory stateAfterBorrow = _getAccountState(owner);
+            _showAccountState(stateAfterBorrow);
+        }
+    }
+
+    function testBorrowByRealMultisig() public {
+        address owner = SonicConstantsLib.MULTISIG;
+        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL"), FORK_BLOCK));
+
+        //------------------------------- check position status
+        AccountState memory state0 = _getAccountState(owner);
+        _showAccountState(state0);
+
+
+        //------------------------------- borrow
+        {
+            address borrow0 = _getTokenBorrow0(LENDING_POOL_USDC_STBL);
+
+            uint amountToBorrow = 29_000e6;
+            console.log("amountToBorrow, max amount", amountToBorrow, _getMaxAmountToBorrow(owner));
+            bytes memory actionsData = _createBorrowActionData(amountToBorrow, owner);
+            bytes memory permitsData = _createPermitsDataEmpty();
+
+            vm.prank(owner);
+            IImpermaxBorrowableV2(borrow0).borrowApprove(ROUTER_ADDR, amountToBorrow);
+
+            vm.prank(owner);
+            IImpermaxV2SolidlyRouter01(ROUTER_ADDR).execute(LENDING_POOL_USDC_STBL, actionsData, permitsData);
+
+            AccountState memory stateAfterBorrow = _getAccountState(owner);
+            _showAccountState(stateAfterBorrow);
+        }
+
+
+        //------------------------------ repay
+        {
+            uint amountToRepay = 29_000e6;
+
+            bytes memory actionsData = _createRepayActionData(amountToRepay);
+            bytes memory permitsData = _createPermitsDataEmpty();
+
+            vm.prank(owner);
+            IERC20(TOKEN_A_USDC).approve(ROUTER_ADDR, amountToRepay);
+
+            vm.prank(owner);
+            IImpermaxV2SolidlyRouter01(ROUTER_ADDR).execute(LENDING_POOL_USDC_STBL, actionsData, permitsData);
+
+            AccountState memory stateAfterRepay = _getAccountState(owner);
+            _showAccountState(stateAfterRepay);
+        }
     }
 
     //region ----------------------------------------- Internal logic
 
-    function _showDecodedBorrowData(bytes memory actionData, bytes memory permitsData) public {
+    function _showDecodedBorrowData(bytes memory actionData, bytes memory permitsData) public view {
         {
             IImpermaxV2SolidlyRouter01.Permit[] memory permits = abi.decode(permitsData, (IImpermaxV2SolidlyRouter01.Permit[]));
             console.log("permits.length", permits.length); // 1
@@ -216,7 +419,7 @@ contract ImpermaxStudySonicTest is Test {
 
     }
 
-    function _showDecodedSupplyData(bytes memory actionData, bytes memory permitsData) public {
+    function _showDecodedSupplyData(bytes memory actionData, bytes memory permitsData) public view {
         {
             IImpermaxV2SolidlyRouter01.Permit[] memory permits = abi.decode(permitsData, (IImpermaxV2SolidlyRouter01.Permit[]));
             console.log("permits.length", permits.length); // 1
@@ -248,6 +451,53 @@ contract ImpermaxStudySonicTest is Test {
             console.log("action[0].amount1Min", decoded.amount1Min);
         }
 
+    }
+
+    function _getAccountState(address user) internal returns (AccountState memory dest) {
+        (IImpermaxV2SolidlyRouter01.LendingPool memory pool) = IImpermaxV2SolidlyRouter01(ROUTER_ADDR).getLendingPool(LENDING_POOL_USDC_STBL);
+        IImpermaxCollateral collateral = IImpermaxCollateral(pool.collateral);
+        (dest.liquidity, dest.shortfall) = collateral.accountLiquidity(user);
+
+        dest.collateralAmount = collateral.balanceOf(user);
+        dest.twapPrice112x112 = collateral.getTwapPrice112x112();
+        dest.collateralExchangeRate = collateral.exchangeRate();
+
+        IImpermaxBorrowableV2(pool.borrowables[0]).accrueInterest();
+        dest.borrowBalance = IImpermaxBorrowableV2(pool.borrowables[0]).borrowBalance(user);
+        dest.borrowExchangeRate = IImpermaxBorrowableV2(pool.borrowables[0]).exchangeRate();
+
+        (dest.price0, dest.price1) = collateral.getPrices();
+
+        // debtValueInCollateral = (debt0 * price0 + debt1 * price1) / 1e18
+        // LTV = debtValueInCollateral / collateralBalance
+        dest.debtValueInCollateral = (dest.borrowBalance * dest.price0) / 1e18;
+        dest.ltv = (dest.debtValueInCollateral * 1e18) / dest.collateralAmount;
+
+        return dest;
+   }
+
+    function _showAccountState(AccountState memory state) internal view {
+        console.log("liquidity", state.liquidity);
+        console.log("shortfall", state.shortfall);
+        console.log("collateralAmount", state.collateralAmount);
+        console.log("twapPrice112x112", state.twapPrice112x112);
+        console.log("collateral exchangeRate", state.collateralExchangeRate);
+        console.log("borrowBalance", state.borrowBalance);
+        console.log("borrow exchangeRate", state.borrowExchangeRate);
+        console.log("price0", state.price0);
+        console.log("price1", state.price1);
+        console.log("debtValueInCollateral", state.debtValueInCollateral);
+        console.log("ltv (1e18)", state.ltv);
+    }
+
+    function _getMaxAmountToBorrow(address user) internal returns (uint amountToBorrow) {
+        AccountState memory state = _getAccountState(user);
+        return state.liquidity * 1e18 * 56 / 100 / state.price0; // todo how to calculate 56? 60.8 is max LTV
+    }
+
+    function _getTokenBorrow0(address lendingPool) internal view returns (address) {
+        (IImpermaxV2SolidlyRouter01.LendingPool memory pool) = IImpermaxV2SolidlyRouter01(ROUTER_ADDR).getLendingPool(lendingPool);
+        return pool.borrowables[0];
     }
     //endregion ----------------------------------------- Internal logic
 
@@ -407,6 +657,11 @@ contract ImpermaxStudySonicTest is Test {
         return abi.encode(permits);
     }
 
+    function _createPermitsDataEmpty() internal pure returns (bytes memory permitsData) {
+        IImpermaxV2SolidlyRouter01.Permit[] memory permits = new IImpermaxV2SolidlyRouter01.Permit[](0);
+        return abi.encode(permits);
+    }
+
     /// @notice Calculates the final digest (message hash) for a classic ERC20 Permit
     function _getSupplyPermitDigest(
         address token,
@@ -508,5 +763,22 @@ contract ImpermaxStudySonicTest is Test {
         return abi.encode(permits);
     }
 
+    function _createRepayActionData(uint repayAmount) internal pure returns (bytes memory actionData) {
+        IImpermaxV2SolidlyRouter01.RepayUserData memory repayData = IImpermaxV2SolidlyRouter01.RepayUserData({
+            index: 0,
+            amountMax: repayAmount
+        });
+
+        IImpermaxV2SolidlyRouter01.Action memory action = IImpermaxV2SolidlyRouter01.Action({
+            actionType: IImpermaxV2SolidlyRouter01.Type.REPAY_USER,
+            actionData: abi.encode(repayData),
+            nextAction: bytes("") // No next action
+        });
+
+        IImpermaxV2SolidlyRouter01.Action[] memory actions = new IImpermaxV2SolidlyRouter01.Action[](1);
+        actions[0] = action;
+
+        return abi.encode(actions);
+    }
     //endregion ---------------------------------------- Permit utils
 }

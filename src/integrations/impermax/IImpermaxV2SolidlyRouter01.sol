@@ -112,5 +112,10 @@ interface IImpermaxV2SolidlyRouter01 {
         uint amount0Min;
         uint amount1Min;
     }
+
+    struct RepayUserData {
+        uint8 index;
+        uint amountMax;
+    }
 }
 
