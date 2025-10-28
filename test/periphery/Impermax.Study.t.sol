@@ -413,8 +413,20 @@ contract ImpermaxStudySonicTest is Test {
             bytes memory permitsData =
                 hex"00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000000";
 
+<<<<<<< Updated upstream
             vm.prank(owner);
             IImpermaxBorrowableV2(borrow0).borrowApprove(ROUTER_ADDR, amountToBorrow);
+=======
+<<<<<<< Updated upstream
+            vm.prank(owner);
+            IImpermaxBorrowableV2(borrow0).borrowApprove(ROUTER_ADDR, amountToBorrow);
+=======
+//            vm.prank(owner);
+//            IImpermaxBorrowableV2(borrow0).borrowApprove(ROUTER_ADDR, amountToBorrow);
+
+            console.log("Exist borrowAllowance", IImpermaxBorrowableV2(borrow0).borrowAllowance(owner, ROUTER_ADDR));
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
 
             vm.prank(owner);
             IImpermaxV2SolidlyRouter01(ROUTER_ADDR).execute(LENDING_POOL_USDC_STBL, actionsData, permitsData);
