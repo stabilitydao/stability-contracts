@@ -13,6 +13,7 @@ import {IPlatform} from "../../src/interfaces/IPlatform.sol";
 import {IRevenueRouter} from "../../src/interfaces/IRevenueRouter.sol";
 import {IXSTBL} from "../../src/interfaces/IXSTBL.sol";
 import {IXStaking} from "../../src/interfaces/IXStaking.sol";
+import {Platform} from "../../src/core/Platform.sol";
 
 contract RevenueRouterTestSonic is Test {
     address public constant PLATFORM = SonicConstantsLib.PLATFORM;
@@ -29,6 +30,7 @@ contract RevenueRouterTestSonic is Test {
         vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL"), FORK_BLOCK));
 
         multisig = IPlatform(PLATFORM).multisig();
+        _upgradePlatform();
     }
 
     function test_RevenueRouter_xStbl_feeTreasury() public {
@@ -110,6 +112,16 @@ contract RevenueRouterTestSonic is Test {
         revenueRouter.processFeeVault(SonicConstantsLib.VAULT_C_USDC_SCUSD_ISF_SCUSD, 1e18);*/
     }
 
+    function testAddresses() public {
+        _deployWithXSTBLandFeeTreasury();
+
+        address[] memory addresses = revenueRouter.addresses();
+        assertEq(addresses[0], address(STBL));
+        assertEq(addresses[1], address(xStbl));
+        assertEq(addresses[2], address(xStaking));
+        assertEq(addresses[3], address(feeTreasury));
+    }
+
     function _deployWithXSTBLandFeeTreasury() internal {
         Proxy xStakingProxy = new Proxy();
         xStakingProxy.initProxy(address(new XStaking()));
@@ -138,5 +150,25 @@ contract RevenueRouterTestSonic is Test {
         RevenueRouter(address(revenueRouterProxy)).initialize(PLATFORM, address(0), address(feeTreasuryProxy));
         revenueRouter = IRevenueRouter(address(revenueRouterProxy));
         feeTreasury = address(feeTreasuryProxy);
+    }
+
+    function _upgradePlatform() internal {
+        rewind(1 days);
+
+        IPlatform platform = IPlatform(SonicConstantsLib.PLATFORM);
+
+        address[] memory proxies = new address[](1);
+        address[] memory implementations = new address[](1);
+
+        proxies[0] = SonicConstantsLib.PLATFORM;
+
+        implementations[0] = address(new Platform());
+
+        vm.startPrank(platform.multisig());
+        platform.announcePlatformUpgrade("2025.08.21-alpha", proxies, implementations);
+
+        skip(1 days);
+        platform.upgrade();
+        vm.stopPrank();
     }
 }
