@@ -65,4 +65,9 @@ contract CurveAdapterTest is PolygonSetup {
             PolygonLib.POOL_CURVE_crvUSD_USDCe, PolygonLib.TOKEN_crvUSD, PolygonLib.TOKEN_USDCe, address(this), 100
         );
     }
+
+    function testGetTwaPrice() public {
+        vm.expectRevert("Not supported");
+        adapter.getTwaPrice(address(0), address(0), address(0), 0, 0);
+    }
 }

@@ -230,6 +230,11 @@ contract MetaVaultAdapterTest is SonicSetup {
         assertEq(adapter.assetForWithdraw(SonicConstantsLib.METAVAULT_METAUSD), metaVaultUSD.assetsForWithdraw()[0]);
     }
 
+    function testGetTwaPrice() public {
+        vm.expectRevert("Not supported");
+        adapter.getTwaPrice(address(0), address(0), address(0), 0, 0);
+    }
+
     //endregion ------------------------------------ Tests for view functions
 
     //region ------------------------------------ Get price of MetaVault in other tokens
