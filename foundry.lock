@@ -1,4 +1,7 @@
 {
+  "lib/devtools": {
+    "rev": "77ba15585252d58e1f613d69bef5013b15be0240"
+  },
   "lib/forge-std": {
     "rev": "1eea5bae12ae557d589f9f0f0edae2faa47cb262"
   },
