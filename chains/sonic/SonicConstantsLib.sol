@@ -593,4 +593,14 @@ library SonicConstantsLib {
     // ---------------------------------- Mainstreet
     address internal constant MSUSD_MINTER = 0xb1E423c251E989bd4e49228eF55aC4747D63F54D;
 
+    // ---------------------------------- LayerZero-v2 https://docs.layerzero.network/v2/deployments/chains/sonic
+    uint32 public constant LAYER_ZERO_V2_ENDPOINT_ID = 30332;
+    address public constant LAYER_ZERO_V2_ENDPOINT = 0x6F475642a6e85809B1c36Fa62763669b1b48DD5B;
+    address public constant LAYER_ZERO_V2_SEND_ULN_302 = 0xC39161c743D0307EB9BCc9FEF03eeb9Dc4802de7;
+    address public constant LAYER_ZERO_V2_RECEIVE_ULN_302 = 0xe1844c5D63a9543023008D332Bd3d2e6f1FE1043;
+    address public constant LAYER_ZERO_V2_READ_LIB_1002 = 0x860E8D714944E7accE4F9e6247923ec5d30c0471;
+    address public constant LAYER_ZERO_V2_EXECUTOR = 0x4208D6E27538189bB48E603D6123A94b8Abe0A0b;
+    address public constant LAYER_ZERO_V2_BLOCKED_MESSAGE_LIBRARY = 0xC1cE56B2099cA68720592583C7984CAb4B6d7E7a;
+    address public constant LAYER_ZERO_V2_DEAD_DVN = 0x6788f52439ACA6BFF597d3eeC2DC9a44B8FEE842;
+
 }

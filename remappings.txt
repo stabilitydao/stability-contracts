@@ -13,4 +13,5 @@ openzeppelin-contracts/=lib/openzeppelin-contracts/
 @layerzerolabs/oft-evm/=lib/devtools/packages/oft-evm/
 @layerzerolabs/oft-evm-upgradeable/=lib/devtools/packages/oft-evm-upgradeable/
 @layerzerolabs/oapp-evm-upgradeable/=lib/devtools/packages/oapp-evm-upgradeable/
-
+@layerzerolabs/lz-evm-messagelib-v2/=lib/LayerZero-v2/packages/layerzero-v2/evm/messagelib
+solidity-bytes-utils/=lib/solidity-bytes-utils/
