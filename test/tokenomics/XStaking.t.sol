@@ -147,7 +147,7 @@ contract XStakingTest is Test, MockSetup {
         platform.setupStabilityDAO(address(stabilityDao));
 
         vm.prank(address(123));
-        vm.expectRevert(IControllable.NotGovernanceAndNotMultisig.selector);
+        vm.expectRevert(IControllable.NotOperator.selector);
         xStaking.syncStabilityDAOBalances(users);
 
         assertEq(stabilityDao.balanceOf(users[0]), 0, "0: User0 has no dao tokens");
@@ -174,8 +174,15 @@ contract XStakingTest is Test, MockSetup {
         assertEq(stabilityDao.balanceOf(users[1]), 0, "2: User1 (syncStabilityDAOBalances is not called)");
         assertEq(stabilityDao.balanceOf(users[2]), 4_000e18, "2: User2");
 
-        vm.prank(platform.governance());
-        xStaking.syncStabilityDAOBalances(users);
+        {
+            address operator = makeAddr("operator");
+
+            vm.prank(platform.multisig());
+            platform.addOperator(operator);
+
+            vm.prank(operator);
+            xStaking.syncStabilityDAOBalances(users);
+        }
 
         assertEq(stabilityDao.balanceOf(users[0]), 4_001e18, "2.1: User0");
         assertEq(stabilityDao.balanceOf(users[1]), 3_999e18, "2.1: User1");

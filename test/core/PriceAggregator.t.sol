@@ -3,14 +3,14 @@ pragma solidity ^0.8.28;
 
 import {IControllable} from "../../src/core/base/Controllable.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
-import {IVaultPriceOracle} from "../../src/interfaces/IVaultPriceOracle.sol";
+import {IPriceAggregator} from "../../src/interfaces/IPriceAggregator.sol";
 import {MockSetup} from "../base/MockSetup.sol";
 import {Proxy} from "../../src/core/proxy/Proxy.sol";
 import {Test, console, Vm} from "forge-std/Test.sol";
-import {VaultPriceOracle} from "../../src/core/VaultPriceOracle.sol";
+import {PriceAggregator} from "../../src/core/PriceAggregator.sol";
 
-contract VaultPriceOracleTest is Test, MockSetup {
-    VaultPriceOracle public oracle;
+contract PriceAggregatorTest is Test, MockSetup {
+    PriceAggregator public oracle;
     address[] public validators;
     address[] public vaults;
     uint[] public thresholds;
@@ -37,12 +37,12 @@ contract VaultPriceOracleTest is Test, MockSetup {
         multisig = makeAddr("multisig");
 
         // Deploy implementation
-        VaultPriceOracle implementation = new VaultPriceOracle();
+        PriceAggregator implementation = new PriceAggregator();
 
         // Deploy proxy
         Proxy proxy = new Proxy();
         proxy.initProxy(address(implementation));
-        oracle = VaultPriceOracle(address(proxy));
+        oracle = PriceAggregator(address(proxy));
 
         // Mock platform calls before initialize
         vm.mockCall(address(platform), abi.encodeWithSelector(IPlatform.multisig.selector), abi.encode(multisig));
@@ -102,11 +102,11 @@ contract VaultPriceOracleTest is Test, MockSetup {
         }
 
         // Test zero platform address revert
-        VaultPriceOracle newOracle = new VaultPriceOracle();
+        PriceAggregator newOracle = new PriceAggregator();
         Proxy newProxy = new Proxy();
         newProxy.initProxy(address(newOracle));
         vm.expectRevert(IControllable.IncorrectZeroArgument.selector);
-        VaultPriceOracle(address(newProxy)).initialize(address(0));
+        PriceAggregator(address(newProxy)).initialize(address(0));
     }
 
     function testAddAndRemoveValidator() public {
@@ -142,7 +142,7 @@ contract VaultPriceOracleTest is Test, MockSetup {
 
         // Cannot add duplicate
         vm.prank(address(this));
-        vm.expectRevert(IVaultPriceOracle.ValidatorAlreadyAuthorized.selector);
+        vm.expectRevert(IPriceAggregator.ValidatorAlreadyAuthorized.selector);
         oracle.addValidator(newValidator);
 
         // Only governance or multisig can remove
@@ -175,11 +175,11 @@ contract VaultPriceOracleTest is Test, MockSetup {
 
         // Cannot remove non-existent
         vm.prank(address(this));
-        vm.expectRevert(IVaultPriceOracle.NotAuthorizedValidator.selector);
+        vm.expectRevert(IPriceAggregator.NotAuthorizedValidator.selector);
         oracle.removeValidator(newValidator);
 
         // Test index out of bounds
-        vm.expectRevert(IVaultPriceOracle.IndexOutOfBounds.selector);
+        vm.expectRevert(IPriceAggregator.IndexOutOfBounds.selector);
         oracle.validatorByIndex(7);
 
         // Remove all validators
@@ -208,7 +208,7 @@ contract VaultPriceOracleTest is Test, MockSetup {
         oracle.addVault(newVault, newPriceThreshold, newStaleness);
         assertEq(oracle.vaultByIndex(1), newVault, "New vault not in list");
         assertEq(oracle.vaultsLength(), 2, "Vault list length incorrect");
-        (uint priceThreshold, uint stalenessValue) = oracle.vaultData(newVault);
+        (uint priceThreshold, uint stalenessValue) = oracle.entityData(newVault);
         assertEq(priceThreshold, newPriceThreshold, "Incorrect price threshold for new vault");
         assertEq(stalenessValue, newStaleness, "Incorrect staleness for new vault");
         Vm.Log[] memory entries = vm.getRecordedLogs();
@@ -226,13 +226,13 @@ contract VaultPriceOracleTest is Test, MockSetup {
         address anotherVault = makeAddr("anotherVault");
         oracle.addVault(anotherVault, 3, 3 days);
         assertEq(oracle.vaultByIndex(2), anotherVault, "Another vault not in list");
-        (priceThreshold, stalenessValue) = oracle.vaultData(anotherVault);
+        (priceThreshold, stalenessValue) = oracle.entityData(anotherVault);
         assertEq(priceThreshold, 3, "Incorrect price threshold for another vault");
         assertEq(stalenessValue, 3 days, "Incorrect staleness for another vault");
 
         // Cannot add zero address
         vm.prank(address(this));
-        vm.expectRevert(IVaultPriceOracle.InvalidVaultAddress.selector);
+        vm.expectRevert(IPriceAggregator.InvalidEntityAddress.selector);
         oracle.addVault(address(0), newPriceThreshold, newStaleness);
 
         // Only governance or multisig can remove
@@ -252,7 +252,7 @@ contract VaultPriceOracleTest is Test, MockSetup {
         }
         assertFalse(found, "Removed vault still in list");
         assertEq(oracle.vaultsLength(), 2, "Vault list length incorrect");
-        (priceThreshold, stalenessValue) = oracle.vaultData(newVault);
+        (priceThreshold, stalenessValue) = oracle.entityData(newVault);
         assertEq(priceThreshold, 0, "Vault data not cleared: priceThreshold");
         assertEq(stalenessValue, 0, "Vault data not cleared: staleness");
         entries = vm.getRecordedLogs();
@@ -267,12 +267,12 @@ contract VaultPriceOracleTest is Test, MockSetup {
 
         // Cannot remove zero address
         vm.prank(address(this));
-        vm.expectRevert(IVaultPriceOracle.InvalidVaultAddress.selector);
+        vm.expectRevert(IPriceAggregator.InvalidEntityAddress.selector);
         oracle.removeVault(address(0));
 
         // Cannot remove non-existent vault
         vm.prank(address(this));
-        vm.expectRevert(IVaultPriceOracle.VaultNotFound.selector);
+        vm.expectRevert(IPriceAggregator.EntityNotFound.selector);
         oracle.removeVault(makeAddr("nonExistentVault"));
 
         // Remove all vaults
@@ -297,7 +297,7 @@ contract VaultPriceOracleTest is Test, MockSetup {
 
         // Cannot set to zero
         vm.prank(address(this));
-        vm.expectRevert(IVaultPriceOracle.MinQuorumMustBeGreaterThanZero.selector);
+        vm.expectRevert(IPriceAggregator.MinQuorumMustBeGreaterThanZero.selector);
         oracle.setMinQuorum(0);
 
         // Set as multisig
@@ -319,7 +319,7 @@ contract VaultPriceOracleTest is Test, MockSetup {
 
         // Cannot set to zero
         vm.prank(address(this));
-        vm.expectRevert(IVaultPriceOracle.MaxPriceAgeMustBeGreaterThanZero.selector);
+        vm.expectRevert(IPriceAggregator.MaxPriceAgeMustBeGreaterThanZero.selector);
         oracle.setMaxPriceAge(0);
 
         // Set as multisig
@@ -339,12 +339,12 @@ contract VaultPriceOracleTest is Test, MockSetup {
 
         // Non-validator cannot submit
         vm.prank(makeAddr("notValidator"));
-        vm.expectRevert(IVaultPriceOracle.NotAuthorizedValidator.selector);
+        vm.expectRevert(IPriceAggregator.NotAuthorizedValidator.selector);
         oracle.submitPrice(vault, 100, roundId);
 
         // Submit with wrong roundId
         vm.prank(validators[0]);
-        vm.expectRevert(IVaultPriceOracle.InvalidRoundId.selector);
+        vm.expectRevert(IPriceAggregator.InvalidRoundId.selector);
         oracle.submitPrice(vault, 100, roundId + 1);
 
         // Submit prices from first 2 validators (below quorum)
@@ -354,7 +354,7 @@ contract VaultPriceOracleTest is Test, MockSetup {
         oracle.submitPrice(vault, prices[1], roundId);
 
         // No aggregation yet
-        vm.expectRevert(IVaultPriceOracle.NoDataAvailable.selector);
+        vm.expectRevert(IPriceAggregator.NoDataAvailable.selector);
         oracle.getLatestPrice(vault);
 
         // Submit 3rd to reach quorum
@@ -429,7 +429,7 @@ contract VaultPriceOracleTest is Test, MockSetup {
 
     function testGetLatestPrice() public {
         // No data yet
-        vm.expectRevert(IVaultPriceOracle.NoDataAvailable.selector);
+        vm.expectRevert(IPriceAggregator.NoDataAvailable.selector);
         oracle.getLatestPrice(vault);
 
         // Submit and aggregate
@@ -448,13 +448,13 @@ contract VaultPriceOracleTest is Test, MockSetup {
 
         // Warp time to make price stale
         vm.warp(originalTimestamp + MAX_PRICE_AGE + 1);
-        vm.expectRevert(IVaultPriceOracle.PriceTooOld.selector);
+        vm.expectRevert(IPriceAggregator.PriceTooOld.selector);
         oracle.getLatestPrice(vault);
     }
 
     function testVaultPrices() public {
         // No data yet
-        (uint price, uint timestamp, uint rId) = oracle.vaultPrice(vault);
+        (uint price, uint timestamp, uint rId) = oracle.price(vault);
         assertEq(price, 0, "Price should be 0");
         assertEq(timestamp, 0, "Timestamp should be 0");
         assertEq(rId, 0, "RoundId should be 0");
@@ -462,7 +462,7 @@ contract VaultPriceOracleTest is Test, MockSetup {
         // Submit and aggregate
         testSubmitPriceAndAggregation();
 
-        (price, timestamp, rId) = oracle.vaultPrice(vault);
+        (price, timestamp, rId) = oracle.price(vault);
         assertEq(price, 105, "Incorrect price");
         assertEq(timestamp, block.timestamp, "Incorrect timestamp");
         assertEq(rId, 2, "Incorrect roundId");
@@ -491,7 +491,7 @@ contract VaultPriceOracleTest is Test, MockSetup {
         for (uint i = 0; i < validators.length; i++) {
             assertEq(validatorList[i], validators[i], "Validator list array incorrect");
         }
-        vm.expectRevert(IVaultPriceOracle.IndexOutOfBounds.selector);
+        vm.expectRevert(IPriceAggregator.IndexOutOfBounds.selector);
         oracle.validatorByIndex(5);
     }
 
@@ -502,8 +502,78 @@ contract VaultPriceOracleTest is Test, MockSetup {
         for (uint i = 0; i < vaults.length; i++) {
             assertEq(vaultList[i], vaults[i], "Vault list array incorrect");
         }
-        vm.expectRevert(IVaultPriceOracle.IndexOutOfBounds.selector);
+        vm.expectRevert(IPriceAggregator.IndexOutOfBounds.selector);
         oracle.vaultByIndex(1);
+    }
+
+    function testAssetsList() public {
+        assertEq(oracle.assetsLength(), 0, "Assets were not registered");
+
+        //--------------------------- Register two assets
+        address asset1 = makeAddr("asset1");
+        address asset2 = makeAddr("asset2");
+        address asset3 = makeAddr("asset3");
+
+        vm.prank(makeAddr("notAuthorized"));
+        vm.expectRevert(IControllable.NotGovernanceAndNotMultisig.selector);
+        oracle.addAsset(asset1, 1, 1 days);
+
+        vm.prank(multisig);
+        vm.expectRevert(IPriceAggregator.InvalidEntityAddress.selector);
+        oracle.addAsset(address(0), 1, 1 days);
+
+        vm.prank(multisig);
+        oracle.addAsset(asset1, 1, 1 days);
+        vm.prank(multisig);
+        oracle.addAsset(asset2, 2, 2 days);
+
+        // --------------------------- Verify assets registered
+
+        assertEq(oracle.assetsLength(), 2, "Two assets in the list");
+        assertEq(oracle.assetByIndex(0), asset1, "First asset");
+        assertEq(oracle.assetByIndex(1), asset2, "Second asset");
+        address[] memory assetList = oracle.assets();
+        assertEq(assetList[0], asset1, "First asset in array");
+        assertEq(assetList[1], asset2, "Second asset in array");
+
+        (uint priceThreshold1, uint staleness1) = oracle.entityData(asset1);
+        assertEq(priceThreshold1, 1, "Asset1 price threshold");
+        assertEq(staleness1, 1 days, "Asset1 staleness");
+
+        (uint priceThreshold2, uint staleness2) = oracle.entityData(asset2);
+        assertEq(priceThreshold2, 2, "Asset2 price threshold");
+        assertEq(staleness2, 2 days, "Asset2 staleness");
+
+        //--------------------------- Unregister asset1
+        vm.prank(makeAddr("notAuthorized"));
+        vm.expectRevert(IControllable.NotGovernanceAndNotMultisig.selector);
+        oracle.removeAsset(asset1);
+
+        vm.expectRevert(IPriceAggregator.InvalidEntityAddress.selector);
+        vm.prank(multisig);
+        oracle.removeAsset(address(0));
+
+        vm.expectRevert(IPriceAggregator.EntityNotFound.selector);
+        vm.prank(multisig);
+        oracle.removeAsset(asset3);
+
+        vm.prank(multisig);
+        oracle.removeAsset(asset1);
+
+        // --------------------------- Verify assets registered
+
+        assertEq(oracle.assetsLength(), 1, "Single asset in the list");
+        assertEq(oracle.assetByIndex(0), asset2, "Only second asset");
+        assetList = oracle.assets();
+        assertEq(assetList[0], asset2, "Only asset 2 in array");
+
+        (priceThreshold1, staleness1) = oracle.entityData(asset1);
+        assertEq(priceThreshold1, 0, "Asset1 price threshold - unregistered");
+        assertEq(staleness1, 0, "Asset1 staleness - unregistered");
+
+        (priceThreshold2, staleness2) = oracle.entityData(asset2);
+        assertEq(priceThreshold2, 2, "Asset2 price threshold - not changed");
+        assertEq(staleness2, 2 days, "Asset2 staleness - not changed");
     }
 
     function testMinQuorum() public view {
@@ -524,7 +594,7 @@ contract VaultPriceOracleTest is Test, MockSetup {
     function testRequireValidator() public {
         // Non-validator
         vm.prank(makeAddr("notValidator"));
-        vm.expectRevert(IVaultPriceOracle.NotAuthorizedValidator.selector);
+        vm.expectRevert(IPriceAggregator.NotAuthorizedValidator.selector);
         oracle.submitPrice(vault, 100, 1);
 
         // Validator
@@ -536,14 +606,14 @@ contract VaultPriceOracleTest is Test, MockSetup {
         address[] memory duplicateValidators = new address[](2);
         duplicateValidators[0] = validators[0];
         duplicateValidators[1] = validators[0];
-        VaultPriceOracle newOracle = new VaultPriceOracle();
+        PriceAggregator newOracle = new PriceAggregator();
         Proxy newProxy = new Proxy();
         newProxy.initProxy(address(newOracle));
 
         vm.mockCall(address(platform), abi.encodeWithSelector(IPlatform.multisig.selector), abi.encode(multisig));
         vm.mockCall(address(platform), abi.encodeWithSelector(IPlatform.governance.selector), abi.encode(address(this)));
 
-        VaultPriceOracle(address(newProxy)).initialize(address(platform));
+        PriceAggregator(address(newProxy)).initialize(address(platform));
         assertEq(oracle.validatorsLength(), 5, "Validator list length incorrect");
     }
 
@@ -567,7 +637,7 @@ contract VaultPriceOracleTest is Test, MockSetup {
         }
 
         // No aggregation yet
-        vm.expectRevert(IVaultPriceOracle.NoDataAvailable.selector);
+        vm.expectRevert(IPriceAggregator.NoDataAvailable.selector);
         oracle.getLatestPrice(vault);
 
         // Add more validators to reach quorum

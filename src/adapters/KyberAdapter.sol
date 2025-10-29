@@ -18,6 +18,8 @@ import {IPool} from "../integrations/kyber/IPool.sol";
 /// @notice AMM adapter for working with KyberSwap Elastic AMMs.
 /// @author Alien Deployer (https://github.com/a17)
 /// @author JodsMigel (https://github.com/JodsMigel)
+/// Changelog:
+///     1.0.4: add empty IAmmAdapter.getTwaPrice
 contract KyberAdapter is Controllable, ICAmmAdapter {
     using SafeERC20 for IERC20;
 
@@ -26,7 +28,7 @@ contract KyberAdapter is Controllable, ICAmmAdapter {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.3";
+    string public constant VERSION = "1.0.4";
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      INITIALIZATION                        */
@@ -210,6 +212,21 @@ contract KyberAdapter is Controllable, ICAmmAdapter {
             tokenIn == token1 ? IERC20Metadata(token0).decimals() : IERC20Metadata(token1).decimals();
         uint160 sqrtPriceX96 = UniswapV3MathLib.getSqrtRatioAtTick(tick);
         return UniswapV3MathLib.calcPriceOut(tokenIn, token0, sqrtPriceX96, tokenInDecimals, tokenOutDecimals, 0);
+    }
+
+    /// @inheritdoc IAmmAdapter
+    function getTwaPrice(
+        address,
+        /*pool*/
+        address,
+        /*tokenIn*/
+        address,
+        /*tokenOut*/
+        uint,
+        /*amount*/
+        uint32 /*period*/
+    ) external pure returns (uint) {
+        revert("Not supported");
     }
 
     /// @inheritdoc IERC165
