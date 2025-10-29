@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import {STBLBridged} from "../../src/tokenomics/STBLBridged.sol";
+import {BridgedSTBL} from "../../src/tokenomics/BridgedSTBL.sol";
 import {STBLOFTAdapter} from "../../src/tokenomics/STBLOFTAdapter.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
@@ -10,7 +10,7 @@ import {Proxy} from "../../src/core/proxy/Proxy.sol";
 import {console} from "forge-std/console.sol";
 import {AvalancheConstantsLib} from "../../chains/avalanche/AvalancheConstantsLib.sol";
 
-contract STBLBridgedTest is Test {
+contract BridgedSTBLTest is Test {
     address public multisig;
 
     uint private constant SONIC_FORK_BLOCK = 52228979; // Oct-28-2025 01:14:21 PM +UTC
@@ -33,7 +33,7 @@ contract STBLBridgedTest is Test {
 
     function testInit() public pure {
         console.logBytes32(
-            keccak256(abi.encode(uint(keccak256("erc7201:stability.STBLBridged")) - 1)) & ~bytes32(uint(0xff))
+            keccak256(abi.encode(uint(keccak256("erc7201:stability.BridgedSTBL")) - 1)) & ~bytes32(uint(0xff))
         );
     }
 
@@ -50,9 +50,9 @@ contract STBLBridgedTest is Test {
         vm.selectFork(forkAvalanche);
 
         Proxy proxy = new Proxy();
-        proxy.initProxy(address(new STBLBridged(ENDPOINT_V2_AVALANCHE)));
-        STBLBridged stblBridged = STBLBridged(address(proxy));
-        stblBridged.initialize(address(AvalancheConstantsLib.PLATFORM), "STBL Bridged", "STBLb");
+        proxy.initProxy(address(new BridgedSTBL(ENDPOINT_V2_AVALANCHE)));
+        BridgedSTBL stblBridged = BridgedSTBL(address(proxy));
+        stblBridged.initialize(address(AvalancheConstantsLib.PLATFORM));
 
         return address(stblBridged);
     }

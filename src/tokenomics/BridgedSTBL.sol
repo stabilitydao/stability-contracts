@@ -6,7 +6,7 @@ import {IControllable, Controllable} from "../core/base/Controllable.sol";
 import {IPlatform} from "../interfaces/IPlatform.sol";
 
 /// @notice Omnichain Fungible Token - bridged version of STBL token from Sonic to other chains
-contract STBLBridged is Controllable, OFTUpgradeable {
+contract BridgedSTBL is Controllable, OFTUpgradeable {
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         CONSTANTS                          */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -14,12 +14,11 @@ contract STBLBridged is Controllable, OFTUpgradeable {
     /// @inheritdoc IControllable
     string public constant VERSION = "1.0.0";
 
-    // keccak256(abi.encode(uint(keccak256("erc7201:stability.STBLBridged")) - 1)) & ~bytes32(uint(0xff));
-    bytes32 internal constant _STBL_BRIDGED_STORAGE_LOCATION =
-        0x4ff2e3a08d98d9373e37265d0e0506d7c0c57521cd81ce2fe040c768fe146b00;
+    // keccak256(abi.encode(uint(keccak256("erc7201:stability.BridgedSTBL")) - 1)) & ~bytes32(uint(0xff));
+    bytes32 internal constant _STBL_BRIDGED_STORAGE_LOCATION = 0xa8c23a932d7408467fabc2c03f4280fd535868ef26def6a73cd9512968d2e900;
 
-    /// @custom:storage-location erc7201:stability.STBLBridged
-    struct StblBridgedStorage {
+    /// @custom:storage-location erc7201:stability.BridgedSTBL
+    struct BridgedStblStorage {
         /// @notice Paused state for addresses
         mapping(address => bool) paused;
     }
@@ -37,11 +36,11 @@ contract STBLBridged is Controllable, OFTUpgradeable {
         _disableInitializers();
     }
 
-    function initialize(address platform_, string memory _name, string memory _symbol) public initializer {
+    function initialize(address platform_) public initializer {
         address _delegate = IPlatform(platform_).multisig(); // todo
 
         __Controllable_init(platform_);
-        __OFT_init(_name, _symbol, _delegate);
+        __OFT_init("Stability STBL", "STBLb", _delegate);
         __Ownable_init(_delegate);
     }
     //endregion --------------------------------- Initializers
@@ -52,7 +51,7 @@ contract STBLBridged is Controllable, OFTUpgradeable {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     function setPaused(address account, bool paused_) external onlyOperator {
-        StblBridgedStorage storage $ = getSTBLBridgedStorage();
+        BridgedStblStorage storage $ = getBridgedStblStorage();
         $.paused[account] = paused_;
 
         emit Pause(account, paused_);
@@ -78,7 +77,7 @@ contract STBLBridged is Controllable, OFTUpgradeable {
     //endregion --------------------------------- Overrides
 
     //region --------------------------------- Internal logic
-    function getSTBLBridgedStorage() internal pure returns (StblBridgedStorage storage $) {
+    function getBridgedStblStorage() internal pure returns (BridgedStblStorage storage $) {
         //slither-disable-next-line assembly
         assembly {
             $.slot := _STBL_BRIDGED_STORAGE_LOCATION
@@ -86,7 +85,7 @@ contract STBLBridged is Controllable, OFTUpgradeable {
     }
 
     function _requireNotPaused(address account) internal view {
-        StblBridgedStorage storage $ = getSTBLBridgedStorage();
+        BridgedStblStorage storage $ = getBridgedStblStorage();
         require(!$.paused[account], Paused());
     }
 
