@@ -233,7 +233,7 @@ contract XStakingTest is Test, MockSetup {
             xStaking.deposit(amounts[i] / 2);
 
             assertEq(xStaking.balanceOf(users[i]), amounts[i] / 2, "initial balance");
-            assertEq(stabilityDao.userPower(users[i]), 0, "initial power is zero because dao is not initialized");
+            assertEq(stabilityDao.getVotes(users[i]), 0, "initial power is zero because dao is not initialized");
         }
 
         // ------------------------------- Initialize Stability DAO and sync users
@@ -245,7 +245,7 @@ contract XStakingTest is Test, MockSetup {
 
         for (uint i; i < users.length; ++i) {
             assertEq(xStaking.balanceOf(users[i]), amounts[i] / 2, "initial balance");
-            assertEq(stabilityDao.userPower(users[i]), amounts[i] / 2, "initial power");
+            assertEq(stabilityDao.getVotes(users[i]), amounts[i] / 2, "initial power");
         }
 
         // ------------------------------- 1: 0 => 1
@@ -262,22 +262,22 @@ contract XStakingTest is Test, MockSetup {
         vm.prank(users[0]);
         stabilityDao.setPowerDelegation(users[1]);
 
-        assertEq(stabilityDao.userPower(users[0]), 0, "1: User 0 delegated his power to user 1");
+        assertEq(stabilityDao.getVotes(users[0]), 0, "1: User 0 delegated his power to user 1");
         assertEq(
-            stabilityDao.userPower(users[1]),
+            stabilityDao.getVotes(users[1]),
             amounts[1] / 2 + amounts[0] / 2,
             "1: balance user 1 + delegated power of user 0"
         );
-        assertEq(stabilityDao.userPower(users[2]), amounts[2] / 2, "1: balance user 2");
+        assertEq(stabilityDao.getVotes(users[2]), amounts[2] / 2, "1: balance user 2");
 
         // ------------------------------- 2: 1 => 2
         vm.prank(users[1]);
         stabilityDao.setPowerDelegation(users[2]);
 
-        assertEq(stabilityDao.userPower(users[0]), 0, "2: User 0 delegated his power to user 1");
-        assertEq(stabilityDao.userPower(users[1]), amounts[0] / 2, "2: delegated power of user 0");
+        assertEq(stabilityDao.getVotes(users[0]), 0, "2: User 0 delegated his power to user 1");
+        assertEq(stabilityDao.getVotes(users[1]), amounts[0] / 2, "2: delegated power of user 0");
         assertEq(
-            stabilityDao.userPower(users[2]),
+            stabilityDao.getVotes(users[2]),
             amounts[2] / 2 + amounts[1] / 2,
             "2: balance user 2 + delegated power of user 1"
         );
@@ -286,11 +286,11 @@ contract XStakingTest is Test, MockSetup {
         vm.prank(users[2]);
         stabilityDao.setPowerDelegation(users[1]);
 
-        assertEq(stabilityDao.userPower(users[0]), 0, "A: no power");
+        assertEq(stabilityDao.getVotes(users[0]), 0, "A: no power");
         assertEq(
-            stabilityDao.userPower(users[1]), amounts[0] / 2 + amounts[2] / 2, "A: delegated power of users 0 and 2"
+            stabilityDao.getVotes(users[1]), amounts[0] / 2 + amounts[2] / 2, "A: delegated power of users 0 and 2"
         );
-        assertEq(stabilityDao.userPower(users[2]), amounts[1] / 2, "A: delegated power of user 1");
+        assertEq(stabilityDao.getVotes(users[2]), amounts[1] / 2, "A: delegated power of user 1");
 
         {
             (address delegatedTo, address[] memory delegatedFrom) = stabilityDao.delegates(users[1]);
@@ -307,9 +307,9 @@ contract XStakingTest is Test, MockSetup {
         vm.prank(users[2]);
         stabilityDao.setPowerDelegation(users[0]);
 
-        assertEq(stabilityDao.userPower(users[0]), amounts[2] / 2, "3: delegated power of user 2");
-        assertEq(stabilityDao.userPower(users[1]), amounts[0] / 2, "3: delegated power of user 0");
-        assertEq(stabilityDao.userPower(users[2]), amounts[1] / 2, "3: delegated power of user 1");
+        assertEq(stabilityDao.getVotes(users[0]), amounts[2] / 2, "3: delegated power of user 2");
+        assertEq(stabilityDao.getVotes(users[1]), amounts[0] / 2, "3: delegated power of user 0");
+        assertEq(stabilityDao.getVotes(users[2]), amounts[1] / 2, "3: delegated power of user 1");
 
         // ------------------------------- 4: Each user deposits second half of their xSTBL to staking
         for (uint i; i < users.length; ++i) {
@@ -319,25 +319,25 @@ contract XStakingTest is Test, MockSetup {
             assertEq(xStaking.balanceOf(users[i]), amounts[i], "full balance");
         }
 
-        assertEq(stabilityDao.userPower(users[0]), amounts[2], "4: delegated power of user 2");
-        assertEq(stabilityDao.userPower(users[1]), amounts[0], "4: delegated power of user 0");
-        assertEq(stabilityDao.userPower(users[2]), amounts[1], "4: delegated power of user 1");
+        assertEq(stabilityDao.getVotes(users[0]), amounts[2], "4: delegated power of user 2");
+        assertEq(stabilityDao.getVotes(users[1]), amounts[0], "4: delegated power of user 0");
+        assertEq(stabilityDao.getVotes(users[2]), amounts[1], "4: delegated power of user 1");
 
         // ------------------------------- 5: User 1 withdraws half of his stake
         vm.prank(users[1]);
         xStaking.withdraw(amounts[1] / 2);
 
-        assertEq(stabilityDao.userPower(users[0]), amounts[2], "5: delegated power of user 2");
-        assertEq(stabilityDao.userPower(users[1]), amounts[0], "5: delegated power of user 0");
-        assertEq(stabilityDao.userPower(users[2]), amounts[1] / 2, "5: delegated power of user 1");
+        assertEq(stabilityDao.getVotes(users[0]), amounts[2], "5: delegated power of user 2");
+        assertEq(stabilityDao.getVotes(users[1]), amounts[0], "5: delegated power of user 0");
+        assertEq(stabilityDao.getVotes(users[2]), amounts[1] / 2, "5: delegated power of user 1");
 
         // ------------------------------- 6: User 1 removes delegation
         vm.prank(users[1]);
         stabilityDao.setPowerDelegation(users[1]);
 
-        assertEq(stabilityDao.userPower(users[0]), amounts[2], "6: delegated power of user 2");
-        assertEq(stabilityDao.userPower(users[1]), amounts[1] / 2 + amounts[0], "6: delegated power of user 0");
-        assertEq(stabilityDao.userPower(users[2]), 0, "6: all power was delegated to user 0");
+        assertEq(stabilityDao.getVotes(users[0]), amounts[2], "6: delegated power of user 2");
+        assertEq(stabilityDao.getVotes(users[1]), amounts[1] / 2 + amounts[0], "6: delegated power of user 0");
+        assertEq(stabilityDao.getVotes(users[2]), 0, "6: all power was delegated to user 0");
 
         {
             (address delegatedTo, address[] memory delegatedFrom) = stabilityDao.delegates(users[0]);
@@ -366,9 +366,9 @@ contract XStakingTest is Test, MockSetup {
         vm.prank(users[2]);
         stabilityDao.setPowerDelegation(address(0)); // remove using zero address
 
-        assertEq(stabilityDao.userPower(users[0]), amounts[0], "7: user 0 has not delegated power");
-        assertEq(stabilityDao.userPower(users[1]), amounts[1] / 2, "7: user 1 has not delegated power");
-        assertEq(stabilityDao.userPower(users[2]), amounts[2], "7: user 2 has not delegated power");
+        assertEq(stabilityDao.getVotes(users[0]), amounts[0], "7: user 0 has not delegated power");
+        assertEq(stabilityDao.getVotes(users[1]), amounts[1] / 2, "7: user 1 has not delegated power");
+        assertEq(stabilityDao.getVotes(users[2]), amounts[2], "7: user 2 has not delegated power");
     }
 
     //region --------------------------------- Utils

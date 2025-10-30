@@ -3,7 +3,7 @@ pragma solidity ^0.8.28;
 
 import {Script} from "forge-std/Script.sol";
 import {Platform} from "../../src/core/Platform.sol";
-import {Proxy} from "../../src/core/proxy/Proxy.sol";
+// import {Proxy} from "../../src/core/proxy/Proxy.sol";
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 import {UniswapV3Adapter} from "../../src/adapters/UniswapV3Adapter.sol";
 import {SolidlyAdapter} from "../../src/adapters/SolidlyAdapter.sol";

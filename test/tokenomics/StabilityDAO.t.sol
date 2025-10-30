@@ -219,8 +219,8 @@ contract StabilityDAOSonicTest is Test {
         vm.prank(stabilityDao.xStaking());
         stabilityDao.mint(user2, 20_000e18);
 
-        assertEq(stabilityDao.userPower(user1), 10_000e18);
-        assertEq(stabilityDao.userPower(user2), 20_000e18);
+        assertEq(stabilityDao.getVotes(user1), 10_000e18);
+        assertEq(stabilityDao.getVotes(user2), 20_000e18);
 
         (address delegatedTo, address[] memory delegates) = stabilityDao.delegates(user1);
         assertEq(delegatedTo, address(0));
@@ -234,8 +234,8 @@ contract StabilityDAOSonicTest is Test {
         vm.prank(user1);
         stabilityDao.setPowerDelegation(address(this));
 
-        assertEq(stabilityDao.userPower(user1), 0);
-        assertEq(stabilityDao.userPower(user2), 20_000e18 + 10_000e18);
+        assertEq(stabilityDao.getVotes(user1), 0);
+        assertEq(stabilityDao.getVotes(user2), 20_000e18 + 10_000e18);
 
         (delegatedTo, delegates) = stabilityDao.delegates(user1);
         assertEq(delegatedTo, user2);
@@ -250,8 +250,8 @@ contract StabilityDAOSonicTest is Test {
         vm.prank(user2);
         stabilityDao.setPowerDelegation(user1);
 
-        assertEq(stabilityDao.userPower(user1), 20_000e18);
-        assertEq(stabilityDao.userPower(user2), 10_000e18);
+        assertEq(stabilityDao.getVotes(user1), 20_000e18);
+        assertEq(stabilityDao.getVotes(user2), 10_000e18);
 
         (delegatedTo, delegates) = stabilityDao.delegates(user1);
         assertEq(delegatedTo, user2);
@@ -270,8 +270,8 @@ contract StabilityDAOSonicTest is Test {
         vm.prank(user2);
         stabilityDao.setPowerDelegation(address(0));
 
-        assertEq(stabilityDao.userPower(user1), 10_000e18);
-        assertEq(stabilityDao.userPower(user2), 20_000e18);
+        assertEq(stabilityDao.getVotes(user1), 10_000e18);
+        assertEq(stabilityDao.getVotes(user2), 20_000e18);
 
         (delegatedTo, delegates) = stabilityDao.delegates(user1);
         assertEq(delegatedTo, address(0));
