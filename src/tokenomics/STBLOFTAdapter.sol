@@ -17,7 +17,8 @@ contract STBLOFTAdapter is Controllable, OFTAdapterUpgradeable, ISTBLOFTAdapter 
     string public constant VERSION = "1.0.0";
 
     // keccak256(abi.encode(uint(keccak256("erc7201:stability.STBLOFTAdapter")) - 1)) & ~bytes32(uint(0xff));
-    bytes32 internal constant _STBLOFT_ADAPTER_STORAGE_LOCATION = 0; // todo
+    bytes32 internal constant _STBLOFT_ADAPTER_STORAGE_LOCATION =
+        0x86cb5347d567d2160ba4a606db69acfd8671070fb11a61ac347984a4cec12500;
 
     /// @custom:storage-location erc7201:stability.STBLOFTAdapter
     struct StblOftAdapterStorage {
@@ -25,7 +26,7 @@ contract STBLOFTAdapter is Controllable, OFTAdapterUpgradeable, ISTBLOFTAdapter 
         mapping(address => bool) paused;
     }
 
-    //region --------------------------------- Initializers
+    //region --------------------------------- Initializers and view
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      INITIALIZATION                        */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -42,7 +43,16 @@ contract STBLOFTAdapter is Controllable, OFTAdapterUpgradeable, ISTBLOFTAdapter 
         __Ownable_init(_delegate);
     }
 
-    //endregion --------------------------------- Initializers
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                         VIEW                               */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    /// @inheritdoc IBridgedSTBL
+    function paused(address account_) external view returns (bool) {
+        return getStblOftAdapterStorage().paused[account_];
+    }
+
+    //endregion --------------------------------- Initializers and view
 
     //region --------------------------------- Restricted actions
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -59,21 +69,12 @@ contract STBLOFTAdapter is Controllable, OFTAdapterUpgradeable, ISTBLOFTAdapter 
 
     //endregion --------------------------------- Restricted actions
 
-    //region --------------------------------- View
-
-    /// @inheritdoc IBridgedSTBL
-    function paused(address account_) external view returns (bool) {
-        return getStblOftAdapterStorage().paused[account_];
-    }
-
-    //endregion --------------------------------- View
-
     //region --------------------------------- Overrides
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                  OVERRIDES                                 */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
     function _checkOwner() internal view override {
-        _requireGovernanceOrMultisig(); // todo
+        _requireMultisig();
     }
 
     /// @dev Paused accounts cannot send tokens
@@ -111,7 +112,7 @@ contract STBLOFTAdapter is Controllable, OFTAdapterUpgradeable, ISTBLOFTAdapter 
 
     function _requireNotPaused(address account) internal view {
         StblOftAdapterStorage storage $ = getStblOftAdapterStorage();
-        require(!$.paused[account], Paused());
+        require(!$.paused[account], IBridgedSTBL.Paused());
     }
 
     //endregion --------------------------------- Internal logic

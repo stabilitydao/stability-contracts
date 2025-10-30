@@ -47,6 +47,9 @@ contract BridgedSTBLTest is Test {
     address internal constant AVALANCHE_DVN_SAMPLE_1 = 0x1a5Df1367F21d55B13D5E2f8778AD644BC97aC6d;
     address internal constant AVALANCHE_DVN_SAMPLE_2 = 0x0Ffe02DF012299A370D5dd69298A5826EAcaFdF8;
 
+    /// @dev By default shared decimals (min decimals at all chains) is 6 for STBL
+    uint internal constant SHARED_DECIMALS = 6;
+
     uint internal forkSonic;
     uint internal forkAvalanche;
 
@@ -144,7 +147,7 @@ contract BridgedSTBLTest is Test {
     }
 
     //region ------------------------------------- Unit tests for bridgetSTBL
-    function testConfigBridgetSTBL() public {
+    function testConfigBridgetSTBL() internal {
         //        _getConfig(
         //            forkAvalanche,
         //            AvalancheConstantsLib.LAYER_ZERO_V2_ENDPOINT,
@@ -167,14 +170,19 @@ contract BridgedSTBLTest is Test {
     function testViewBridgedStbl() public {
         vm.selectFork(forkAvalanche);
 
-        console.logBytes32(
-            keccak256(abi.encode(uint(keccak256("erc7201:stability.BridgedSTBL")) - 1)) & ~bytes32(uint(0xff))
-        );
+        //        console.logBytes32(
+        //            keccak256(abi.encode(uint(keccak256("erc7201:stability.BridgedSTBL")) - 1)) & ~bytes32(uint(0xff))
+        //        );
 
         assertEq(bridgedToken.name(), "Stability STBL");
-        assertEq(bridgedToken.symbol(), "STBLb");
-        assertEq(bridgedToken.owner(), multisigAvalanche);
+        assertEq(bridgedToken.symbol(), "STBL");
         assertEq(bridgedToken.decimals(), 18);
+
+        assertEq(bridgedToken.platform(), AvalancheConstantsLib.PLATFORM, "BridgedSTBL - platform");
+        assertEq(bridgedToken.owner(), multisigAvalanche, "BridgedSTBL - owner");
+        assertEq(bridgedToken.token(), address(bridgedToken), "BridgedSTBL - token");
+        assertEq(bridgedToken.approvalRequired(), false, "BridgedSTBL - approvalRequired");
+        assertEq(bridgedToken.sharedDecimals(), SHARED_DECIMALS, "BridgedSTBL - shared decimals");
     }
 
     function testBridgedStblPause() public {
@@ -195,16 +203,36 @@ contract BridgedSTBLTest is Test {
         assertEq(bridgedToken.paused(address(this)), false);
     }
 
+    function testBridgedStblsetPeers() public {
+        vm.selectFork(forkSonic);
+
+        vm.prank(address(this));
+        vm.expectRevert();
+        adapter.setPeer(AvalancheConstantsLib.LAYER_ZERO_V2_ENDPOINT_ID, bytes32(uint(uint160(address(bridgedToken)))));
+
+        vm.prank(multisigSonic);
+        adapter.setPeer(AvalancheConstantsLib.LAYER_ZERO_V2_ENDPOINT_ID, bytes32(uint(uint160(address(bridgedToken)))));
+    }
+
     //endregion ------------------------------------- Unit tests for bridgetSTBL
 
     //region ------------------------------------- Unit tests for STBLOFTAdapter
     function testViewSTBLOFTAdapter() public {
         vm.selectFork(forkSonic);
 
-        assertEq(adapter.owner(), multisigSonic);
+        //        console.log("erc7201:stability.STBLOFTAdapter");
+        //        console.logBytes32(
+        //            keccak256(abi.encode(uint(keccak256("erc7201:stability.STBLOFTAdapter")) - 1)) & ~bytes32(uint(0xff))
+        //        );
+
+        assertEq(adapter.platform(), SonicConstantsLib.PLATFORM, "STBLOFTAdapter - platform");
+        assertEq(adapter.owner(), multisigSonic, "STBLOFTAdapter - owner");
+        assertEq(adapter.token(), SonicConstantsLib.TOKEN_STBL, "STBLOFTAdapter - token");
+        assertEq(adapter.approvalRequired(), true, "STBLOFTAdapter - approvalRequired");
+        assertEq(adapter.sharedDecimals(), SHARED_DECIMALS, "STBLOFTAdapter - shared decimals");
     }
 
-    function testConfigSTBLOFTAdapter() public {
+    function testConfigSTBLOFTAdapter() internal {
         _getConfig(
             forkSonic,
             SonicConstantsLib.LAYER_ZERO_V2_ENDPOINT,
@@ -240,6 +268,17 @@ contract BridgedSTBLTest is Test {
         vm.prank(multisigSonic);
         adapter.setPaused(address(this), false);
         assertEq(adapter.paused(address(this)), false);
+    }
+
+    function testSTBLOFTAdapterPeers() public {
+        vm.selectFork(forkAvalanche);
+
+        vm.prank(address(this));
+        vm.expectRevert();
+        bridgedToken.setPeer(SonicConstantsLib.LAYER_ZERO_V2_ENDPOINT_ID, bytes32(uint(uint160(address(adapter)))));
+
+        vm.prank(multisigAvalanche);
+        bridgedToken.setPeer(SonicConstantsLib.LAYER_ZERO_V2_ENDPOINT_ID, bytes32(uint(uint160(address(adapter)))));
     }
 
     //endregion ------------------------------------- Unit tests for STBLOFTAdapter
@@ -305,7 +344,7 @@ contract BridgedSTBLTest is Test {
         address userF = makeAddr("A");
         address userA = makeAddr("D");
 
-        // ------------- Prepare
+        // ------------- Prepare balances and pause the user on Sonic
         _testSendToAvalanche(userF, 100e18, 500e18, userF);
 
         vm.selectFork(forkSonic);
@@ -327,7 +366,7 @@ contract BridgedSTBLTest is Test {
         // ----------- Tests
         _testSendToAvalancheOnPause(userF, 1e18, userA, false); // forbidden
         _testSendToAvalancheOnPause(userA, 1e18, userF, true); // allowed
-        _testSendToSonicOnPause(userF, 1e18, userA, false); // allowed
+        _testSendToSonicOnPause(userF, 1e18, userA, true); // allowed
         _testSendToSonicOnPause(userA, 1e18, userF, true); // allowed
     }
 
@@ -335,6 +374,7 @@ contract BridgedSTBLTest is Test {
         address userF = makeAddr("A");
         address userA = makeAddr("D");
 
+        // ------------- Prepare balances and pause the user on Avalanche
         _testSendToAvalanche(userF, 100e18, 500e18, userF);
 
         vm.selectFork(forkSonic);
@@ -364,7 +404,7 @@ contract BridgedSTBLTest is Test {
         address userF = makeAddr("A");
         address userA = makeAddr("D");
 
-        // ------------- Prepare
+        // ------------- Prepare balance and pause the user on both chains
         _testSendToAvalanche(userF, 100e18, 500e18, userF);
 
         vm.selectFork(forkSonic);
@@ -390,6 +430,39 @@ contract BridgedSTBLTest is Test {
         _testSendToAvalancheOnPause(userF, 1e18, userA, false); // forbidden
         _testSendToAvalancheOnPause(userA, 1e18, userF, true); // allowed
         _testSendToSonicOnPause(userF, 1e18, userA, false); // forbidden
+        _testSendToSonicOnPause(userA, 1e18, userF, true); // allowed
+    }
+
+    function testContractsPausedOnBothChains() public {
+        address userF = makeAddr("A");
+        address userA = makeAddr("D");
+
+        // ------------- Prepare balance and pause the user on both chains
+        _testSendToAvalanche(userF, 100e18, 500e18, userF);
+
+        vm.selectFork(forkSonic);
+        deal(SonicConstantsLib.TOKEN_STBL, userA, 300e18);
+
+        assertEq(IERC20(SonicConstantsLib.TOKEN_STBL).balanceOf(userF), 400e18, "Sonic.F: initial balance");
+        assertEq(IERC20(SonicConstantsLib.TOKEN_STBL).balanceOf(userA), 300e18, "Sonic.A: initial balance");
+
+        vm.prank(multisigSonic);
+        adapter.setPaused(address(adapter), true);
+
+        vm.selectFork(forkAvalanche);
+        vm.prank(userF);
+        IERC20(bridgedToken).safeTransfer(userA, 70e18);
+
+        assertEq(bridgedToken.balanceOf(userF), 30e18, "Avalanche.F: initial balance");
+        assertEq(bridgedToken.balanceOf(userA), 70e18, "Avalanche.A: initial balance");
+
+        vm.prank(multisigAvalanche);
+        bridgedToken.setPaused(address(bridgedToken), true);
+
+        // ----------- Tests
+        _testSendToAvalancheOnPause(userF, 1e18, userA, true); // forbidden
+        _testSendToAvalancheOnPause(userA, 1e18, userF, true); // allowed
+        _testSendToSonicOnPause(userF, 1e18, userA, true); // forbidden
         _testSendToSonicOnPause(userA, 1e18, userF, true); // allowed
     }
 
@@ -833,7 +906,7 @@ contract BridgedSTBLTest is Test {
             }
         }
 
-        console.logBytes(message);
+        //        console.logBytes(message);
         return message;
     }
     //endregion ------------------------------------- Internal logic

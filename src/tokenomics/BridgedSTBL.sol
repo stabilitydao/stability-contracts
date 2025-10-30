@@ -39,7 +39,7 @@ contract BridgedSTBL is Controllable, OFTUpgradeable, IBridgedSTBL {
         address _delegate = IPlatform(platform_).multisig();
 
         __Controllable_init(platform_);
-        __OFT_init("Stability STBL", "STBLb", _delegate);
+        __OFT_init("Stability STBL", "STBL", _delegate);
         __Ownable_init(_delegate);
     }
 
@@ -74,7 +74,7 @@ contract BridgedSTBL is Controllable, OFTUpgradeable, IBridgedSTBL {
     /*                  OVERRIDES                                 */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
     function _checkOwner() internal view override {
-        _requireGovernanceOrMultisig(); // todo
+        _requireMultisig();
     }
 
     /// @dev Paused accounts cannot send tokens
