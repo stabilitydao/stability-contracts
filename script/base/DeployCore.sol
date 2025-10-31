@@ -14,7 +14,7 @@ import {IPlatformDeployer} from "../../src/interfaces/IPlatformDeployer.sol";
 import {RevenueRouter} from "../../src/tokenomics/RevenueRouter.sol";
 import {FeeTreasury} from "../../src/tokenomics/FeeTreasury.sol";
 import {MetaVaultFactory} from "../../src/core/MetaVaultFactory.sol";
-import {VaultPriceOracle} from "../../src/core/VaultPriceOracle.sol";
+import {PriceAggregator} from "../../src/core/PriceAggregator.sol";
 
 abstract contract DeployCore {
     struct DeployPlatformVars {
@@ -30,7 +30,7 @@ abstract contract DeployCore {
         RevenueRouter revenueRouter;
         FeeTreasury feeTreasury;
         MetaVaultFactory metaVaultFactory;
-        VaultPriceOracle vaultPriceOracle;
+        PriceAggregator priceAggregator;
     }
 
     function _deployCore(IPlatformDeployer.DeployPlatformParams memory p) internal returns (address) {
@@ -100,9 +100,9 @@ abstract contract DeployCore {
 
         // VaultPriceOracle
         vars.proxy = new Proxy();
-        vars.proxy.initProxy(address(new VaultPriceOracle()));
-        vars.vaultPriceOracle = VaultPriceOracle(address(vars.proxy));
-        vars.vaultPriceOracle.initialize(address(vars.platform));
+        vars.proxy.initProxy(address(new PriceAggregator()));
+        vars.priceAggregator = PriceAggregator(address(vars.proxy));
+        vars.priceAggregator.initialize(address(vars.platform));
 
         // setup platform
         vars.platform
@@ -118,7 +118,7 @@ abstract contract DeployCore {
                     zap: address(vars.zap),
                     revenueRouter: address(vars.revenueRouter),
                     metaVaultFactory: address(vars.metaVaultFactory),
-                    vaultPriceOracle: address(vars.vaultPriceOracle)
+                    vaultPriceOracle: address(vars.priceAggregator)
                 }),
                 IPlatform.PlatformSettings({fee: p.fee})
             );

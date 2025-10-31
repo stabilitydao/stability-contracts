@@ -431,15 +431,30 @@ contract PlatformTest is Test {
         assertEq(StrategyDeveloperLib.getDeveloper("unknown"), address(0));
     }
 
-    function testSetupVaultPriceOracle() public {
+    function testSetupPriceAggregator() public {
         platform.initialize(address(this), "23.11.0-dev");
-        platform.setupVaultPriceOracle(address(123));
-        assertEq(platform.vaultPriceOracle(), address(123));
+        platform.setupPriceAggregator(address(123));
+        assertEq(platform.priceAggregator(), address(123));
     }
 
     function testSetupRecovery() public {
         platform.initialize(address(this), "23.11.0-dev");
         platform.setupRecovery(address(123));
         assertEq(platform.recovery(), address(123));
+    }
+
+    function testSetupStabilityDAO() public {
+        platform.initialize(address(this), "23.11.0-dev");
+        address notGov = address(1);
+
+        vm.prank(notGov);
+        vm.expectRevert(abi.encodeWithSelector(IControllable.NotGovernanceAndNotMultisig.selector));
+        platform.setupStabilityDAO(address(123));
+
+        platform.setupStabilityDAO(address(123));
+        assertEq(platform.stabilityDAO(), address(123));
+
+        vm.expectRevert(abi.encodeWithSelector(IControllable.AlreadyExist.selector));
+        platform.setupStabilityDAO(address(124));
     }
 }
