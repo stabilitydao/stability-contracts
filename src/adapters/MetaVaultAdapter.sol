@@ -15,6 +15,7 @@ import {IPriceReader} from "../interfaces/IPriceReader.sol";
 /// @title AMM adapter for Meta Vaults
 /// @dev It's not suitable for MultiVaults, see i.e. poolTokens implementation.
 /// Changelog:
+///   1.0.2: add empty IAmmAdapter.getTwaPrice
 ///   1.0.1: fix incorrect calculation of minSharesOut in swap()
 ///   1.0.0: Initial version
 /// @author dvpublic (https://github.com/dvpublic)
@@ -26,7 +27,7 @@ contract MetaVaultAdapter is Controllable, IMetaVaultAmmAdapter {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.1";
+    string public constant VERSION = "1.0.2";
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       CUSTOM ERRORS                        */
@@ -182,6 +183,21 @@ contract MetaVaultAdapter is Controllable, IMetaVaultAmmAdapter {
         }
 
         revert IncorrectTokens();
+    }
+
+    /// @inheritdoc IAmmAdapter
+    function getTwaPrice(
+        address,
+        /*pool*/
+        address,
+        /*tokenIn*/
+        address,
+        /*tokenOut*/
+        uint,
+        /*amount*/
+        uint32 /*period*/
+    ) external pure returns (uint) {
+        revert("Not supported");
     }
 
     /// @inheritdoc IERC165

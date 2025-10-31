@@ -12,6 +12,7 @@ import {IPriceReader} from "../interfaces/IPriceReader.sol";
 /// @title Recovery contract to swap assets on recovery tokens in recovery pools
 /// @author dvpublic (https://github.com/dvpublic)
 /// Changelog:
+///   1.2.1: replace event SwapAssets by event SwapAssets2
 ///   1.2.0: getListTokensToSwap excludes meta vault tokens, add getListRegisteredTokens, fix getPoolWithMinPrice logic
 ///          Use onlyOperator restrictions for setThresholds and changeWhitelist
 ///          Add possibility to forward bought recovery tokens instead of burning
@@ -24,7 +25,7 @@ contract Recovery is Controllable, IRecovery, IUniswapV3SwapCallback {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.2.0";
+    string public constant VERSION = "1.2.1";
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      INITIALIZATION                        */

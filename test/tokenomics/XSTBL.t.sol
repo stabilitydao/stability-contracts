@@ -6,15 +6,20 @@ import {Test} from "forge-std/Test.sol";
 import {MockSetup} from "../base/MockSetup.sol";
 import {Proxy} from "../../src/core/proxy/Proxy.sol";
 import {IXSTBL} from "../../src/interfaces/IXSTBL.sol";
+import {IXStaking} from "../../src/interfaces/IXStaking.sol";
+import {IStabilityDAO} from "../../src/interfaces/IStabilityDAO.sol";
 import {IControllable} from "../../src/interfaces/IControllable.sol";
 import {XStaking} from "../../src/tokenomics/XStaking.sol";
 import {XSTBL} from "../../src/tokenomics/XSTBL.sol";
 import {RevenueRouter} from "../../src/tokenomics/RevenueRouter.sol";
 import {FeeTreasury} from "../../src/tokenomics/FeeTreasury.sol";
+import {StabilityDAO} from "../../src/tokenomics/StabilityDAO.sol";
+// import {console} from "forge-std/console.sol";
 
 contract XSTBLTest is Test, MockSetup {
     address public stbl;
     IXSTBL public xStbl;
+    IXStaking public xStaking;
 
     function setUp() public {
         stbl = address(tokenA);
@@ -33,6 +38,7 @@ contract XSTBLTest is Test, MockSetup {
         RevenueRouter(address(revenueRouterProxy))
             .initialize(address(platform), address(xSTBLProxy), address(feeTreasuryProxy));
         xStbl = IXSTBL(address(xSTBLProxy));
+        xStaking = IXStaking(address(xStakingProxy));
         //console.logBytes32(keccak256(abi.encode(uint256(keccak256("erc7201:stability.XSTBL")) - 1)) & ~bytes32(uint256(0xff)));
     }
 
@@ -152,4 +158,50 @@ contract XSTBLTest is Test, MockSetup {
         vm.expectRevert();
         xStbl.exitVest(10);
     }
+
+    function testSlashingPenalty() public {
+        // --------------------- StabilityDAO is not initialized
+        assertEq(xStbl.SLASHING_PENALTY(), 50_00, "50% by default");
+
+        // --------------------- Set up StabilityDAO
+        IStabilityDAO daoToken = _createStabilityDAOInstance();
+        platform.setupStabilityDAO(address(daoToken));
+
+        _setSlashingPenalty(daoToken, 80_00);
+        assertEq(xStbl.SLASHING_PENALTY(), 80_00, "80%");
+
+        _setSlashingPenalty(daoToken, 30_00);
+        assertEq(xStbl.SLASHING_PENALTY(), 30_00, "30%");
+
+        _setSlashingPenalty(daoToken, 0);
+        assertEq(xStbl.SLASHING_PENALTY(), 50_00, "DEFAULT_SLASHING_PENALTY");
+    }
+
+    // region --------------------- Helpers
+    function _setSlashingPenalty(IStabilityDAO daoToken, uint penalty_) internal {
+        address multisig = platform.multisig();
+
+        IStabilityDAO.DaoParams memory config = daoToken.config();
+        config.exitPenalty = penalty_;
+
+        vm.prank(multisig);
+        daoToken.updateConfig(config);
+    }
+
+    function _createStabilityDAOInstance() internal returns (IStabilityDAO) {
+        IStabilityDAO.DaoParams memory p = IStabilityDAO.DaoParams({
+            minimalPower: 4000e18,
+            exitPenalty: 50_00,
+            quorum: 20_00,
+            proposalThreshold: 10_00,
+            powerAllocationDelay: 86400
+        });
+
+        Proxy proxy = new Proxy();
+        proxy.initProxy(address(new StabilityDAO()));
+        IStabilityDAO token = IStabilityDAO(address(proxy));
+        token.initialize(address(platform), address(xStbl), address(xStaking), p);
+        return token;
+    }
+    // endregion --------------------- Helpers
 }

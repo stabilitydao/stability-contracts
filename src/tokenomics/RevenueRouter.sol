@@ -19,6 +19,7 @@ import {IRecovery} from "../interfaces/IRecovery.sol";
 
 /// @title Platform revenue distributor
 /// Changelog:
+///   1.7.1: add addresses()
 ///   1.7.0: improve
 ///   1.6.0: send 20% of earned assets to Recovery
 ///   1.5.0: processAccumulatedVaults
@@ -36,7 +37,7 @@ contract RevenueRouter is Controllable, IRevenueRouter {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.7.0";
+    string public constant VERSION = "1.7.1";
 
     uint internal constant RECOVER_PERCENTAGE = 20_000; // 20%
     uint internal constant DENOMINATOR = 100_000; // 100%
@@ -379,6 +380,17 @@ contract RevenueRouter is Controllable, IRevenueRouter {
     /// @inheritdoc IRevenueRouter
     function vaultsAccumulated() external view returns (address[] memory) {
         return _getRevenueRouterStorage().vaultsAccumulated.values();
+    }
+
+    /// @inheritdoc IRevenueRouter
+    function addresses() external view returns (address[] memory) {
+        RevenueRouterStorage storage $ = _getRevenueRouterStorage();
+        address[] memory _addresses = new address[](4);
+        _addresses[0] = $.stbl;
+        _addresses[1] = $.xStbl;
+        _addresses[2] = $.xStaking;
+        _addresses[3] = $.feeTreasury;
+        return _addresses;
     }
 
     /// @inheritdoc IRevenueRouter

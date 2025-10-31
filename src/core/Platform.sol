@@ -17,6 +17,8 @@ import {ISwapper} from "../interfaces/ISwapper.sol";
 ///         ┗┓ ┃ ┣┫┣┫┃┃ ┃ ┃ ┗┫  ┃┃┃ ┣┫ ┃ ┣ ┃┃┣┫┃┃┃
 ///         ┗┛ ┻ ┛┗┻┛┻┗┛┻ ┻ ┗┛  ┣┛┗┛┛┗ ┻ ┻ ┗┛┛┗┛ ┗
 /// Changelog:
+///   1.6.3: rename vaultPriceOracle to priceAggregator - #414
+///   1.6.2: IPlatform.stabilityDAO()
 ///   1.6.1: IPlatform.recovery()
 ///   1.6.0: remove buildingPermitToken, buildingPayPerVaultToken, BB and boost related; init with MetaVaultFactory;
 ///   1.5.1: IPlatform.vaultPriceOracle()
@@ -41,7 +43,7 @@ contract Platform is Controllable, IPlatform {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @dev Version of Platform contract implementation
-    string public constant VERSION = "1.6.1";
+    string public constant VERSION = "1.6.3";
 
     /// @inheritdoc IPlatform
     uint public constant TIME_LOCK = 16 hours;
@@ -123,9 +125,11 @@ contract Platform is Controllable, IPlatform {
         /// @inheritdoc IPlatform
         address metaVaultFactory;
         /// @inheritdoc IPlatform
-        address vaultPriceOracle;
+        address priceAggregator;
         /// @inheritdoc IPlatform
         address recovery;
+        /// @inheritdoc IPlatform
+        address stabilityDAO;
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -162,8 +166,9 @@ contract Platform is Controllable, IPlatform {
         $.zap = addresses.zap;
         $.revenueRouter = addresses.revenueRouter;
         $.metaVaultFactory = addresses.metaVaultFactory;
-        $.vaultPriceOracle = addresses.vaultPriceOracle;
+        $.priceAggregator = addresses.vaultPriceOracle;
         // $.recovery is not set by default, use setupRecovery if needed
+        // $.stabilityDAO is not set by default, use setupStabilityDAO if needed
         $.minTvlForFreeHardWork = 100e18;
         emit Addresses(
             $.multisig,
@@ -356,10 +361,10 @@ contract Platform is Controllable, IPlatform {
     }
 
     /// @inheritdoc IPlatform
-    function setupVaultPriceOracle(address vaultPriceOracle_) external onlyGovernanceOrMultisig {
+    function setupPriceAggregator(address priceAggregator_) external onlyGovernanceOrMultisig {
         PlatformStorage storage $ = _getStorage();
-        emit VaultPriceOracle(vaultPriceOracle_);
-        $.vaultPriceOracle = vaultPriceOracle_;
+        emit PriceAggregator(priceAggregator_);
+        $.priceAggregator = priceAggregator_;
     }
 
     /// @inheritdoc IPlatform
@@ -367,6 +372,15 @@ contract Platform is Controllable, IPlatform {
         PlatformStorage storage $ = _getStorage();
         emit Recovery(recovery_);
         $.recovery = recovery_;
+    }
+
+    /// @inheritdoc IPlatform
+    function setupStabilityDAO(address stabilityDAO_) external onlyGovernanceOrMultisig {
+        PlatformStorage storage $ = _getStorage();
+        require($.stabilityDAO == address(0), AlreadyExist());
+        $.stabilityDAO = stabilityDAO_;
+
+        emit StabilityDAO(stabilityDAO_);
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -578,13 +592,18 @@ contract Platform is Controllable, IPlatform {
     }
 
     /// @inheritdoc IPlatform
-    function vaultPriceOracle() external view returns (address) {
-        return _getStorage().vaultPriceOracle;
+    function priceAggregator() external view returns (address) {
+        return _getStorage().priceAggregator;
     }
 
     /// @inheritdoc IPlatform
     function recovery() external view returns (address) {
         return _getStorage().recovery;
+    }
+
+    /// @inheritdoc IPlatform
+    function stabilityDAO() external view returns (address) {
+        return _getStorage().stabilityDAO;
     }
 
     /// @inheritdoc IPlatform

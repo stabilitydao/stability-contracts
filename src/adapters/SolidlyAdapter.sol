@@ -18,18 +18,17 @@ import {ConstantsLib} from "../core/libs/ConstantsLib.sol";
 /// @author Alien Deployer (https://github.com/a17)
 /// @custom:deprecated The adapter was used on Real only and now it's not used anymore
 /// If we decided to use it on other chain we need to add new tests for it
+/// Changelog:
+///  1.1.0: implement IAmmAdapter.getTwaPrice
 contract SolidlyAdapter is Controllable, IAmmAdapter {
     using SafeERC20 for IERC20;
-
-    // Exclude from coverage report
-    function test() public {}
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         CONSTANTS                          */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.0";
+    string public constant VERSION = "1.1.0";
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      INITIALIZATION                        */
@@ -150,6 +149,27 @@ contract SolidlyAdapter is Controllable, IAmmAdapter {
         uint amount
     ) public view returns (uint) {
         return ISolidlyPool(pool).getAmountOut(amount, tokenIn);
+    }
+
+    /// @inheritdoc IAmmAdapter
+    function getTwaPrice(
+        address pool,
+        address tokenIn,
+        address,
+        /*tokenOut*/
+        uint amount,
+        uint32 period
+    ) external view returns (uint) {
+        if (period == 0) {
+            // Return the current (spot) price.
+            return ISolidlyPool(pool).getAmountOut(amount, tokenIn);
+        } else {
+            // Return the TWAP price.
+            // The `current` function returns the TWAP over the maximum safe period
+            // (>= 30 minutes, see periodSize constant in the pool code), ignoring the requested `period` value.
+            // {period} is only used as a flag to select the TWAP mode.
+            return ISolidlyPool(pool).current(tokenIn, amount);
+        }
     }
 
     /// @inheritdoc IERC165

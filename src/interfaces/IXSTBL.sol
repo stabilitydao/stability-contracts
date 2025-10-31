@@ -70,7 +70,7 @@ interface IXSTBL {
     /// @notice Denominator
     function BASIS() external view returns (uint);
 
-    /// @notice Max slashing amount
+    /// @notice Max slashing amount. {BASIS} is used as denominator, so 100 = 1%
     function SLASHING_PENALTY() external view returns (uint);
 
     /// @notice The minimum vesting length

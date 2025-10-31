@@ -18,6 +18,8 @@ import {IStableSwapViews} from "../integrations/curve/IStableSwapViews.sol";
 /// @title AMM adapter for Curve StableSwap-NG pools with 2-8 tokens
 /// @dev AMM source code https://github.com/curvefi/stableswap-ng/blob/main/contracts/main/CurveStableSwapNG.vy
 /// @author Alien Deployer (https://github.com/a17)
+/// Changelog:
+///     1.0.1: add empty IAmmAdapter.getTwaPrice
 contract CurveAdapter is Controllable, IAmmAdapter {
     using SafeERC20 for IERC20;
 
@@ -26,7 +28,7 @@ contract CurveAdapter is Controllable, IAmmAdapter {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.0";
+    string public constant VERSION = "1.0.1";
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      INITIALIZATION                        */
@@ -132,6 +134,21 @@ contract CurveAdapter is Controllable, IAmmAdapter {
     function getPrice(address pool, address tokenIn, address tokenOut, uint amount) public view returns (uint) {
         (int128 tokenInIndex, int128 tokenOutIndex) = _getTokensIndexes(pool, tokenIn, tokenOut);
         return IStableSwapNG(pool).get_dy(tokenInIndex, tokenOutIndex, amount);
+    }
+
+    /// @inheritdoc IAmmAdapter
+    function getTwaPrice(
+        address,
+        /*pool*/
+        address,
+        /*tokenIn*/
+        address,
+        /*tokenOut*/
+        uint,
+        /*amount*/
+        uint32 /*period*/
+    ) external pure returns (uint) {
+        revert("Not supported");
     }
 
     /// @inheritdoc IERC165

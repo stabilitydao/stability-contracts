@@ -46,8 +46,12 @@ library RecoveryLib {
     event SetThresholds(address[] tokens, uint[] thresholds);
     event Whitelist(address operator, bool add);
     event OnSwapFailed(address asset, address token, uint amount);
+    /// @notice Deprecated, replaced by SwapAssets2
     event SwapAssets(
         address[] tokens, address asset, uint balanceBefore, uint balanceAfter, address selectedRecoveryPool
+    );
+    event SwapAssets2(
+        address token, address asset, uint balanceBefore, uint balanceAfter, address selectedRecoveryPool
     );
     event FillRecoveryPools(address metaVaultToken_, uint balanceBefore, uint balanceAfter, uint countSwaps);
     event SetReceiver(address recoveryToken, address receiver);
@@ -268,8 +272,8 @@ library RecoveryLib {
 
                     // hide swap errors in same way as in RevenueRouter
                     try swapper_.swap(tokens[i], metaVaultToken, amount, SWAP_PRICE_IMPACT_TOLERANCE_ASSETS) {
-                        emit SwapAssets(
-                            tokens,
+                        emit SwapAssets2(
+                            tokens[i],
                             metaVaultToken,
                             balanceBefore,
                             IERC20(metaVaultToken).balanceOf(address(this)),
