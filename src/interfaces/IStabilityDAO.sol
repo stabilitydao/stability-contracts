@@ -51,7 +51,7 @@ interface IStabilityDAO is IERC20, IERC20Metadata {
     /// @notice Get total power of a user.
     /// The power = user's own (not-delegated) balance of STBL_DAO + balances of all users that delegated to him
     /// If user has balance of staked xSTBL below minimalPower, his power is 0
-    function userPower(address user_) external view returns (uint);
+    function getVotes(address user_) external view returns (uint);
 
     /// @notice Get delegation info of a user
     /// @return delegatedTo The address to whom the user has delegated his voting power (or address(0) if not delegated)

@@ -17,6 +17,7 @@ import {ConstantsLib} from "../core/libs/ConstantsLib.sol";
 /// Tokens are non-transferable and can be only minted and burned by XStaking contract.
 /// @author Omriss (https://github.com/omriss)
 /// Changelog:
+///  1.0.1: userPower is renamed to getVotes (compatibility with OpenZeppelin's ERC20Votes) - #423
 contract StabilityDAO is
     Controllable,
     ERC20Upgradeable,
@@ -29,7 +30,7 @@ contract StabilityDAO is
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.0";
+    string public constant VERSION = "1.0.1";
 
     // keccak256(abi.encode(uint(keccak256("erc7201:stability.StabilityDAO")) - 1)) & ~bytes32(uint(0xff));
     bytes32 private constant _STABILITY_DAO_TOKEN_STORAGE_LOCATION =
@@ -207,7 +208,7 @@ contract StabilityDAO is
     }
 
     /// @inheritdoc IStabilityDAO
-    function userPower(address user_) public view returns (uint) {
+    function getVotes(address user_) public view returns (uint) {
         StabilityDaoStorage storage $ = _getStorage();
         uint power = $.delegatedTo[user_] == address(0) ? balanceOf(user_) : 0;
 
