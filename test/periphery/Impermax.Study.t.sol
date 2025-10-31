@@ -15,7 +15,7 @@ import {IImpermaxCollateral} from "../../src/integrations/impermax/IImpermaxColl
 /// @dev Borrow tx: https://sonicscan.org/tx/0x4486f0cc158d7ada27a5f72dc4a8cfbe0ab5b73329298e6be20b65ced28ec5a4
 /// @dev Supply tx: https://sonicscan.org/tx/0x60a9a6447befa55d47eecf0dd5737768e824cd6a51231c79800d893dee2863b1
 contract ImpermaxStudySonicTest is Test {
-    uint internal constant FORK_BLOCK = 52216651; // Oct-28-2025 11:43:25 AM +UTC
+    uint internal constant FORK_BLOCK = 52766517; // Oct-31-2025 08:12:44 AM +UTC
 
     uint internal constant FORK_BORROW_TX_BLOCK = 51314094; // Oct-20-2025 01:29:00 PM UTC
     uint internal constant FORK_SUPPLY_TX_BLOCK = 51314070; // Oct-20-2025 01:28:30 PM UTC
@@ -356,7 +356,7 @@ contract ImpermaxStudySonicTest is Test {
         {
             address borrow0 = _getTokenBorrow0(LENDING_POOL_USDC_STBL);
 
-            uint amountToBorrow = 25_000e6;
+            uint amountToBorrow = 10_000e6;
             console.log("amountToBorrow, max amount", amountToBorrow, _getMaxAmountToBorrow(owner));
             bytes memory actionsData = _createBorrowActionData(amountToBorrow, owner);
             bytes memory permitsData = _createPermitsDataEmpty();
@@ -378,7 +378,7 @@ contract ImpermaxStudySonicTest is Test {
 
         //------------------------------ repay
         {
-            uint amountToRepay = 25_000e6;
+            uint amountToRepay = 10_000e6;
 
             bytes memory actionsData = _createRepayActionData(amountToRepay);
             bytes memory permitsData = _createPermitsDataEmpty();
@@ -406,10 +406,10 @@ contract ImpermaxStudySonicTest is Test {
         {
             address borrow0 = _getTokenBorrow0(LENDING_POOL_USDC_STBL);
 
-            uint amountToBorrow = 25_000e6;
+            uint amountToBorrow = 10_000e6;
             console.log("amountToBorrow, max amount", amountToBorrow, _getMaxAmountToBorrow(owner));
             bytes memory actionsData =
-                hex"0000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000e00000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000005d21dba00000000000000000000000000f564ebac1182578398e94868bea1aba6ba3396520000000000000000000000000000000000000000000000000000000000000000";
+                hex"0000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000e00000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002540be400000000000000000000000000f564ebac1182578398e94868bea1aba6ba3396520000000000000000000000000000000000000000000000000000000000000000";
             bytes memory permitsData =
                 hex"00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000000";
 
@@ -428,7 +428,7 @@ contract ImpermaxStudySonicTest is Test {
 
         //------------------------------ repay
         {
-            uint amountToRepay = 25_000e6;
+            uint amountToRepay = 10_000e6;
 
             bytes memory actionsData = _createRepayActionData(amountToRepay);
             bytes memory permitsData = _createPermitsDataEmpty();
