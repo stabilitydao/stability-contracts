@@ -25,7 +25,8 @@ contract PriceAggregatorQApp is Controllable, OAppUpgradeable, IPriceAggregatorQ
     string public constant VERSION = "1.0.0";
 
     // keccak256(abi.encode(uint(keccak256("erc7201:stability.PriceAggregatorQApp")) - 1)) & ~bytes32(uint(0xff));
-    bytes32 internal constant _PRICE_AGGREGATOR_QAPP_STORAGE_LOCATION = 0;
+    bytes32 internal constant _PRICE_AGGREGATOR_QAPP_STORAGE_LOCATION =
+        0x4ae4669e0847cbd8ac112b506c168d94d95debd740cba7df24fb81bf6d925200;
 
     /// @custom:storage-location erc7201:stability.PriceAggregatorQApp
     struct PriceAggregatorQAppStorage {
@@ -74,12 +75,16 @@ contract PriceAggregatorQApp is Controllable, OAppUpgradeable, IPriceAggregatorQ
     }
 
     /// @inheritdoc IPriceAggregatorQApp
-    function quotePriceMessage(uint32 dstEid_, bool payInLzToken_) public view returns (MessagingFee memory fee) {
+    function quotePriceMessage(
+        uint32 dstEid_,
+        bytes memory options_,
+        bool payInLzToken_
+    ) public view returns (MessagingFee memory fee) {
         PriceAggregatorQAppStorage storage $ = getPriceAggregatorQAppStorage();
         // combineOptions (from OAppOptionsType3) merges enforced options set by the contract owner
         // with any additional execution options provided by the caller
         (bytes memory message,,) = _getPriceMessage($.entity);
-        fee = _quote(dstEid_, message, "", payInLzToken_);
+        fee = _quote(dstEid_, message, options_, payInLzToken_);
     }
 
     //endregion --------------------------------- View
@@ -98,12 +103,12 @@ contract PriceAggregatorQApp is Controllable, OAppUpgradeable, IPriceAggregatorQ
     }
 
     /// @inheritdoc IPriceAggregatorQApp
-    function sendPriceMessage(uint32 dstEid_, MessagingFee memory fee_) external payable {
+    function sendPriceMessage(uint32 dstEid_, bytes memory options_, MessagingFee memory fee_) external payable {
         PriceAggregatorQAppStorage storage $ = getPriceAggregatorQAppStorage();
         require($.whitelist[msg.sender], NotWhitelisted());
 
         (bytes memory message, uint price, uint timestamp) = _getPriceMessage($.entity);
-        _lzSend(dstEid_, message, "", fee_, payable(msg.sender));
+        _lzSend(dstEid_, message, options_, fee_, payable(msg.sender));
 
         emit SendPriceMessage(dstEid_, price, timestamp);
     }

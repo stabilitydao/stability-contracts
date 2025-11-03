@@ -17,7 +17,8 @@ contract BridgedPriceOracle is Controllable, OAppUpgradeable, IBridgedPriceOracl
     string public constant VERSION = "1.0.0";
 
     // keccak256(abi.encode(uint(keccak256("erc7201:stability.BridgedPriceOracle")) - 1)) & ~bytes32(uint(0xff));
-    bytes32 internal constant _BRIDGED_PRICE_ORACLE_STORAGE_LOCATION = 0;
+    bytes32 internal constant _BRIDGED_PRICE_ORACLE_STORAGE_LOCATION =
+        0x7de84bf9d24250450323fa11c7039f1c170849cf600decfdbf5e505497ab9b00;
 
     /// @dev Single slot
     struct PriceInfo {
@@ -97,15 +98,12 @@ contract BridgedPriceOracle is Controllable, OAppUpgradeable, IBridgedPriceOracl
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IBridgedPriceOracle
-    function setTrustedSender(address senderAddress_, uint[] memory srcEids, bool trusted_) external onlyOperator {
+    function setTrustedSender(address senderAddress_, uint srcEid, bool trusted_) external onlyOperator {
         BridgedPriceOracleStorage storage $ = getBridgedPriceOracleStorage();
-        uint len = srcEids.length;
-        for (uint i; i < len; ++i) {
-            bytes32 hash = keccak256(abi.encode(srcEids[i], senderAddress_));
-            $.trustedSenders[hash] = trusted_;
-        }
+        bytes32 hash = keccak256(abi.encode(srcEid, senderAddress_));
+        $.trustedSenders[hash] = trusted_;
 
-        emit TrustedSenderUpdated(senderAddress_, srcEids, trusted_);
+        emit TrustedSenderUpdated(senderAddress_, srcEid, trusted_);
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/

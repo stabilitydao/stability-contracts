@@ -5,11 +5,15 @@ import {console, Test, Vm} from "forge-std/Test.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
 import {IControllable} from "../../src/interfaces/IControllable.sol";
 import {IPriceAggregator} from "../../src/interfaces/IPriceAggregator.sol";
+import {IPriceAggregatorQApp} from "../../src/interfaces/IPriceAggregatorQApp.sol";
+import {IBridgedPriceOracle} from "../../src/interfaces/IBridgedPriceOracle.sol";
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 import {Proxy} from "../../src/core/proxy/Proxy.sol";
 import {AvalancheConstantsLib} from "../../chains/avalanche/AvalancheConstantsLib.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {MessagingFee} from "@layerzerolabs/oft-evm/contracts/interfaces/IOFT.sol";
+import {Origin} from "@layerzerolabs/oapp-evm/contracts/oapp/interfaces/IOAppReceiver.sol";
 // import {OFTMsgCodec} from "@layerzerolabs/oft-evm/contracts/libs/OFTMsgCodec.sol";
 import {OptionsBuilder} from "@layerzerolabs/oapp-evm/contracts/oapp/libs/OptionsBuilder.sol";
 import {ILayerZeroEndpointV2} from "@layerzerolabs/lz-evm-protocol-v2/contracts/interfaces/ILayerZeroEndpointV2.sol";
@@ -21,9 +25,9 @@ import {PacketV1Codec} from "@layerzerolabs/lz-evm-protocol-v2/contracts/message
 import {PriceAggregatorQApp} from "../../src/periphery/PriceAggregatorOApp.sol";
 import {BridgedPriceOracle} from "../../src/periphery/BridgedPriceOracle.sol";
 import {PlasmaConstantsLib} from "../../chains/plasma/PlasmaConstantsLib.sol";
+import {IBridgedSTBL} from "../../src/interfaces/IBridgedSTBL.sol";
 
 contract PriceAggregatorQAppTest is Test {
-    using OptionsBuilder for bytes;
     using PacketV1Codec for bytes;
     using SafeERC20 for IERC20;
 
@@ -122,13 +126,14 @@ contract PriceAggregatorQAppTest is Test {
     function testViewPriceAggregatorQApp() public {
         vm.selectFork(forkSonic);
 
-        console.logBytes32(
-            keccak256(abi.encode(uint(keccak256("erc7201:stability.PriceAggregatorQApp")) - 1)) & ~bytes32(uint(0xff))
-        );
+        //        console.log("erc7201:stability.PriceAggregatorQApp");
+        //        console.logBytes32(
+        //            keccak256(abi.encode(uint(keccak256("erc7201:stability.PriceAggregatorQApp")) - 1)) & ~bytes32(uint(0xff))
+        //        );
 
         assertEq(priceAggregatorQApp.entity(), SonicConstantsLib.TOKEN_STBL, "stbl");
-        assertEq(priceAggregatorQApp.platform(), AvalancheConstantsLib.PLATFORM, "BridgedSTBL - platform");
-        assertEq(priceAggregatorQApp.owner(), multisigSonic, "BridgedSTBL - owner");
+        assertEq(priceAggregatorQApp.platform(), SonicConstantsLib.PLATFORM, "priceAggregatorQApp - platform");
+        assertEq(priceAggregatorQApp.owner(), multisigSonic, "priceAggregatorQApp - owner");
     }
 
     function testWhitelist() public {
@@ -151,7 +156,7 @@ contract PriceAggregatorQAppTest is Test {
         assertEq(isWhitelisted, false, "not whitelisted");
     }
 
-    function testBridgedStblsetPeers() public {
+    function testPriceAggregatorQAppSetPeers() public {
         vm.selectFork(forkSonic);
 
         vm.prank(address(this));
@@ -177,25 +182,22 @@ contract PriceAggregatorQAppTest is Test {
     function testViewBridgedPriceOracle() public {
         vm.selectFork(forkAvalanche);
 
-        console.logBytes32(
-            keccak256(abi.encode(uint(keccak256("erc7201:stability.BridgedPriceOracle")) - 1)) & ~bytes32(uint(0xff))
-        );
+        //        console.log("erc7201:stability.BridgedPriceOracle");
+        //        console.logBytes32(
+        //            keccak256(abi.encode(uint(keccak256("erc7201:stability.BridgedPriceOracle")) - 1)) & ~bytes32(uint(0xff))
+        //        );
 
         assertEq(bridgedPriceOracle.decimals(), 8, "decimals in aave price oracle is 8");
-        assertEq(bridgedPriceOracle.platform(), AvalancheConstantsLib.PLATFORM, "BridgedSTBL - platform");
-        assertEq(bridgedPriceOracle.owner(), multisigAvalanche, "BridgedSTBL - owner");
+        assertEq(bridgedPriceOracle.platform(), AvalancheConstantsLib.PLATFORM, "bridgedPriceOracle - platform");
+        assertEq(bridgedPriceOracle.owner(), multisigAvalanche, "bridgedPriceOracle - owner");
     }
 
     function testSetTrustedSender() public {
         vm.selectFork(forkAvalanche);
 
-        uint[] memory endpointIds = new uint[](2);
-        endpointIds[0] = SonicConstantsLib.LAYER_ZERO_V2_ENDPOINT_ID;
-        endpointIds[1] = PlasmaConstantsLib.LAYER_ZERO_V2_ENDPOINT_ID;
-
         vm.prank(address(this));
         vm.expectRevert(IControllable.NotOperator.selector);
-        bridgedPriceOracle.setTrustedSender(address(this), endpointIds, true);
+        bridgedPriceOracle.setTrustedSender(address(this), SonicConstantsLib.LAYER_ZERO_V2_ENDPOINT_ID, true);
 
         assertEq(
             bridgedPriceOracle.isTrustedSender(address(this), SonicConstantsLib.LAYER_ZERO_V2_ENDPOINT_ID),
@@ -209,7 +211,10 @@ contract PriceAggregatorQAppTest is Test {
         );
 
         vm.prank(multisigAvalanche);
-        bridgedPriceOracle.setTrustedSender(address(this), endpointIds, true);
+        bridgedPriceOracle.setTrustedSender(address(this), SonicConstantsLib.LAYER_ZERO_V2_ENDPOINT_ID, true);
+
+        vm.prank(multisigAvalanche);
+        bridgedPriceOracle.setTrustedSender(address(this), PlasmaConstantsLib.LAYER_ZERO_V2_ENDPOINT_ID, true);
 
         assertEq(
             bridgedPriceOracle.isTrustedSender(address(this), SonicConstantsLib.LAYER_ZERO_V2_ENDPOINT_ID),
@@ -222,26 +227,23 @@ contract PriceAggregatorQAppTest is Test {
             "trusted"
         );
 
-        endpointIds = new uint[](1);
-        endpointIds[0] = SonicConstantsLib.LAYER_ZERO_V2_ENDPOINT_ID;
-
         vm.prank(multisigAvalanche);
-        bridgedPriceOracle.setTrustedSender(address(this), endpointIds, false);
+        bridgedPriceOracle.setTrustedSender(address(this), PlasmaConstantsLib.LAYER_ZERO_V2_ENDPOINT_ID, false);
 
         assertEq(
-            bridgedPriceOracle.isTrustedSender(address(this), SonicConstantsLib.LAYER_ZERO_V2_ENDPOINT_ID),
+            bridgedPriceOracle.isTrustedSender(address(this), PlasmaConstantsLib.LAYER_ZERO_V2_ENDPOINT_ID),
             false,
             "not trusted anymore"
         );
         assertEq(
-            bridgedPriceOracle.isTrustedSender(address(this), PlasmaConstantsLib.LAYER_ZERO_V2_ENDPOINT_ID),
+            bridgedPriceOracle.isTrustedSender(address(this), SonicConstantsLib.LAYER_ZERO_V2_ENDPOINT_ID),
             true,
             "still trusted"
         );
     }
 
     function testBridgedPriceOraclePeers() public {
-        vm.selectFork(forkSonic);
+        vm.selectFork(forkAvalanche);
 
         vm.prank(address(this));
         vm.expectRevert();
@@ -249,7 +251,7 @@ contract PriceAggregatorQAppTest is Test {
             SonicConstantsLib.LAYER_ZERO_V2_ENDPOINT_ID, bytes32(uint(uint160(address(priceAggregatorQApp))))
         );
 
-        vm.prank(multisigSonic);
+        vm.prank(multisigAvalanche);
         bridgedPriceOracle.setPeer(
             SonicConstantsLib.LAYER_ZERO_V2_ENDPOINT_ID, bytes32(uint(uint160(address(priceAggregatorQApp))))
         );
@@ -264,88 +266,196 @@ contract PriceAggregatorQAppTest is Test {
 
     //region ------------------------------------- Send price from Sonic to Avalanche
     function testSendPrice() public {
+        // ------------------- Setup whitelist and trusted sender
         vm.selectFork(forkSonic);
 
-        // ------------------- Prepare price inside PriceAggregator
-        {
-            IPriceAggregator priceAggregator = IPriceAggregator(IPlatform(SonicConstantsLib.PLATFORM).priceAggregator());
+        address sender = address(0x1);
+        deal(sender, 10 ether); // to pay fees
 
-            vm.prank(multisigSonic);
-            priceAggregator.addAsset(SonicConstantsLib.TOKEN_STBL, 1, 1);
+        vm.prank(multisigSonic);
+        priceAggregatorQApp.changeWhitelist(sender, true);
 
-            vm.prank(multisigSonic);
-            priceAggregator.setMinQuorum(1);
+        vm.selectFork(forkAvalanche);
 
-            (,, uint roundId) = priceAggregator.price(SonicConstantsLib.TOKEN_STBL);
+        vm.prank(multisigAvalanche);
+        bridgedPriceOracle.setTrustedSender(
+            address(priceAggregatorQApp), SonicConstantsLib.LAYER_ZERO_V2_ENDPOINT_ID, true
+        );
 
-            vm.prank(multisigSonic);
-            priceAggregator.submitPrice(SonicConstantsLib.TOKEN_STBL, 1.7e18, roundId);
+        // ------------------- Check initial price on Sonic
+        vm.selectFork(forkAvalanche);
+        (uint priceBefore,) = bridgedPriceOracle.getPriceUsd18();
+        assertEq(priceBefore, 0, "initial price is not set");
 
-            (uint price,,) = priceAggregator.price(SonicConstantsLib.TOKEN_STBL);
-            assertEq(price, 1.7e18, "expected price in price aggregator");
-        }
+        // ------------------- Set price in PriceAggregator on Sonic
+        (uint priceSonic, uint timestampPriceSonic) = _setPriceOnSonic(1.7e18);
 
-        //        // ------------------- Prepare user tokens
-        //        deal(sender, 1 ether); // to pay fees
-        //        deal(SonicConstantsLib.TOKEN_STBL, sender, balance0);
-        //
-        //        vm.prank(sender);
-        //        IERC20(SonicConstantsLib.TOKEN_STBL).approve(address(adapter), sendAmount);
-        //
-        //        // ------------------- Prepare send options
-        //        bytes memory options = OptionsBuilder.newOptions().addExecutorLzReceiveOption(2_000_000, 0);
-        //
-        //        SendParam memory sendParam = SendParam({
-        //            dstEid: AvalancheConstantsLib.LAYER_ZERO_V2_ENDPOINT_ID,
-        //            to: bytes32(uint(uint160(receiver))),
-        //            amountLD: sendAmount,
-        //            minAmountLD: sendAmount,
-        //            extraOptions: options,
-        //            composeMsg: "",
-        //            oftCmd: ""
-        //        });
-        //        MessagingFee memory msgFee = adapter.quoteSend(sendParam, false);
-        //
-        //        dest.sonicBefore = _getBalancesSonic(sender, receiver);
-        //
-        //        // ------------------- Send
-        //        vm.recordLogs();
-        //
-        //        vm.prank(sender);
-        //        adapter.send{value: msgFee.nativeFee}(sendParam, msgFee, sender);
-        //        bytes memory message = _extractSendMessage();
-        //
-        //        // ------------------ Avalanche: simulate message reception
-        //        vm.selectFork(forkAvalanche);
-        //        dest.avalancheBefore = _getBalancesAvalanche(sender, receiver);
-        //
-        //        Origin memory origin = Origin({
-        //            srcEid: SonicConstantsLib.LAYER_ZERO_V2_ENDPOINT_ID,
-        //            sender: bytes32(uint(uint160(address(adapter)))),
-        //            nonce: 1
-        //        });
-        //
-        //        vm.prank(AvalancheConstantsLib.LAYER_ZERO_V2_ENDPOINT);
-        //        bridgedToken.lzReceive(
-        //            origin,
-        //            bytes32(0), // guid: actual value doesn't matter
-        //            message,
-        //            address(0), // executor
-        //            "" // extraData
-        //        );
-        //
-        //        dest.avalancheAfter = _getBalancesAvalanche(sender, receiver);
-        //        vm.selectFork(forkSonic);
-        //        dest.sonicAfter = _getBalancesSonic(sender, receiver);
-        //
-        //        dest.nativeFee = msgFee.nativeFee;
-        //
-        //        return dest;
+        // ------------------- Send price to Avalanche
+        (uint priceAvalanche, uint timestampAvalanche) = _sendPriceToAvalanche(sender);
+
+        assertEq(priceSonic, 1.7e18, "price set on Sonic");
+        assertEq(priceAvalanche, 1.7e18, "price set on Avalanche");
+        assertEq(timestampAvalanche, timestampPriceSonic, "timestamp after matches timestamp sent");
+
+        // ------------------- Set TINY price in PriceAggregator on Sonic
+        (priceSonic, timestampPriceSonic) = _setPriceOnSonic(1);
+
+        // ------------------- Send new price to Avalanche
+        (priceAvalanche, timestampAvalanche) = _sendPriceToAvalanche(sender);
+
+        assertEq(priceSonic, 1, "price set on Sonic");
+        assertEq(priceAvalanche, 1, "price set on Avalanche");
+        assertEq(timestampAvalanche, timestampPriceSonic, "timestamp after matches timestamp sent");
+
+        // ------------------- Set HUGE price in PriceAggregator on Sonic
+        (priceSonic, timestampPriceSonic) = _setPriceOnSonic(17e38);
+
+        // ------------------- Send new price to Avalanche
+        (priceAvalanche, timestampAvalanche) = _sendPriceToAvalanche(sender);
+
+        assertEq(priceSonic, 17e38, "price set on Sonic");
+        assertEq(priceAvalanche, 17e38, "price set on Avalanche");
+        assertEq(timestampAvalanche, timestampPriceSonic, "timestamp after matches timestamp sent");
+    }
+
+    function testSendPriceBadPaths() public {
+        vm.selectFork(forkSonic);
+
+        address sender = address(0x1);
+        deal(sender, 2 ether); // to pay fees
+
+        (uint priceSonic,) = _setPriceOnSonic(1.7e18);
+
+        // ------------------- Send price to Avalanche
+        vm.selectFork(forkSonic);
+
+        bytes memory options = OptionsBuilder.addExecutorLzReceiveOption(OptionsBuilder.newOptions(), 2_000_000, 0);
+        MessagingFee memory msgFee =
+            priceAggregatorQApp.quotePriceMessage(AvalancheConstantsLib.LAYER_ZERO_V2_ENDPOINT_ID, options, false);
+
+        vm.recordLogs();
+
+        // ------------------- Not whitelisted (!)
+        vm.prank(sender);
+        vm.expectRevert(IPriceAggregatorQApp.NotWhitelisted.selector);
+        priceAggregatorQApp.sendPriceMessage{value: msgFee.nativeFee}(
+            AvalancheConstantsLib.LAYER_ZERO_V2_ENDPOINT_ID, options, msgFee
+        );
+
+        // ------------------- Whitelisted
+        vm.selectFork(forkSonic);
+        vm.prank(multisigSonic);
+        priceAggregatorQApp.changeWhitelist(sender, true);
+
+        vm.prank(sender);
+        priceAggregatorQApp.sendPriceMessage{value: msgFee.nativeFee}(
+            AvalancheConstantsLib.LAYER_ZERO_V2_ENDPOINT_ID, options, msgFee
+        );
+        bytes memory message = _extractPayload();
+
+        // ------------------ Avalanche: simulate message reception
+        vm.selectFork(forkAvalanche);
+
+        Origin memory origin = Origin({
+            srcEid: SonicConstantsLib.LAYER_ZERO_V2_ENDPOINT_ID,
+            sender: bytes32(uint(uint160(address(priceAggregatorQApp)))),
+            nonce: 1
+        });
+
+        // ------------------- Not trusted sender (!)
+        vm.prank(AvalancheConstantsLib.LAYER_ZERO_V2_ENDPOINT);
+        vm.expectRevert(IBridgedPriceOracle.InvalidSender.selector);
+        bridgedPriceOracle.lzReceive(
+            origin,
+            bytes32(0), // guid: actual value doesn't matter
+            message,
+            address(0), // executor
+            "" // extraData
+        );
+
+        // ------------------- Trusted sender
+        vm.selectFork(forkAvalanche);
+        vm.prank(multisigAvalanche);
+        bridgedPriceOracle.setTrustedSender(
+            address(priceAggregatorQApp), SonicConstantsLib.LAYER_ZERO_V2_ENDPOINT_ID, true
+        );
+
+        vm.prank(AvalancheConstantsLib.LAYER_ZERO_V2_ENDPOINT);
+        bridgedPriceOracle.lzReceive(
+            origin,
+            bytes32(0), // guid: actual value doesn't matter
+            message,
+            address(0), // executor
+            "" // extraData
+        );
+
+        (uint priceAvalanche,) = _sendPriceToAvalanche(sender);
+        assertEq(priceSonic, 1.7e18, "new price set on Sonic");
+        assertEq(priceAvalanche, 1.7e18, "new price set on Avalanche");
     }
 
     //endregion ------------------------------------- Send price from Sonic to Avalanche
 
     //region ------------------------------------- Internal logic
+    function _setPriceOnSonic(uint targetPrice_) internal returns (uint price, uint timestamp) {
+        vm.selectFork(forkSonic);
+        IPriceAggregator priceAggregator = IPriceAggregator(IPlatform(SonicConstantsLib.PLATFORM).priceAggregator());
+
+        vm.prank(multisigSonic);
+        priceAggregator.addAsset(SonicConstantsLib.TOKEN_STBL, 1, 1);
+
+        vm.prank(multisigSonic);
+        priceAggregator.setMinQuorum(1);
+
+        (,, uint roundId) = priceAggregator.price(SonicConstantsLib.TOKEN_STBL);
+
+        address[] memory validators = priceAggregator.validators();
+
+        vm.prank(validators[0]);
+        priceAggregator.submitPrice(SonicConstantsLib.TOKEN_STBL, targetPrice_, roundId == 0 ? 1 : roundId);
+
+        (price, timestamp,) = priceAggregator.price(SonicConstantsLib.TOKEN_STBL);
+        assertEq(price, targetPrice_, "expected price in price aggregator");
+    }
+
+    function _sendPriceToAvalanche(address sender) internal returns (uint price, uint timestamp) {
+        vm.selectFork(forkSonic);
+
+        // ------------------- Send a message with new price to Avalanche
+        bytes memory options = OptionsBuilder.addExecutorLzReceiveOption(OptionsBuilder.newOptions(), 2_000_000, 0);
+
+        MessagingFee memory msgFee =
+            priceAggregatorQApp.quotePriceMessage(AvalancheConstantsLib.LAYER_ZERO_V2_ENDPOINT_ID, options, false);
+
+        vm.recordLogs();
+
+        vm.prank(sender);
+        priceAggregatorQApp.sendPriceMessage{value: msgFee.nativeFee}(
+            AvalancheConstantsLib.LAYER_ZERO_V2_ENDPOINT_ID, options, msgFee
+        );
+        bytes memory message = _extractPayload();
+
+        // ------------------ Avalanche: simulate message reception
+        vm.selectFork(forkAvalanche);
+
+        Origin memory origin = Origin({
+            srcEid: SonicConstantsLib.LAYER_ZERO_V2_ENDPOINT_ID,
+            sender: bytes32(uint(uint160(address(priceAggregatorQApp)))),
+            nonce: 1
+        });
+
+        vm.prank(AvalancheConstantsLib.LAYER_ZERO_V2_ENDPOINT);
+        bridgedPriceOracle.lzReceive(
+            origin,
+            bytes32(0), // guid: actual value doesn't matter
+            message,
+            address(0), // executor
+            "" // extraData
+        );
+
+        (price, timestamp) = bridgedPriceOracle.getPriceUsd18();
+    }
+
     function setupPriceAggregatorQAppOnSonic() internal returns (address) {
         vm.selectFork(forkSonic);
 
@@ -519,7 +629,7 @@ contract PriceAggregatorQAppTest is Test {
     }
 
     /// @notice Extract PacketSent message from emitted event
-    function _extractSendMessage() internal view returns (bytes memory message) {
+    function _extractPayload() internal view returns (bytes memory message) {
         bytes memory encodedPayload;
         bytes32 sig = keccak256("PacketSent(bytes,bytes,address)"); // PacketSent(bytes encodedPayload, bytes options, address sendLibrary)
         Vm.Log[] memory logs = vm.getRecordedLogs();

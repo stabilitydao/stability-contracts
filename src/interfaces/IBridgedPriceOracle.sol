@@ -9,7 +9,7 @@ interface IBridgedPriceOracle is IAggregatorInterfaceMinimal {
 
     /// @notice Emitted when price is updated
     event PriceUpdated(uint priceUsd18, uint priceTimestamp);
-    event TrustedSenderUpdated(address trustedSender, uint[] endpointIds, bool isTrusted);
+    event TrustedSenderUpdated(address trustedSender, uint srcEid, bool isTrusted);
 
     /// @notice Returns the latest price in USD with 18 decimals
     /// @return price Price in USD with 18 decimals
@@ -22,8 +22,8 @@ interface IBridgedPriceOracle is IAggregatorInterfaceMinimal {
     function isTrustedSender(address sender, uint srcEid) external view returns (bool);
 
     /// @notice True if the given sender is trusted for a specific chain
-    /// @param srcEids Source chain endpoint IDs, see https://docs.layerzero.network/v2/concepts/glossary#endpoint-id
+    /// @param srcEid Source chain endpoint ID, see https://docs.layerzero.network/v2/concepts/glossary#endpoint-id
     /// @param sender Address of the sender on the source chain
     /// @param trusted True to set as trusted, false to remove from trusted
-    function setTrustedSender(address sender, uint[] memory srcEids, bool trusted) external;
+    function setTrustedSender(address sender, uint srcEid, bool trusted) external;
 }
