@@ -41,11 +41,34 @@ contract BridgedSTBLTest is Test {
     uint32 private constant CONFIG_TYPE_EXECUTOR = 1;
     uint32 private constant CONFIG_TYPE_ULN = 2;
 
-    address internal constant SONIC_DVN_SAMPLE_1 = 0xCA764b512E2d2fD15fcA1c0a38F7cFE9153148F0;
-    address internal constant SONIC_DVN_SAMPLE_2 = 0x78f607fc38e071cEB8630B7B12c358eE01C31E96;
+    /// @dev Gas limit for executor lzReceive calls
+    /// 2 mln => fee = 0.78 S
+    /// 100_000 => fee = 0.36 S
+    uint128 private constant GAS_LIMIT = 200_000;
 
-    address internal constant AVALANCHE_DVN_SAMPLE_1 = 0x1a5Df1367F21d55B13D5E2f8778AD644BC97aC6d;
-    address internal constant AVALANCHE_DVN_SAMPLE_2 = 0x0Ffe02DF012299A370D5dd69298A5826EAcaFdF8;
+    // --------------- DVN config: List of DVN providers must be equal on both chains (!)
+
+    // https://docs.layerzero.network/v2/deployments/chains/sonic
+    address internal constant SONIC_DVN_SAMPLE_1 = 0x78f607fc38e071cEB8630B7B12c358eE01C31E96;
+    address internal constant SONIC_DVN_SAMPLE_2 = 0xCA764b512E2d2fD15fcA1c0a38F7cFE9153148F0;
+
+    // https://docs.layerzero.network/v2/deployments/chains/avalanche
+    address internal constant AVALANCHE_DVN_SAMPLE_1 = 0x0Ffe02DF012299A370D5dd69298A5826EAcaFdF8;
+    address internal constant AVALANCHE_DVN_SAMPLE_2 = 0x1a5Df1367F21d55B13D5E2f8778AD644BC97aC6d;
+
+    // --------------- Confirmations: send >= receive, see https://docs.layerzero.network/v2/developers/evm/configuration/dvn-executor-config
+
+    /// @dev Minimum block confirmations to wait on Sonic
+    uint64 internal constant MIN_BLOCK_CONFIRMATIONS_SEND_SONIC = 15;
+
+    /// @dev Minimum block confirmations required on Avalanche
+    uint64 internal constant MIN_BLOCK_CONFIRMATIONS_RECEIVE_AVALANCHE = 10;
+
+    /// @dev Minimum block confirmations to wait on Avalanche
+    uint64 internal constant MIN_BLOCK_CONFIRMATIONS_SEND_AVALANCHE = 15;
+
+    /// @dev Minimum block confirmations required on Sonic
+    uint64 internal constant MIN_BLOCK_CONFIRMATIONS_RECEIVE_SONIC = 10;
 
     /// @dev By default shared decimals (min decimals at all chains) is 6 for STBL
     uint internal constant SHARED_DECIMALS = 6;
@@ -93,7 +116,7 @@ contract BridgedSTBLTest is Test {
         bridgedToken = BridgedSTBL(setupSTBLBridgedOnAvalanche());
         adapter = STBLOFTAdapter(setupSTBLOFTAdapterOnSonic());
 
-        // ------------------- Set up layer zero on both chains
+        // ------------------- Set up layer zero on Sonic
         _setupLayerZeroConfig(
             forkSonic,
             address(adapter),
@@ -105,9 +128,9 @@ contract BridgedSTBLTest is Test {
             multisigSonic
         );
         address[] memory requiredDVNs = new address[](2); // list must be sorted
-        requiredDVNs[0] = SONIC_DVN_SAMPLE_2;
-        requiredDVNs[1] = SONIC_DVN_SAMPLE_1;
-        _setUlnAndExecutor(
+        requiredDVNs[0] = SONIC_DVN_SAMPLE_1;
+        requiredDVNs[1] = SONIC_DVN_SAMPLE_2;
+        _setSendConfig(
             forkSonic,
             SonicConstantsLib.LAYER_ZERO_V2_ENDPOINT,
             address(adapter),
@@ -115,9 +138,21 @@ contract BridgedSTBLTest is Test {
             SonicConstantsLib.LAYER_ZERO_V2_EXECUTOR,
             requiredDVNs,
             multisigSonic,
-            SonicConstantsLib.LAYER_ZERO_V2_SEND_ULN_302
+            SonicConstantsLib.LAYER_ZERO_V2_SEND_ULN_302,
+            MIN_BLOCK_CONFIRMATIONS_SEND_SONIC
+        );
+        _setReceiveConfig(
+            forkAvalanche,
+            AvalancheConstantsLib.LAYER_ZERO_V2_ENDPOINT,
+            address(bridgedToken),
+            SonicConstantsLib.LAYER_ZERO_V2_ENDPOINT_ID,
+            requiredDVNs,
+            multisigAvalanche,
+            AvalancheConstantsLib.LAYER_ZERO_V2_RECEIVE_ULN_302,
+            MIN_BLOCK_CONFIRMATIONS_RECEIVE_AVALANCHE
         );
 
+        // ------------------- Set up layer zero on Avalanche
         _setupLayerZeroConfig(
             forkAvalanche,
             address(bridgedToken),
@@ -129,9 +164,9 @@ contract BridgedSTBLTest is Test {
             multisigAvalanche
         );
         requiredDVNs = new address[](2); // list must be sorted
-        requiredDVNs[0] = AVALANCHE_DVN_SAMPLE_2;
-        requiredDVNs[1] = AVALANCHE_DVN_SAMPLE_1;
-        _setUlnAndExecutor(
+        requiredDVNs[0] = AVALANCHE_DVN_SAMPLE_1;
+        requiredDVNs[1] = AVALANCHE_DVN_SAMPLE_2;
+        _setSendConfig(
             forkAvalanche,
             AvalancheConstantsLib.LAYER_ZERO_V2_ENDPOINT,
             address(bridgedToken),
@@ -139,7 +174,18 @@ contract BridgedSTBLTest is Test {
             AvalancheConstantsLib.LAYER_ZERO_V2_EXECUTOR,
             requiredDVNs,
             multisigAvalanche,
-            AvalancheConstantsLib.LAYER_ZERO_V2_SEND_ULN_302
+            AvalancheConstantsLib.LAYER_ZERO_V2_SEND_ULN_302,
+            MIN_BLOCK_CONFIRMATIONS_SEND_AVALANCHE
+        );
+        _setReceiveConfig(
+            forkSonic,
+            SonicConstantsLib.LAYER_ZERO_V2_ENDPOINT,
+            address(adapter),
+            AvalancheConstantsLib.LAYER_ZERO_V2_ENDPOINT_ID,
+            requiredDVNs,
+            multisigSonic,
+            SonicConstantsLib.LAYER_ZERO_V2_RECEIVE_ULN_302,
+            MIN_BLOCK_CONFIRMATIONS_RECEIVE_SONIC
         );
 
         // ------------------- set peers
@@ -503,7 +549,7 @@ contract BridgedSTBLTest is Test {
         IERC20(SonicConstantsLib.TOKEN_STBL).approve(address(adapter), sendAmount);
 
         // ------------------- Prepare send options
-        bytes memory options = OptionsBuilder.newOptions().addExecutorLzReceiveOption(2_000_000, 0);
+        bytes memory options = OptionsBuilder.newOptions().addExecutorLzReceiveOption(GAS_LIMIT, 0);
 
         SendParam memory sendParam = SendParam({
             dstEid: AvalancheConstantsLib.LAYER_ZERO_V2_ENDPOINT_ID,
@@ -515,6 +561,7 @@ contract BridgedSTBLTest is Test {
             oftCmd: ""
         });
         MessagingFee memory msgFee = adapter.quoteSend(sendParam, false);
+        // console.log("Quoted native fee:", msgFee.nativeFee);
 
         dest.sonicBefore = _getBalancesSonic(sender, receiver);
 
@@ -535,14 +582,18 @@ contract BridgedSTBLTest is Test {
             nonce: 1
         });
 
-        vm.prank(AvalancheConstantsLib.LAYER_ZERO_V2_ENDPOINT);
-        bridgedToken.lzReceive(
-            origin,
-            bytes32(0), // guid: actual value doesn't matter
-            message,
-            address(0), // executor
-            "" // extraData
-        );
+        {
+            // uint gasBefore = gasleft();
+            vm.prank(AvalancheConstantsLib.LAYER_ZERO_V2_ENDPOINT);
+            bridgedToken.lzReceive(
+                origin,
+                bytes32(0), // guid: actual value doesn't matter
+                message,
+                address(0), // executor
+                "" // extraData
+            );
+            // console.log("lzReceive gas", gasBefore - gasleft()); // ~ 60 ths
+        }
 
         dest.avalancheAfter = _getBalancesAvalanche(sender, receiver);
         vm.selectFork(forkSonic);
@@ -787,14 +838,18 @@ contract BridgedSTBLTest is Test {
         bridgedToken.setPeer(SonicConstantsLib.LAYER_ZERO_V2_ENDPOINT_ID, bytes32(uint(uint160(address(adapter)))));
     }
 
-    /// @notice Configures both ULN (DVN validators) and Executor for an OApp
+    /// @notice Configures both ULN (DVN validators) and Executor for an OApp on sending chain
+    /// @dev https://docs.layerzero.network/v2/developers/evm/configuration/dvn-executor-config
     /// @param forkId        Foundry fork ID to select the target chain
     /// @param endpoint      LayerZero V2 endpoint address for this network
     /// @param oapp          Address of the OApp (adapter or bridged token)
     /// @param remoteEid     Endpoint ID (EID) of the remote chain
     /// @param executor      Address of the LayerZero Executor contract
     /// @param requiredDVNs  Array of DVN validator addresses
-    function _setUlnAndExecutor(
+    /// @param confirmations Minimum block confirmations for ULN
+    /// @param multisig      Address of the multisig wallet to authorize the config change
+    /// @param sendLib       Address of the SendUln302 library
+    function _setSendConfig(
         uint forkId,
         address endpoint,
         address oapp,
@@ -802,13 +857,14 @@ contract BridgedSTBLTest is Test {
         address executor,
         address[] memory requiredDVNs,
         address multisig,
-        address sendLib
+        address sendLib,
+        uint64 confirmations
     ) internal {
         vm.selectFork(forkId);
 
         // ---------------------- ULN (DVN) configuration ----------------------
         UlnConfig memory uln = UlnConfig({
-            confirmations: 20, // Minimum block confirmations
+            confirmations: confirmations, // Minimum block confirmations
             requiredDVNCount: 2,
             optionalDVNCount: type(uint8).max,
             requiredDVNs: requiredDVNs, // sorted list of required DVN addresses
@@ -830,6 +886,45 @@ contract BridgedSTBLTest is Test {
 
         vm.prank(multisig);
         ILayerZeroEndpointV2(endpoint).setConfig(oapp, sendLib, params);
+    }
+
+    /// @notice Configures ULN (DVN validators) for on receiving chain
+    /// @dev https://docs.layerzero.network/v2/developers/evm/configuration/dvn-executor-config
+    /// @param forkId        Foundry fork ID to select the target chain
+    /// @param endpoint      LayerZero V2 endpoint address for this network
+    /// @param oapp          Address of the OApp (adapter or bridged token)
+    /// @param remoteEid     Endpoint ID (EID) of the remote chain
+    /// @param requiredDVNs  Array of DVN validator addresses
+    /// @param confirmations Minimum block confirmations for ULN
+    /// @param multisig      Address of the multisig wallet to authorize the config change
+    /// @param receiveLib       Address of the ReceiveUln302 library
+    function _setReceiveConfig(
+        uint forkId,
+        address endpoint,
+        address oapp,
+        uint32 remoteEid,
+        address[] memory requiredDVNs,
+        address multisig,
+        address receiveLib,
+        uint64 confirmations
+    ) internal {
+        vm.selectFork(forkId);
+
+        // ---------------------- ULN (DVN) configuration ----------------------
+        UlnConfig memory uln = UlnConfig({
+            confirmations: confirmations, // Minimum block confirmations
+            requiredDVNCount: 2,
+            optionalDVNCount: type(uint8).max,
+            requiredDVNs: requiredDVNs, // sorted list of required DVN addresses
+            optionalDVNs: new address[](0),
+            optionalDVNThreshold: 0
+        });
+
+        SetConfigParam[] memory params = new SetConfigParam[](1);
+        params[0] = SetConfigParam({eid: remoteEid, configType: CONFIG_TYPE_ULN, config: abi.encode(uln)});
+
+        vm.prank(multisig);
+        ILayerZeroEndpointV2(endpoint).setConfig(oapp, receiveLib, params);
     }
 
     /// @notice Calls getConfig on the specified LayerZero Endpoint.
