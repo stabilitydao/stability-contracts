@@ -523,7 +523,7 @@ contract BridgedSTBLTest is Test {
 
         vm.prank(sender);
         adapter.send{value: msgFee.nativeFee}(sendParam, msgFee, sender);
-        bytes memory message = _extractSendMessage();
+        bytes memory message = _extractSendMessage(vm.getRecordedLogs());
 
         // ------------------ Avalanche: simulate message reception
         vm.selectFork(forkAvalanche);
@@ -588,7 +588,7 @@ contract BridgedSTBLTest is Test {
 
         vm.prank(sender);
         bridgedToken.send{value: msgFee.nativeFee}(sendParam, msgFee, sender);
-        bytes memory message = _extractSendMessage();
+        bytes memory message = _extractSendMessage(vm.getRecordedLogs());
 
         // ------------------ Sonic: simulate message reception
         vm.selectFork(forkSonic);
@@ -884,10 +884,10 @@ contract BridgedSTBLTest is Test {
     }
 
     /// @notice Extract PacketSent message from emitted event
-    function _extractSendMessage() internal view returns (bytes memory message) {
+    function _extractSendMessage(Vm.Log[] memory logs) internal pure returns (bytes memory message) {
         bytes memory encodedPayload;
         bytes32 sig = keccak256("PacketSent(bytes,bytes,address)"); // PacketSent(bytes encodedPayload, bytes options, address sendLibrary)
-        Vm.Log[] memory logs = vm.getRecordedLogs();
+
         for (uint i; i < logs.length; ++i) {
             if (logs[i].topics[0] == sig) {
                 (encodedPayload,,) = abi.decode(logs[i].data, (bytes, bytes, address));

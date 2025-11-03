@@ -51,7 +51,7 @@ contract PriceAggregatorQApp is Controllable, OAppUpgradeable, IPriceAggregatorQ
 
         __Controllable_init(platform_);
         __OApp_init(_delegate);
-        __Ownable_init(_delegate); // todo
+        __Ownable_init(_delegate);
 
         getPriceAggregatorQAppStorage().entity = entity_;
     }
@@ -150,6 +150,7 @@ contract PriceAggregatorQApp is Controllable, OAppUpgradeable, IPriceAggregatorQ
         view
         returns (bytes memory message, uint price, uint timestamp)
     {
+        // slither-disable-next-line unused-return
         (price, timestamp,) = IPriceAggregator(IPlatform(platform()).priceAggregator()).price(entity_);
         return (OAppEncodingLib.packPriceUsd18(price, timestamp), price, timestamp);
     }

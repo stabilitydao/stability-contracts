@@ -33,9 +33,6 @@ contract BridgedPriceOracle is Controllable, OAppUpgradeable, IBridgedPriceOracl
     struct BridgedPriceOracleStorage {
         /// @notice Last stored price
         PriceInfo lastPriceInfo;
-
-        /// @notice Trusted senders mapping. Hash is keccak256(abi.encode(src-endpoint-id, senderAddress))
-        mapping(bytes32 hash => bool) trustedSenders;
     }
 
     //region --------------------------------- Initializers
@@ -53,7 +50,7 @@ contract BridgedPriceOracle is Controllable, OAppUpgradeable, IBridgedPriceOracl
 
         __Controllable_init(platform_);
         __OApp_init(_delegate);
-        __Ownable_init(_delegate); // todo
+        __Ownable_init(_delegate);
     }
 
     //endregion --------------------------------- Initializers
@@ -62,12 +59,6 @@ contract BridgedPriceOracle is Controllable, OAppUpgradeable, IBridgedPriceOracl
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                             VIEW                           */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
-
-    /// @inheritdoc IBridgedPriceOracle
-    function isTrustedSender(address sender, uint srcEid) external view returns (bool) {
-        BridgedPriceOracleStorage storage $ = getBridgedPriceOracleStorage();
-        return _isTrustedSender($, srcEid, sender);
-    }
 
     /// @inheritdoc IBridgedPriceOracle
     function getPriceUsd18() external view returns (uint price, uint priceTimestamp) {
@@ -94,19 +85,6 @@ contract BridgedPriceOracle is Controllable, OAppUpgradeable, IBridgedPriceOracl
 
     //region --------------------------------- Actions
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
-    /*                   Restricted actions                       */
-    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
-
-    /// @inheritdoc IBridgedPriceOracle
-    function setTrustedSender(address senderAddress_, uint srcEid, bool trusted_) external onlyOperator {
-        BridgedPriceOracleStorage storage $ = getBridgedPriceOracleStorage();
-        bytes32 hash = keccak256(abi.encode(srcEid, senderAddress_));
-        $.trustedSenders[hash] = trusted_;
-
-        emit TrustedSenderUpdated(senderAddress_, srcEid, trusted_);
-    }
-
-    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                   QApp receive logic                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
@@ -117,7 +95,8 @@ contract BridgedPriceOracle is Controllable, OAppUpgradeable, IBridgedPriceOracl
     /// @dev executor_ Executor address that delivered the message
     /// @dev extraData_ Additional data from the Executor (unused here)
     function _lzReceive(
-        Origin calldata origin_,
+        Origin calldata,
+        /*origin_*/
         bytes32,
         /*guid_*/
         bytes calldata message_,
@@ -129,7 +108,6 @@ contract BridgedPriceOracle is Controllable, OAppUpgradeable, IBridgedPriceOracl
         (uint16 messageFormat, uint160 price, uint64 timestamp) = OAppEncodingLib.unpackPriceUsd18(message_);
 
         require(messageFormat == OAppEncodingLib.MESSAGE_FORMAT_PRICE_USD18_1, InvalidMessageFormat());
-        require(_isTrustedSender($, origin_.srcEid, address(uint160(uint(origin_.sender)))), InvalidSender());
 
         $.lastPriceInfo = PriceInfo({price: price, timestamp: timestamp});
 
@@ -144,15 +122,6 @@ contract BridgedPriceOracle is Controllable, OAppUpgradeable, IBridgedPriceOracl
         assembly {
             $.slot := _BRIDGED_PRICE_ORACLE_STORAGE_LOCATION
         }
-    }
-
-    function _isTrustedSender(
-        BridgedPriceOracleStorage storage $,
-        uint srcEid,
-        address sender
-    ) internal view returns (bool) {
-        bytes32 hash = keccak256(abi.encode(srcEid, sender));
-        return $.trustedSenders[hash];
     }
     //endregion --------------------------------- Internal logic
 }

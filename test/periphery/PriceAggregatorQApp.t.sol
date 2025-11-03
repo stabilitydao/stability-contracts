@@ -6,7 +6,6 @@ import {IPlatform} from "../../src/interfaces/IPlatform.sol";
 import {IControllable} from "../../src/interfaces/IControllable.sol";
 import {IPriceAggregator} from "../../src/interfaces/IPriceAggregator.sol";
 import {IPriceAggregatorQApp} from "../../src/interfaces/IPriceAggregatorQApp.sol";
-import {IBridgedPriceOracle} from "../../src/interfaces/IBridgedPriceOracle.sol";
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 import {Proxy} from "../../src/core/proxy/Proxy.sol";
 import {AvalancheConstantsLib} from "../../chains/avalanche/AvalancheConstantsLib.sol";
@@ -24,8 +23,6 @@ import {UlnConfig} from "@layerzerolabs/lz-evm-messagelib-v2/contracts/uln/UlnBa
 import {PacketV1Codec} from "@layerzerolabs/lz-evm-protocol-v2/contracts/messagelib/libs/PacketV1Codec.sol";
 import {PriceAggregatorQApp} from "../../src/periphery/PriceAggregatorOApp.sol";
 import {BridgedPriceOracle} from "../../src/periphery/BridgedPriceOracle.sol";
-import {PlasmaConstantsLib} from "../../chains/plasma/PlasmaConstantsLib.sol";
-import {IBridgedSTBL} from "../../src/interfaces/IBridgedSTBL.sol";
 
 contract PriceAggregatorQAppTest is Test {
     using PacketV1Codec for bytes;
@@ -77,7 +74,7 @@ contract PriceAggregatorQAppTest is Test {
             SonicConstantsLib.LAYER_ZERO_V2_ENDPOINT,
             SonicConstantsLib.LAYER_ZERO_V2_SEND_ULN_302,
             SonicConstantsLib.LAYER_ZERO_V2_ENDPOINT_ID,
-            SonicConstantsLib.LAYER_ZERO_V2_RECEIVE_ULN_302,
+            address(0), // we have one directional bridge: sonic -> avalanche, receive lib is not needed
             multisigSonic
         );
         address[] memory requiredDVNs = new address[](2); // list must be sorted
@@ -99,7 +96,7 @@ contract PriceAggregatorQAppTest is Test {
             address(bridgedPriceOracle),
             SonicConstantsLib.LAYER_ZERO_V2_ENDPOINT_ID,
             AvalancheConstantsLib.LAYER_ZERO_V2_ENDPOINT,
-            AvalancheConstantsLib.LAYER_ZERO_V2_SEND_ULN_302,
+            address(0), // we have one directional bridge: sonic -> avalanche, send lib is not needed
             AvalancheConstantsLib.LAYER_ZERO_V2_ENDPOINT_ID,
             AvalancheConstantsLib.LAYER_ZERO_V2_RECEIVE_ULN_302,
             multisigAvalanche
@@ -176,6 +173,26 @@ contract PriceAggregatorQAppTest is Test {
         );
     }
 
+    function testLzReceiveUnsuppoted() public {
+        vm.selectFork(forkSonic);
+
+        Origin memory origin = Origin({
+            srcEid: AvalancheConstantsLib.LAYER_ZERO_V2_ENDPOINT_ID,
+            sender: bytes32(uint(uint160(address(bridgedPriceOracle)))),
+            nonce: 1
+        });
+
+        vm.prank(SonicConstantsLib.LAYER_ZERO_V2_ENDPOINT);
+        vm.expectRevert(IPriceAggregatorQApp.UnsupportedOperation.selector);
+        priceAggregatorQApp.lzReceive(
+            origin,
+            bytes32(0), // guid: actual value doesn't matter
+            hex"00", // empty message
+            address(0), // executor
+            "" // extraData
+        );
+    }
+
     //endregion ------------------------------------- Unit tests for PriceAggregatorQApp
 
     //region ------------------------------------- Unit tests for BridgedPriceOracle
@@ -190,56 +207,6 @@ contract PriceAggregatorQAppTest is Test {
         assertEq(bridgedPriceOracle.decimals(), 8, "decimals in aave price oracle is 8");
         assertEq(bridgedPriceOracle.platform(), AvalancheConstantsLib.PLATFORM, "bridgedPriceOracle - platform");
         assertEq(bridgedPriceOracle.owner(), multisigAvalanche, "bridgedPriceOracle - owner");
-    }
-
-    function testSetTrustedSender() public {
-        vm.selectFork(forkAvalanche);
-
-        vm.prank(address(this));
-        vm.expectRevert(IControllable.NotOperator.selector);
-        bridgedPriceOracle.setTrustedSender(address(this), SonicConstantsLib.LAYER_ZERO_V2_ENDPOINT_ID, true);
-
-        assertEq(
-            bridgedPriceOracle.isTrustedSender(address(this), SonicConstantsLib.LAYER_ZERO_V2_ENDPOINT_ID),
-            false,
-            "initially not trusted"
-        );
-        assertEq(
-            bridgedPriceOracle.isTrustedSender(address(this), PlasmaConstantsLib.LAYER_ZERO_V2_ENDPOINT_ID),
-            false,
-            "initially not trusted"
-        );
-
-        vm.prank(multisigAvalanche);
-        bridgedPriceOracle.setTrustedSender(address(this), SonicConstantsLib.LAYER_ZERO_V2_ENDPOINT_ID, true);
-
-        vm.prank(multisigAvalanche);
-        bridgedPriceOracle.setTrustedSender(address(this), PlasmaConstantsLib.LAYER_ZERO_V2_ENDPOINT_ID, true);
-
-        assertEq(
-            bridgedPriceOracle.isTrustedSender(address(this), SonicConstantsLib.LAYER_ZERO_V2_ENDPOINT_ID),
-            true,
-            "trusted"
-        );
-        assertEq(
-            bridgedPriceOracle.isTrustedSender(address(this), PlasmaConstantsLib.LAYER_ZERO_V2_ENDPOINT_ID),
-            true,
-            "trusted"
-        );
-
-        vm.prank(multisigAvalanche);
-        bridgedPriceOracle.setTrustedSender(address(this), PlasmaConstantsLib.LAYER_ZERO_V2_ENDPOINT_ID, false);
-
-        assertEq(
-            bridgedPriceOracle.isTrustedSender(address(this), PlasmaConstantsLib.LAYER_ZERO_V2_ENDPOINT_ID),
-            false,
-            "not trusted anymore"
-        );
-        assertEq(
-            bridgedPriceOracle.isTrustedSender(address(this), SonicConstantsLib.LAYER_ZERO_V2_ENDPOINT_ID),
-            true,
-            "still trusted"
-        );
     }
 
     function testBridgedPriceOraclePeers() public {
@@ -276,11 +243,6 @@ contract PriceAggregatorQAppTest is Test {
         priceAggregatorQApp.changeWhitelist(sender, true);
 
         vm.selectFork(forkAvalanche);
-
-        vm.prank(multisigAvalanche);
-        bridgedPriceOracle.setTrustedSender(
-            address(priceAggregatorQApp), SonicConstantsLib.LAYER_ZERO_V2_ENDPOINT_ID, true
-        );
 
         // ------------------- Check initial price on Sonic
         vm.selectFork(forkAvalanche);
@@ -351,7 +313,7 @@ contract PriceAggregatorQAppTest is Test {
         priceAggregatorQApp.sendPriceMessage{value: msgFee.nativeFee}(
             AvalancheConstantsLib.LAYER_ZERO_V2_ENDPOINT_ID, options, msgFee
         );
-        bytes memory message = _extractPayload();
+        bytes memory message = _extractPayload(vm.getRecordedLogs());
 
         // ------------------ Avalanche: simulate message reception
         vm.selectFork(forkAvalanche);
@@ -361,24 +323,6 @@ contract PriceAggregatorQAppTest is Test {
             sender: bytes32(uint(uint160(address(priceAggregatorQApp)))),
             nonce: 1
         });
-
-        // ------------------- Not trusted sender (!)
-        vm.prank(AvalancheConstantsLib.LAYER_ZERO_V2_ENDPOINT);
-        vm.expectRevert(IBridgedPriceOracle.InvalidSender.selector);
-        bridgedPriceOracle.lzReceive(
-            origin,
-            bytes32(0), // guid: actual value doesn't matter
-            message,
-            address(0), // executor
-            "" // extraData
-        );
-
-        // ------------------- Trusted sender
-        vm.selectFork(forkAvalanche);
-        vm.prank(multisigAvalanche);
-        bridgedPriceOracle.setTrustedSender(
-            address(priceAggregatorQApp), SonicConstantsLib.LAYER_ZERO_V2_ENDPOINT_ID, true
-        );
 
         vm.prank(AvalancheConstantsLib.LAYER_ZERO_V2_ENDPOINT);
         bridgedPriceOracle.lzReceive(
@@ -433,7 +377,7 @@ contract PriceAggregatorQAppTest is Test {
         priceAggregatorQApp.sendPriceMessage{value: msgFee.nativeFee}(
             AvalancheConstantsLib.LAYER_ZERO_V2_ENDPOINT_ID, options, msgFee
         );
-        bytes memory message = _extractPayload();
+        bytes memory message = _extractPayload(vm.getRecordedLogs());
 
         // ------------------ Avalanche: simulate message reception
         vm.selectFork(forkAvalanche);
@@ -494,24 +438,28 @@ contract PriceAggregatorQAppTest is Test {
     ) internal {
         vm.selectFork(forkId);
 
-        // Set send library for outbound messages
-        vm.prank(multisig);
-        ILayerZeroEndpointV2(endpoint)
-            .setSendLibrary(
-                oapp, // OApp address
-                dstEid, // Destination chain EID
-                sendLib // SendUln302 address
-            );
+        if (sendLib != address(0)) {
+            // Set send library for outbound messages
+            vm.prank(multisig);
+            ILayerZeroEndpointV2(endpoint)
+                .setSendLibrary(
+                    oapp, // OApp address
+                    dstEid, // Destination chain EID
+                    sendLib // SendUln302 address
+                );
+        }
 
         // Set receive library for inbound messages
-        vm.prank(multisig);
-        ILayerZeroEndpointV2(endpoint)
-            .setReceiveLibrary(
-                oapp, // OApp address
-                srcEid, // Source chain EID
-                receiveLib, // ReceiveUln302 address
-                GRACE_PERIOD // Grace period for library switch
-            );
+        if (receiveLib != address(0)) {
+            vm.prank(multisig);
+            ILayerZeroEndpointV2(endpoint)
+                .setReceiveLibrary(
+                    oapp, // OApp address
+                    srcEid, // Source chain EID
+                    receiveLib, // ReceiveUln302 address
+                    GRACE_PERIOD // Grace period for library switch
+                );
+        }
     }
 
     function _setPeers() internal {
@@ -629,10 +577,10 @@ contract PriceAggregatorQAppTest is Test {
     }
 
     /// @notice Extract PacketSent message from emitted event
-    function _extractPayload() internal view returns (bytes memory message) {
+    function _extractPayload(Vm.Log[] memory logs) internal pure returns (bytes memory message) {
         bytes memory encodedPayload;
         bytes32 sig = keccak256("PacketSent(bytes,bytes,address)"); // PacketSent(bytes encodedPayload, bytes options, address sendLibrary)
-        Vm.Log[] memory logs = vm.getRecordedLogs();
+
         for (uint i; i < logs.length; ++i) {
             if (logs[i].topics[0] == sig) {
                 (encodedPayload,,) = abi.decode(logs[i].data, (bytes, bytes, address));
