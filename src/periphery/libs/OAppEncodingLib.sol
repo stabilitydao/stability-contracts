@@ -12,15 +12,14 @@ library OAppEncodingLib {
         return abi.encodePacked(serialized);
     }
 
-    function unpackPriceUsd18(bytes memory message)
+    /// @dev calldata is used to reduce gas consumption of lzReceive (from 29894 to 29703)
+    function unpackPriceUsd18(bytes calldata message)
         internal
         pure
         returns (uint16 format, uint160 price, uint64 timestamp)
     {
-        bytes32 serialized;
-        assembly {
-            serialized := mload(add(message, 32))
-        }
+        // assume here that message length >= 32 here
+        bytes32 serialized = abi.decode(message, (bytes32));
 
         uint raw = uint(serialized);
 

@@ -24,7 +24,7 @@ import {PacketV1Codec} from "@layerzerolabs/lz-evm-protocol-v2/contracts/message
 import {PriceAggregatorQApp} from "../../src/periphery/PriceAggregatorOApp.sol";
 import {BridgedPriceOracle} from "../../src/periphery/BridgedPriceOracle.sol";
 
-contract PriceAggregatorQAppTest is Test {
+contract PriceAggregatorOAppTest is Test {
     using PacketV1Codec for bytes;
     using SafeERC20 for IERC20;
 
@@ -43,17 +43,19 @@ contract PriceAggregatorQAppTest is Test {
     /// @dev Gas limit for executor lzReceive calls
     /// 2 mln => fee = 0.78 S
     /// 100_000 => fee = 0.36 S
-    uint128 private constant GAS_LIMIT = 100_000;
+    uint128 private constant GAS_LIMIT = 30_000;
 
     // --------------- DVN config: List of DVN providers must be equal on both chains (!)
 
     // https://docs.layerzero.network/v2/deployments/chains/sonic
-    address internal constant SONIC_DVN_SAMPLE_1 = 0x78f607fc38e071cEB8630B7B12c358eE01C31E96;
-    address internal constant SONIC_DVN_SAMPLE_2 = 0xCA764b512E2d2fD15fcA1c0a38F7cFE9153148F0;
+    address internal constant SONIC_DVN_NETHERMIND = 0x3b0531eB02Ab4aD72e7a531180beeF9493a00dD2; // Nethermind (lzRead)
+    address internal constant SONIC_DVN_LAYER_ZERO = 0x78f607fc38e071cEB8630B7B12c358eE01C31E96; // LayerZero Labs (lzRead)
+    address internal constant SONIC_DVN_HORIZEN = 0xCA764b512E2d2fD15fcA1c0a38F7cFE9153148F0; // Horizen (lzRead)
 
     // https://docs.layerzero.network/v2/deployments/chains/avalanche
-    address internal constant AVALANCHE_DVN_SAMPLE_1 = 0x0Ffe02DF012299A370D5dd69298A5826EAcaFdF8;
-    address internal constant AVALANCHE_DVN_SAMPLE_2 = 0x1a5Df1367F21d55B13D5E2f8778AD644BC97aC6d;
+    address internal constant AVALANCHE_DVN_LAYER_ZERO = 0x0Ffe02DF012299A370D5dd69298A5826EAcaFdF8; // LayerZero Labs (lzRead)
+    address internal constant AVALANCHE_DVN_NETHERMIND = 0x1308151a7ebaC14f435d3Ad5fF95c34160D539A5; // Nethermind (lzRead)
+    address internal constant AVALANCHE_DVN_HORIZON = 0x1a5Df1367F21d55B13D5E2f8778AD644BC97aC6d; // Horizen (lzRead)
 
     // --------------- Confirmations: send >= receive, see https://docs.layerzero.network/v2/developers/evm/configuration/dvn-executor-config
     /// @dev Minimum block confirmations to wait on Sonic
@@ -93,9 +95,10 @@ contract PriceAggregatorQAppTest is Test {
             address(0), // we have one directional bridge: sonic -> avalanche, receive lib is not needed
             multisigSonic
         );
-        address[] memory requiredDVNs = new address[](2); // list must be sorted
-        requiredDVNs[0] = SONIC_DVN_SAMPLE_1;
-        requiredDVNs[1] = SONIC_DVN_SAMPLE_2;
+        address[] memory requiredDVNs = new address[](1); // list must be sorted
+        //requiredDVNs[0] = SONIC_DVN_NETHERMIND;
+        requiredDVNs[0] = SONIC_DVN_LAYER_ZERO;
+        //requiredDVNs[2] = SONIC_DVN_HORIZEN;
         _setSendConfig(
             forkSonic,
             SonicConstantsLib.LAYER_ZERO_V2_ENDPOINT,
@@ -119,9 +122,10 @@ contract PriceAggregatorQAppTest is Test {
             AvalancheConstantsLib.LAYER_ZERO_V2_RECEIVE_ULN_302,
             multisigAvalanche
         );
-        requiredDVNs = new address[](2); // list must be sorted
-        requiredDVNs[0] = AVALANCHE_DVN_SAMPLE_1;
-        requiredDVNs[1] = AVALANCHE_DVN_SAMPLE_2;
+        requiredDVNs = new address[](1); // list must be sorted
+        requiredDVNs[0] = AVALANCHE_DVN_LAYER_ZERO;
+        //        requiredDVNs[1] = AVALANCHE_DVN_NETHERMIND;
+        //        requiredDVNs[2] = AVALANCHE_DVN_HORIZON;
         _setReceiveConfig(
             forkAvalanche,
             AvalancheConstantsLib.LAYER_ZERO_V2_ENDPOINT,
@@ -393,6 +397,7 @@ contract PriceAggregatorQAppTest is Test {
 
         MessagingFee memory msgFee =
             priceAggregatorQApp.quotePriceMessage(AvalancheConstantsLib.LAYER_ZERO_V2_ENDPOINT_ID, options, false);
+        console.log("msgFee", msgFee.nativeFee);
 
         vm.recordLogs();
 
@@ -411,6 +416,7 @@ contract PriceAggregatorQAppTest is Test {
             nonce: 1
         });
 
+        uint gas = gasleft();
         vm.prank(AvalancheConstantsLib.LAYER_ZERO_V2_ENDPOINT);
         bridgedPriceOracle.lzReceive(
             origin,
@@ -419,6 +425,8 @@ contract PriceAggregatorQAppTest is Test {
             address(0), // executor
             "" // extraData
         );
+        uint gasUsed = gas - gasleft();
+        assertLt(gasUsed, GAS_LIMIT, "gas used in lzReceive"); // ~ 30 ths
 
         (price, timestamp) = bridgedPriceOracle.getPriceUsd18();
     }
@@ -527,7 +535,7 @@ contract PriceAggregatorQAppTest is Test {
         // ---------------------- ULN (DVN) configuration ----------------------
         UlnConfig memory uln = UlnConfig({
             confirmations: confirmations,
-            requiredDVNCount: 2,
+            requiredDVNCount: uint8(requiredDVNs.length),
             optionalDVNCount: type(uint8).max,
             requiredDVNs: requiredDVNs, // sorted list of required DVN addresses
             optionalDVNs: new address[](0),
@@ -535,7 +543,7 @@ contract PriceAggregatorQAppTest is Test {
         });
 
         ExecutorConfig memory exec = ExecutorConfig({
-            maxMessageSize: 10000, // max bytes per cross-chain message
+            maxMessageSize: 32, // max bytes per cross-chain message
             executor: executor // address that pays destination execution fees
         });
 
@@ -575,7 +583,7 @@ contract PriceAggregatorQAppTest is Test {
         // ---------------------- ULN (DVN) configuration ----------------------
         UlnConfig memory uln = UlnConfig({
             confirmations: confirmations, // Minimum block confirmations
-            requiredDVNCount: 2,
+            requiredDVNCount: uint8(requiredDVNs.length),
             optionalDVNCount: type(uint8).max,
             requiredDVNs: requiredDVNs, // sorted list of required DVN addresses
             optionalDVNs: new address[](0),

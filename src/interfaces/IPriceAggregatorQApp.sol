@@ -25,7 +25,7 @@ interface IPriceAggregatorQApp {
     /// @notice Quote the gas needed to pay for sending price message to the given destination chain endpoint ID.
     /// The message is generated internally as a packet of price value and timestamp taken from the price aggregator
     /// @param dstEid_ Destination chain endpoint ID, see https://docs.layerzero.network/v2/concepts/glossary#endpoint-id
-    /// @param options_ Additional options for the message.
+    /// @param options_ Additional options for the message. Use OptionsBuilder.addExecutorLzReceiveOption()
     /// @param payInLzToken_ Whether to return fee in ZRO token.
     /// @return fee A `MessagingFee` struct containing the calculated gas fee in either the native token or ZRO token.
     function quotePriceMessage(
@@ -37,7 +37,7 @@ interface IPriceAggregatorQApp {
     /// @notice Send price message to a remote BridgedPriceOracle on another chain.
     /// The message is generated internally as a packet of price value and timestamp taken from the price aggregator
     /// @param dstEid_ Destination chain endpoint ID, see https://docs.layerzero.network/v2/concepts/glossary#endpoint-id
-    /// @param options_ Additional options for the message.
+    /// @param options_ Additional options for the message. Use OptionsBuilder.addExecutorLzReceiveOption()
     /// @param fee_ A `MessagingFee` struct containing the gas fee to be paid
     function sendPriceMessage(uint32 dstEid_, bytes memory options_, MessagingFee memory fee_) external payable;
 }

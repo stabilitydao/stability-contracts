@@ -63,7 +63,7 @@ contract PriceAggregatorQApp is Controllable, OAppUpgradeable, IPriceAggregatorQ
     /*                             VIEW                           */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    /// @notice Address of the entity (vault or asset) to get price for
+    /// @inheritdoc IPriceAggregatorQApp
     function entity() external view returns (address) {
         return getPriceAggregatorQAppStorage().entity;
     }

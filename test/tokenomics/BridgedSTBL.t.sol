@@ -44,7 +44,7 @@ contract BridgedSTBLTest is Test {
     /// @dev Gas limit for executor lzReceive calls
     /// 2 mln => fee = 0.78 S
     /// 100_000 => fee = 0.36 S
-    uint128 private constant GAS_LIMIT = 200_000;
+    uint128 private constant GAS_LIMIT = 60_000;
 
     // --------------- DVN config: List of DVN providers must be equal on both chains (!)
 
@@ -583,7 +583,7 @@ contract BridgedSTBLTest is Test {
         });
 
         {
-            // uint gasBefore = gasleft();
+            uint gasBefore = gasleft();
             vm.prank(AvalancheConstantsLib.LAYER_ZERO_V2_ENDPOINT);
             bridgedToken.lzReceive(
                 origin,
@@ -592,7 +592,8 @@ contract BridgedSTBLTest is Test {
                 address(0), // executor
                 "" // extraData
             );
-            // console.log("lzReceive gas", gasBefore - gasleft()); // ~ 60 ths
+            assertLt(gasBefore - gasleft(), GAS_LIMIT, "gas limit exceeded"); // ~60 ths
+            // console.log("gasBefore - gasleft()", gasBefore - gasleft());
         }
 
         dest.avalancheAfter = _getBalancesAvalanche(sender, receiver);
