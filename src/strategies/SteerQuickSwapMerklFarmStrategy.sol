@@ -265,9 +265,8 @@ contract SteerQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase 
             IMultiPositionManager multiPositionManager = IMultiPositionManager($._underlying);
             (amounts_[0], amounts_[1]) = multiPositionManager.getTotalAmounts();
             uint totalInMultiPositionManager = multiPositionManager.totalSupply();
-            (amounts_[0], amounts_[1]) = (
-                amounts_[0] * _total / totalInMultiPositionManager, amounts_[1] * _total / totalInMultiPositionManager
-            );
+            (amounts_[0], amounts_[1]) =
+            (amounts_[0] * _total / totalInMultiPositionManager, amounts_[1] * _total / totalInMultiPositionManager);
         }
     }
 

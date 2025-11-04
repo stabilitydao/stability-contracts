@@ -969,9 +969,8 @@ contract WrapperMetaUsdRestartSonicTest is Test {
 
         (state.wmetaUSDPrice,) =
             IPriceReader(IPlatform(PLATFORM).priceReader()).getPrice(SonicConstantsLib.WRAPPED_METAVAULT_METAUSD);
-        state.wmetaUSDPriceDirectCalculations =
-            IWrappedMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_METAUSD).totalAssets() * 1e18
-                / IWrappedMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_METAUSD).totalSupply();
+        state.wmetaUSDPriceDirectCalculations = IWrappedMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_METAUSD)
+                .totalAssets() * 1e18 / IWrappedMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_METAUSD).totalSupply();
         //        console.log("state.wmetaUSDPrice", state.wmetaUSDPrice);
         //        console.log("state.wmetaUSDPriceDirectCalculations", state.wmetaUSDPriceDirectCalculations);
 

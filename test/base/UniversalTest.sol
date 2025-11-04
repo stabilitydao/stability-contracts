@@ -124,7 +124,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                 factory.strategyLogicConfig(keccak256(bytes(strategies[i].id)));
             // (,vars.strategyImplementation,,,vars.farming, vars.tokenId) = factory.strategyLogicConfig(keccak256(bytes(strategies[i].id)));
             (vars.strategyImplementation, vars.farming, vars.tokenId) =
-                (strategyConfig.implementation, strategyConfig.farming, strategyConfig.tokenId);
+            (strategyConfig.implementation, strategyConfig.farming, strategyConfig.tokenId);
             assertNotEq(
                 vars.strategyImplementation, address(0), "Strategy implementation not found. Put it to chain lib."
             );

@@ -457,7 +457,8 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
     {
         FactoryStorage storage $ = _getStorage();
         VaultConfig memory vaultConfig_ = $.vaultConfig[typeHash];
-        (vaultType, implementation, deployAllowed, upgradeAllowed, buildingPrice) = (
+        (vaultType, implementation, deployAllowed, upgradeAllowed, buildingPrice) =
+        (
             vaultConfig_.vaultType,
             vaultConfig_.implementation,
             vaultConfig_.deployAllowed,
