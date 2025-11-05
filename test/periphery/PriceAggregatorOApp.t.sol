@@ -22,8 +22,8 @@ import {ExecutorConfig} from "@layerzerolabs/lz-evm-messagelib-v2/contracts/Send
 import {UlnConfig} from "@layerzerolabs/lz-evm-messagelib-v2/contracts/uln/UlnBase.sol";
 // import {InboundPacket, PacketDecoder} from "@layerzerolabs/lz-evm-protocol-v2/../oapp/contracts/precrime/libs/Packet.sol";
 import {PacketV1Codec} from "@layerzerolabs/lz-evm-protocol-v2/contracts/messagelib/libs/PacketV1Codec.sol";
-import { IOAppCore } from "@layerzerolabs/oapp-evm/contracts/oapp/interfaces/IOAppCore.sol";
-import { IOAppReceiver } from "@layerzerolabs/oapp-evm/contracts/oapp/interfaces/IOAppReceiver.sol";
+import {IOAppCore} from "@layerzerolabs/oapp-evm/contracts/oapp/interfaces/IOAppCore.sol";
+import {IOAppReceiver} from "@layerzerolabs/oapp-evm/contracts/oapp/interfaces/IOAppReceiver.sol";
 import {PriceAggregatorQApp} from "../../src/periphery/PriceAggregatorOApp.sol";
 import {BridgedPriceOracle} from "../../src/periphery/BridgedPriceOracle.sol";
 import {PlasmaConstantsLib} from "../../chains/plasma/PlasmaConstantsLib.sol";
@@ -47,7 +47,7 @@ contract PriceAggregatorOAppTest is Test {
     /// 100_000 => fee = 0.36 S
     uint128 private constant GAS_LIMIT = 30_000;
 
-    // --------------- DVN config: List of DVN providers must be equal on both chains (!)
+    // --------------- DVN config: List of DVN providers must be equal on both source and target chains
 
     // https://docs.layerzero.network/v2/deployments/chains/sonic
     address internal constant SONIC_DVN_NETHERMIND_PULL = 0x3b0531eB02Ab4aD72e7a531180beeF9493a00dD2; // Nethermind (lzRead)
@@ -119,17 +119,17 @@ contract PriceAggregatorOAppTest is Test {
             _setupLayerZeroConfig(sonic, avalanche, false);
 
             address[] memory requiredDVNs = new address[](1); // list must be sorted
-//            requiredDVNs[0] = SONIC_DVN_NETHERMIND_PULL;
+            //            requiredDVNs[0] = SONIC_DVN_NETHERMIND_PULL;
             requiredDVNs[0] = SONIC_DVN_LAYER_ZERO_PULL;
-//            requiredDVNs[2] = SONIC_DVN_HORIZEN_PULL;
+            //            requiredDVNs[2] = SONIC_DVN_HORIZEN_PULL;
             _setSendConfig(sonic, avalanche, requiredDVNs, MIN_BLOCK_CONFIRMATIONS_SEND_SONIC);
 
             // ------------------- Set up receiving chain for Sonic:Avalanche
             _setupLayerZeroConfig(avalanche, sonic, false);
             requiredDVNs = new address[](1); // list must be sorted
             requiredDVNs[0] = AVALANCHE_DVN_LAYER_ZERO_PULL;
-//            requiredDVNs[1] = AVALANCHE_DVN_NETHERMIND_PULL;
-//            requiredDVNs[2] = AVALANCHE_DVN_HORIZON_PULL;
+            //            requiredDVNs[1] = AVALANCHE_DVN_NETHERMIND_PULL;
+            //            requiredDVNs[2] = AVALANCHE_DVN_HORIZON_PULL;
             _setReceiveConfig(avalanche, sonic, requiredDVNs, MIN_BLOCK_CONFIRMATIONS_RECEIVE);
 
             // ------------------- set peers
@@ -142,9 +142,9 @@ contract PriceAggregatorOAppTest is Test {
             _setupLayerZeroConfig(sonic, plasma, false);
 
             address[] memory requiredDVNs = new address[](1); // list must be sorted
-//            requiredDVNs[0] = SONIC_DVN_NETHERMIND_PULL;
+            //            requiredDVNs[0] = SONIC_DVN_NETHERMIND_PULL;
             requiredDVNs[0] = SONIC_DVN_LAYER_ZERO_PUSH;
-//            requiredDVNs[2] = SONIC_DVN_HORIZEN_PULL;
+            //            requiredDVNs[2] = SONIC_DVN_HORIZEN_PULL;
             _setSendConfig(sonic, plasma, requiredDVNs, MIN_BLOCK_CONFIRMATIONS_SEND_SONIC);
 
             // ------------------- Set up receiving chain for Sonic:Plasma
@@ -204,7 +204,10 @@ contract PriceAggregatorOAppTest is Test {
         vm.prank(sonic.multisig);
         priceAggregatorOApp.setPeer(avalanche.endpointId, bytes32(uint(uint160(address(bridgedPriceOracleAvalanche)))));
 
-        assertEq(priceAggregatorOApp.peers(avalanche.endpointId), bytes32(uint(uint160(address(bridgedPriceOracleAvalanche)))));
+        assertEq(
+            priceAggregatorOApp.peers(avalanche.endpointId),
+            bytes32(uint(uint160(address(bridgedPriceOracleAvalanche))))
+        );
     }
 
     function testLzReceiveUnsuppoted() public {
@@ -239,7 +242,9 @@ contract PriceAggregatorOAppTest is Test {
         //        );
 
         assertEq(bridgedPriceOracleAvalanche.decimals(), 8, "decimals in aave price oracle is 8");
-        assertEq(bridgedPriceOracleAvalanche.platform(), AvalancheConstantsLib.PLATFORM, "bridgedPriceOracle - platform");
+        assertEq(
+            bridgedPriceOracleAvalanche.platform(), AvalancheConstantsLib.PLATFORM, "bridgedPriceOracle - platform"
+        );
         assertEq(bridgedPriceOracleAvalanche.owner(), avalanche.multisig, "bridgedPriceOracle - owner");
     }
 
@@ -254,8 +259,7 @@ contract PriceAggregatorOAppTest is Test {
         bridgedPriceOracleAvalanche.setPeer(sonic.endpointId, bytes32(uint(uint160(address(priceAggregatorOApp)))));
 
         assertEq(
-            bridgedPriceOracleAvalanche.peers(sonic.endpointId),
-            bytes32(uint(uint160(address(priceAggregatorOApp))))
+            bridgedPriceOracleAvalanche.peers(sonic.endpointId), bytes32(uint(uint160(address(priceAggregatorOApp))))
         );
     }
 
@@ -308,11 +312,8 @@ contract PriceAggregatorOAppTest is Test {
         // ------------------ Avalanche: simulate message reception
         vm.selectFork(avalanche.fork);
 
-        Origin memory origin = Origin({
-            srcEid: sonic.endpointId,
-            sender: bytes32(uint(uint160(address(priceAggregatorOApp)))),
-            nonce: 1
-        });
+        Origin memory origin =
+            Origin({srcEid: sonic.endpointId, sender: bytes32(uint(uint160(address(priceAggregatorOApp)))), nonce: 1});
 
         vm.prank(avalanche.endpoint);
         bridgedPriceOracleAvalanche.lzReceive(
@@ -408,7 +409,10 @@ contract PriceAggregatorOAppTest is Test {
         assertEq(price, targetPrice_, "expected price in price aggregator");
     }
 
-    function _sendPriceFromSonicToDest(address sender, ChainConfig memory dest) internal returns (uint price, uint timestamp) {
+    function _sendPriceFromSonicToDest(
+        address sender,
+        ChainConfig memory dest
+    ) internal returns (uint price, uint timestamp) {
         vm.selectFork(sonic.fork);
 
         // ------------------- Send a message with new price to target chain
@@ -425,21 +429,19 @@ contract PriceAggregatorOAppTest is Test {
         // ------------------ Target chain: simulate message reception
         vm.selectFork(dest.fork);
 
-        Origin memory origin = Origin({
-            srcEid: sonic.endpointId,
-            sender: bytes32(uint(uint160(address(priceAggregatorOApp)))),
-            nonce: 1
-        });
+        Origin memory origin =
+            Origin({srcEid: sonic.endpointId, sender: bytes32(uint(uint160(address(priceAggregatorOApp)))), nonce: 1});
 
         uint gas = gasleft();
         vm.prank(dest.endpoint);
-        IOAppReceiver(dest.oapp).lzReceive(
-            origin,
-            bytes32(0), // guid: actual value doesn't matter
-            message,
-            address(0), // executor
-            "" // extraData
-        );
+        IOAppReceiver(dest.oapp)
+            .lzReceive(
+                origin,
+                bytes32(0), // guid: actual value doesn't matter
+                message,
+                address(0), // executor
+                "" // extraData
+            );
         uint gasUsed = gas - gasleft();
         assertLt(gasUsed, GAS_LIMIT, "gas used in lzReceive"); // ~ 30 ths
         console.log("gas limit, used, fee", GAS_LIMIT, gasUsed, msgFee.nativeFee);
@@ -493,7 +495,7 @@ contract PriceAggregatorOAppTest is Test {
             ILayerZeroEndpointV2(src.endpoint)
                 .setReceiveLibrary(
                     src.oapp, // OApp address
-                    src.endpointId, // Source chain EID
+                    dst.endpointId, // Source chain EID
                     src.receiveLib, // ReceiveUln302 address
                     GRACE_PERIOD // Grace period for library switch
                 );
@@ -505,23 +507,24 @@ contract PriceAggregatorOAppTest is Test {
         vm.selectFork(src.fork);
 
         vm.prank(src.multisig);
-        IOAppCore(src.oapp).setPeer(
-            dst.endpointId, bytes32(uint(uint160(address(dst.oapp))))
-        );
+        IOAppCore(src.oapp).setPeer(dst.endpointId, bytes32(uint(uint160(address(dst.oapp)))));
 
         // ------------------- Avalanche: set up peer connection
         vm.selectFork(dst.fork);
 
         vm.prank(dst.multisig);
-        IOAppCore(dst.oapp).setPeer(
-            src.endpointId, bytes32(uint(uint160(address(src.oapp))))
-        );
+        IOAppCore(dst.oapp).setPeer(src.endpointId, bytes32(uint(uint160(address(src.oapp)))));
     }
 
     /// @notice Configures both ULN (DVN validators) and Executor for an OApp
     /// @param requiredDVNs  Array of DVN validator addresses
     /// @param confirmations  Minimum block confirmations
-    function _setSendConfig(ChainConfig memory src, ChainConfig memory dst, address[] memory requiredDVNs, uint64 confirmations) internal {
+    function _setSendConfig(
+        ChainConfig memory src,
+        ChainConfig memory dst,
+        address[] memory requiredDVNs,
+        uint64 confirmations
+    ) internal {
         vm.selectFork(src.fork);
 
         // ---------------------- ULN (DVN) configuration ----------------------
@@ -554,7 +557,12 @@ contract PriceAggregatorOAppTest is Test {
     /// @dev https://docs.layerzero.network/v2/developers/evm/configuration/dvn-executor-config
     /// @param requiredDVNs  Array of DVN validator addresses
     /// @param confirmations Minimum block confirmations for ULN
-    function _setReceiveConfig(ChainConfig memory src, ChainConfig memory dst, address[] memory requiredDVNs, uint64 confirmations) internal {
+    function _setReceiveConfig(
+        ChainConfig memory src,
+        ChainConfig memory dst,
+        address[] memory requiredDVNs,
+        uint64 confirmations
+    ) internal {
         vm.selectFork(src.fork);
 
         // ---------------------- ULN (DVN) configuration ----------------------
@@ -651,6 +659,7 @@ contract PriceAggregatorOAppTest is Test {
         //        console.logBytes(message);
         return message;
     }
+
     //endregion ------------------------------------- Internal logic
 
     //region ------------------------------------- Chains

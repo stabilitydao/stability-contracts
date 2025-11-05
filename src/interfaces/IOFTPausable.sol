@@ -3,11 +3,9 @@ pragma solidity ^0.8.23;
 
 import {IOFT} from "@layerzerolabs/oft-evm/contracts/interfaces/IOFT.sol";
 
-interface IBridgedSTBL is IOFT {
+interface IOFTPausable is IOFT {
     error Paused();
     event Pause(address indexed account, bool paused);
-
-    function initialize(address platform_) external;
 
     /// @notice True if the given account is paused and is not able to transfer bridget tokens
     function paused(address account_) external view returns (bool);

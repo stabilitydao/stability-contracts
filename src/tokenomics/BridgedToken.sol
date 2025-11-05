@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.22;
 
-import {OFTAdapterUpgradeable} from "@layerzerolabs/oft-evm-upgradeable/contracts/oft/OFTAdapterUpgradeable.sol";
+import {OFTUpgradeable} from "@layerzerolabs/oft-evm-upgradeable/contracts/oft/OFTUpgradeable.sol";
 import {IControllable, Controllable} from "../core/base/Controllable.sol";
 import {IPlatform} from "../interfaces/IPlatform.sol";
-import {ISTBLOFTAdapter} from "../interfaces/ISTBLOFTAdapter.sol";
-import {IBridgedSTBL} from "../interfaces/IBridgedSTBL.sol";
+import {IBridgedToken} from "../interfaces/IBridgedToken.sol";
+import {IOFTPausable} from "../interfaces/IOFTPausable.sol";
 
-/// @notice Omnichain Fungible Token Adapter for exist STBL token
-contract STBLOFTAdapter is Controllable, OFTAdapterUpgradeable, ISTBLOFTAdapter {
+/// @notice Omnichain Fungible Token - bridged version of STBL token from Sonic to other chains
+contract BridgedToken is Controllable, OFTUpgradeable, IBridgedToken {
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         CONSTANTS                          */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -16,52 +16,44 @@ contract STBLOFTAdapter is Controllable, OFTAdapterUpgradeable, ISTBLOFTAdapter 
     /// @inheritdoc IControllable
     string public constant VERSION = "1.0.0";
 
-    // keccak256(abi.encode(uint(keccak256("erc7201:stability.STBLOFTAdapter")) - 1)) & ~bytes32(uint(0xff));
-    bytes32 internal constant _STBLOFT_ADAPTER_STORAGE_LOCATION =
-        0x86cb5347d567d2160ba4a606db69acfd8671070fb11a61ac347984a4cec12500;
+    // keccak256(abi.encode(uint(keccak256("erc7201:stability.BridgedToken")) - 1)) & ~bytes32(uint(0xff));
+    bytes32 internal constant BRIDGED_TOKEN_STORAGE_LOCATION =
+        0x5908ba930cd8810ead4eba737803862bca8ae4a4891cfeedea00ad638eaee100;
 
-    /// @custom:storage-location erc7201:stability.STBLOFTAdapter
-    struct StblOftAdapterStorage {
+    /// @custom:storage-location erc7201:stability.BridgedToken
+    struct BridgedTokenStorage {
         /// @notice Paused state for addresses
         mapping(address => bool) paused;
     }
 
-    //region --------------------------------- Initializers and view
+    //region --------------------------------- Initializers
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      INITIALIZATION                        */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
-    constructor(address token_, address lzEndpoint_) OFTAdapterUpgradeable(token_, lzEndpoint_) {
+
+    constructor(address lzEndpoint_) OFTUpgradeable(lzEndpoint_) {
         _disableInitializers();
     }
 
-    /// @inheritdoc IBridgedSTBL
-    function initialize(address platform_) public initializer {
+    /// @inheritdoc IBridgedToken
+    function initialize(address platform_, string memory name_, string memory symbol_) public initializer {
         address _delegate = IPlatform(platform_).multisig();
 
         __Controllable_init(platform_);
-        __OFTAdapter_init(_delegate);
+        __OFT_init(name_, symbol_, _delegate);
         __Ownable_init(_delegate);
     }
 
-    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
-    /*                         VIEW                               */
-    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
-
-    /// @inheritdoc IBridgedSTBL
-    function paused(address account_) external view returns (bool) {
-        return getStblOftAdapterStorage().paused[account_];
-    }
-
-    //endregion --------------------------------- Initializers and view
+    //endregion --------------------------------- Initializers
 
     //region --------------------------------- Restricted actions
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                  RESTRICTED ACTIONS                        */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    /// @inheritdoc IBridgedSTBL
+    /// @inheritdoc IOFTPausable
     function setPaused(address account, bool paused_) external onlyOperator {
-        StblOftAdapterStorage storage $ = getStblOftAdapterStorage();
+        BridgedTokenStorage storage $ = getBridgedTokenStorage();
         $.paused[account] = paused_;
 
         emit Pause(account, paused_);
@@ -69,12 +61,28 @@ contract STBLOFTAdapter is Controllable, OFTAdapterUpgradeable, ISTBLOFTAdapter 
 
     //endregion --------------------------------- Restricted actions
 
+    //region --------------------------------- View
+
+    /// @inheritdoc IOFTPausable
+    function paused(address account_) external view returns (bool) {
+        return getBridgedTokenStorage().paused[account_];
+    }
+
+    //endregion --------------------------------- View
+
     //region --------------------------------- Overrides
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                  OVERRIDES                                 */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
     function _checkOwner() internal view override {
         _requireMultisig();
+    }
+
+    /// @dev Paused accounts cannot send tokens
+    function _update(address from, address to, uint value) internal virtual override {
+        _requireNotPaused(from);
+
+        super._update(from, to, value);
     }
 
     /// @dev Paused accounts cannot send tokens
@@ -103,16 +111,16 @@ contract STBLOFTAdapter is Controllable, OFTAdapterUpgradeable, ISTBLOFTAdapter 
     //endregion --------------------------------- Overrides
 
     //region --------------------------------- Internal logic
-    function getStblOftAdapterStorage() internal pure returns (StblOftAdapterStorage storage $) {
+    function getBridgedTokenStorage() internal pure returns (BridgedTokenStorage storage $) {
         //slither-disable-next-line assembly
         assembly {
-            $.slot := _STBLOFT_ADAPTER_STORAGE_LOCATION
+            $.slot := BRIDGED_TOKEN_STORAGE_LOCATION
         }
     }
 
     function _requireNotPaused(address account) internal view {
-        StblOftAdapterStorage storage $ = getStblOftAdapterStorage();
-        require(!$.paused[account], IBridgedSTBL.Paused());
+        BridgedTokenStorage storage $ = getBridgedTokenStorage();
+        require(!$.paused[account], Paused());
     }
 
     //endregion --------------------------------- Internal logic

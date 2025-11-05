@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.22;
 
-import {OFTUpgradeable} from "@layerzerolabs/oft-evm-upgradeable/contracts/oft/OFTUpgradeable.sol";
+import {OFTAdapterUpgradeable} from "@layerzerolabs/oft-evm-upgradeable/contracts/oft/OFTAdapterUpgradeable.sol";
 import {IControllable, Controllable} from "../core/base/Controllable.sol";
 import {IPlatform} from "../interfaces/IPlatform.sol";
-import {IBridgedSTBL} from "../interfaces/IBridgedSTBL.sol";
+import {IStabilityOFTAdapter} from "../interfaces/IStabilityOFTAdapter.sol";
+import {IOFTPausable} from "../interfaces/IOFTPausable.sol";
 
-/// @notice Omnichain Fungible Token - bridged version of STBL token from Sonic to other chains
-contract BridgedSTBL is Controllable, OFTUpgradeable, IBridgedSTBL {
+/// @notice Omnichain Fungible Token Adapter for exist STBL token
+contract StabilityOFTAdapter is Controllable, OFTAdapterUpgradeable, IStabilityOFTAdapter {
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         CONSTANTS                          */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -15,44 +16,52 @@ contract BridgedSTBL is Controllable, OFTUpgradeable, IBridgedSTBL {
     /// @inheritdoc IControllable
     string public constant VERSION = "1.0.0";
 
-    // keccak256(abi.encode(uint(keccak256("erc7201:stability.BridgedSTBL")) - 1)) & ~bytes32(uint(0xff));
-    bytes32 internal constant _BRIDGED_STBL_STORAGE_LOCATION =
-        0xa8c23a932d7408467fabc2c03f4280fd535868ef26def6a73cd9512968d2e900;
+    // keccak256(abi.encode(uint(keccak256("erc7201:stability.StabilityOFTAdapter")) - 1)) & ~bytes32(uint(0xff));
+    bytes32 internal constant STABILITY_OFT_ADAPTER_STORAGE_LOCATION =
+        0xc2fe35575ba2043e2e48d6fdb6b1fc90678ceafd17da235789a1487ce75a9a00;
 
-    /// @custom:storage-location erc7201:stability.BridgedSTBL
-    struct BridgedStblStorage {
+    /// @custom:storage-location erc7201:stability.StabilityOFTAdapter
+    struct StabilityOftAdapterStorage {
         /// @notice Paused state for addresses
         mapping(address => bool) paused;
     }
 
-    //region --------------------------------- Initializers
+    //region --------------------------------- Initializers and view
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      INITIALIZATION                        */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
-
-    constructor(address lzEndpoint_) OFTUpgradeable(lzEndpoint_) {
+    constructor(address token_, address lzEndpoint_) OFTAdapterUpgradeable(token_, lzEndpoint_) {
         _disableInitializers();
     }
 
-    /// @inheritdoc IBridgedSTBL
+    /// @inheritdoc IStabilityOFTAdapter
     function initialize(address platform_) public initializer {
         address _delegate = IPlatform(platform_).multisig();
 
         __Controllable_init(platform_);
-        __OFT_init("Stability STBL", "STBL", _delegate);
+        __OFTAdapter_init(_delegate);
         __Ownable_init(_delegate);
     }
 
-    //endregion --------------------------------- Initializers
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                         VIEW                               */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    /// @inheritdoc IOFTPausable
+    function paused(address account_) external view returns (bool) {
+        return getStabilityOftAdapterStorage().paused[account_];
+    }
+
+    //endregion --------------------------------- Initializers and view
 
     //region --------------------------------- Restricted actions
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                  RESTRICTED ACTIONS                        */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    /// @inheritdoc IBridgedSTBL
+    /// @inheritdoc IOFTPausable
     function setPaused(address account, bool paused_) external onlyOperator {
-        BridgedStblStorage storage $ = getBridgedStblStorage();
+        StabilityOftAdapterStorage storage $ = getStabilityOftAdapterStorage();
         $.paused[account] = paused_;
 
         emit Pause(account, paused_);
@@ -60,28 +69,12 @@ contract BridgedSTBL is Controllable, OFTUpgradeable, IBridgedSTBL {
 
     //endregion --------------------------------- Restricted actions
 
-    //region --------------------------------- View
-
-    /// @inheritdoc IBridgedSTBL
-    function paused(address account_) external view returns (bool) {
-        return getBridgedStblStorage().paused[account_];
-    }
-
-    //endregion --------------------------------- View
-
     //region --------------------------------- Overrides
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                  OVERRIDES                                 */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
     function _checkOwner() internal view override {
         _requireMultisig();
-    }
-
-    /// @dev Paused accounts cannot send tokens
-    function _update(address from, address to, uint value) internal virtual override {
-        _requireNotPaused(from);
-
-        super._update(from, to, value);
     }
 
     /// @dev Paused accounts cannot send tokens
@@ -110,16 +103,16 @@ contract BridgedSTBL is Controllable, OFTUpgradeable, IBridgedSTBL {
     //endregion --------------------------------- Overrides
 
     //region --------------------------------- Internal logic
-    function getBridgedStblStorage() internal pure returns (BridgedStblStorage storage $) {
+    function getStabilityOftAdapterStorage() internal pure returns (StabilityOftAdapterStorage storage $) {
         //slither-disable-next-line assembly
         assembly {
-            $.slot := _BRIDGED_STBL_STORAGE_LOCATION
+            $.slot := STABILITY_OFT_ADAPTER_STORAGE_LOCATION
         }
     }
 
     function _requireNotPaused(address account) internal view {
-        BridgedStblStorage storage $ = getBridgedStblStorage();
-        require(!$.paused[account], Paused());
+        StabilityOftAdapterStorage storage $ = getStabilityOftAdapterStorage();
+        require(!$.paused[account], IOFTPausable.Paused());
     }
 
     //endregion --------------------------------- Internal logic
