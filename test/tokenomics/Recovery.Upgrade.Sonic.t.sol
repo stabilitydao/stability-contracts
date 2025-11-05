@@ -1,35 +1,137 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+import {console} from "forge-std/console.sol";
 import {IMetaVaultFactory} from "../../src/interfaces/IMetaVaultFactory.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
+import {IControllable} from "../../src/interfaces/IControllable.sol";
 import {IPriceReader} from "../../src/interfaces/IPriceReader.sol";
 import {IRecovery} from "../../src/interfaces/IRecovery.sol";
 import {IMetaVault} from "../../src/interfaces/IMetaVault.sol";
+import {IUniswapV3Pool} from "../../src/integrations/uniswapv3/IUniswapV3Pool.sol";
 import {MetaVault} from "../../src/core/vaults/MetaVault.sol";
 import {Recovery} from "../../src/tokenomics/Recovery.sol";
+import {RecoveryLib} from "../../src/tokenomics/libs/RecoveryLib.sol";
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 import {Test} from "forge-std/Test.sol";
+import {Swapper} from "../../src/core/Swapper.sol";
 
 contract RecoveryUpgradeTestSonic is Test {
-    uint public constant FORK_BLOCK = 48796315; // Sep-30-2025 02:52:14 AM +UTC
-    // uint public constant FORK_BLOCK = 49150536; // Oct-03-2025 12:00:30 AM UTC
     address public constant PLATFORM = SonicConstantsLib.PLATFORM;
-    address public multisig;
 
-    constructor() {
-        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL"), FORK_BLOCK));
-        multisig = IPlatform(PLATFORM).multisig();
+    constructor() {}
 
-        _upgradePlatform();
-        _upgradeMetaVault(SonicConstantsLib.METAVAULT_METAUSDC);
-        _upgradeMetaVault(SonicConstantsLib.METAVAULT_METAUSD);
-        _upgradeMetaVault(SonicConstantsLib.METAVAULT_METAS);
-        //        _upgradeCVault(0x38274302e0Dd5779b4E0A3E401023cFB48fF5c23);
-        //        _upgradeSiloStrategy(0xaB7F5bA1Ea7434730a3976a45662833E6a6D0bC0);
+    /// @notice Both recovery-S pools have price 1 on the given block. Ensure that wmetaS is never selected.
+    function testGetPoolWithNonUnitPrice() public {
+        _setUpTest(53711121); // Nov-05-2025 05:07:58 AM +UTC
+
+        IRecovery recovery = IRecovery(IPlatform(PLATFORM).recovery());
+        address[] memory pools = recovery.recoveryPools();
+
+        for (uint i; i < pools.length; ++i) {
+            uint index = RecoveryLib.getPoolWithNonUnitPrice(pools, i);
+            assertEq(
+                IUniswapV3Pool(pools[index]).token1(),
+                SonicConstantsLib.WRAPPED_METAVAULT_METAUSD,
+                "wmetaUSD is selected 1"
+            );
+        }
+
+        for (uint i; i < 25; ++i) {
+            uint index = RecoveryLib.selectPool(i, pools);
+            assertEq(
+                IUniswapV3Pool(pools[index]).token1(),
+                SonicConstantsLib.WRAPPED_METAVAULT_METAUSD,
+                "wmetaUSD is selected 2"
+            );
+        }
+    }
+
+    function testSwapExplicitlyWmetaS2wS() public {
+        // _setUpTest(53711121); // Nov-05-2025 05:07:58 AM +UTC
+        _setUpTest(52711121);
+        // _setUpTest(53711121); // Nov-05-2025 05:07:58 AM +UTC
+
+        IRecovery recovery = IRecovery(IPlatform(PLATFORM).recovery());
+        uint[2] memory balanceBefore = [
+            IERC20(SonicConstantsLib.WRAPPED_METAVAULT_METAS).balanceOf(address(recovery)),
+            IERC20(SonicConstantsLib.TOKEN_WS).balanceOf(address(recovery))
+        ];
+        assertNotEq(balanceBefore[0], 0, "there is wmetaS on balance");
+
+        // --------------------------------- not operator
+        vm.prank(address(this));
+        vm.expectRevert(IControllable.NotOperator.selector);
+        recovery.swapExplicitly(
+            SonicConstantsLib.WRAPPED_METAVAULT_METAS, SonicConstantsLib.TOKEN_WS, balanceBefore[0], 10_000
+        );
+
+        // --------------------------------- successful swap
+        address multisig = IPlatform(PLATFORM).multisig();
+        vm.prank(multisig);
+        IPlatform(PLATFORM).addOperator(address(this));
+
+        uint gas = gasleft();
+        vm.prank(address(this));
+        recovery.swapExplicitly(
+            SonicConstantsLib.WRAPPED_METAVAULT_METAS, SonicConstantsLib.TOKEN_WS, balanceBefore[0], 10_000
+        );
+        assertLt(gas - gasleft(), 6e6, "gas limit exceeded");
+
+        uint[2] memory balanceAfter = [
+            IERC20(SonicConstantsLib.WRAPPED_METAVAULT_METAS).balanceOf(address(recovery)),
+            IERC20(SonicConstantsLib.TOKEN_WS).balanceOf(address(recovery))
+        ];
+
+        assertEq(balanceAfter[0], 0, "all wmetaS swapped");
+        assertGt(balanceAfter[1], balanceAfter[0], "wS received");
+    }
+
+    function testSwapExplicitlyStsToWMetaUsd() public {
+        _setUpTest(52711121);
+        // _setUpTest(53711121); // Nov-05-2025 05:07:58 AM +UTC
+
+        IRecovery recovery = IRecovery(IPlatform(PLATFORM).recovery());
+        uint[2] memory balanceBefore = [
+            IERC20(SonicConstantsLib.TOKEN_STS).balanceOf(address(recovery)),
+            IERC20(SonicConstantsLib.WRAPPED_METAVAULT_METAUSD).balanceOf(address(recovery))
+        ];
+        assertNotEq(balanceBefore[0], 0, "there is stS on balance");
+
+        // --------------------------------- not operator
+        vm.prank(address(this));
+        vm.expectRevert(IControllable.NotOperator.selector);
+        recovery.swapExplicitly(
+            SonicConstantsLib.TOKEN_STS, SonicConstantsLib.WRAPPED_METAVAULT_METAUSD, balanceBefore[0], 10_000
+        );
+
+        // --------------------------------- successful swap
+        address multisig = IPlatform(PLATFORM).multisig();
+        vm.prank(multisig);
+        IPlatform(PLATFORM).addOperator(address(this));
+
+        vm.prank(address(this));
+        recovery.swapExplicitly(
+            SonicConstantsLib.TOKEN_STS, SonicConstantsLib.WRAPPED_METAVAULT_METAUSD, balanceBefore[0], 10_000
+        );
+
+        uint[2] memory balanceAfter = [
+            IERC20(SonicConstantsLib.TOKEN_STS).balanceOf(address(recovery)),
+            IERC20(SonicConstantsLib.WRAPPED_METAVAULT_METAUSD).balanceOf(address(recovery))
+        ];
+
+        console.log("before", balanceBefore[0], balanceBefore[1]);
+        console.log("after", balanceAfter[0], balanceAfter[1]);
+
+        assertEq(balanceAfter[0], 0, "all stS swapped");
+        assertGt(balanceAfter[1], balanceAfter[0], "wmetaUSD received");
     }
 
     function testSwapAssetsToRecoveryTokens() public {
+        _setUpTest(48796315); // Sep-30-2025 02:52:14 AM +UTC
+        address multisig = IPlatform(PLATFORM).multisig();
+
         IRecovery recovery = IRecovery(IPlatform(PLATFORM).recovery());
 
         IPriceReader priceReader = IPriceReader(IPlatform(PLATFORM).priceReader());
@@ -185,6 +287,16 @@ contract RecoveryUpgradeTestSonic is Test {
     }
 
     //region ------------------- Helpers
+    function _setUpTest(uint forkBlock) internal {
+        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL"), forkBlock));
+
+        _upgradePlatform();
+        _upgradeMetaVault(SonicConstantsLib.METAVAULT_METAUSDC);
+        _upgradeMetaVault(SonicConstantsLib.METAVAULT_METAUSD);
+        _upgradeMetaVault(SonicConstantsLib.METAVAULT_METAS);
+        //        _upgradeCVault(0x38274302e0Dd5779b4E0A3E401023cFB48fF5c23);
+        //        _upgradeSiloStrategy(0xaB7F5bA1Ea7434730a3976a45662833E6a6D0bC0);
+    }
 
     function _upgradePlatform() internal {
         rewind(1 days);
@@ -195,11 +307,16 @@ contract RecoveryUpgradeTestSonic is Test {
         address[] memory implementations = new address[](1);
 
         proxies[0] = platform.recovery();
-        //        proxies[1] = platform.swapper();
+        // proxies[1] = platform.swapper();
         //        proxies[2] = platform.ammAdapter(keccak256(bytes(AmmAdapterIdLib.META_VAULT))).proxy;
         implementations[0] = address(new Recovery());
-        //        implementations[1] = address(new Swapper());
+        // implementations[1] = address(new Swapper());
         //        implementations[2] = address(new MetaVaultAdapter());
+
+        if (platform.pendingPlatformUpgrade().proxies.length != 0) {
+            vm.startPrank(platform.multisig());
+            platform.cancelUpgrade();
+        }
 
         vm.startPrank(platform.multisig());
         platform.announcePlatformUpgrade("2025.10.01-alpha", proxies, implementations);
@@ -210,15 +327,16 @@ contract RecoveryUpgradeTestSonic is Test {
     }
 
     function _upgradeMetaVault(address metaVault_) internal {
+        IPlatform platform = IPlatform(PLATFORM);
         IMetaVaultFactory metaVaultFactory = IMetaVaultFactory(SonicConstantsLib.METAVAULT_FACTORY);
 
         // Upgrade MetaVault to the new implementation
         address vaultImplementation = address(new MetaVault());
-        vm.prank(multisig);
+        vm.prank(platform.multisig());
         metaVaultFactory.setMetaVaultImplementation(vaultImplementation);
         address[] memory metaProxies = new address[](1);
         metaProxies[0] = address(metaVault_);
-        vm.prank(multisig);
+        vm.prank(platform.multisig());
         metaVaultFactory.upgradeMetaProxies(metaProxies);
     }
 

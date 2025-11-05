@@ -59,7 +59,7 @@ abstract contract StrategyBase is Controllable, IStrategy {
         __Controllable_init(platform_);
         StrategyBaseStorage storage $ = _getStrategyBaseStorage();
         ($._id, $.vault, $._assets, $._underlying, $._exchangeAssetIndex) =
-            (id_, vault_, assets_, underlying_, exchangeAssetIndex_);
+        (id_, vault_, assets_, underlying_, exchangeAssetIndex_);
     }
 
     //region -------------------- Restricted actions

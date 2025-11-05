@@ -12,6 +12,7 @@ import {IUniswapV3Pool} from "../../integrations/uniswapv3/IUniswapV3Pool.sol";
 import {IWrappedMetaVault} from "../../interfaces/IWrappedMetaVault.sol";
 import {LibPRNG} from "../../../lib/solady/src/utils/LibPRNG.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {IPlatform} from "../../interfaces/IPlatform.sol";
 
 library RecoveryLib {
     using EnumerableSet for EnumerableSet.AddressSet;
@@ -21,7 +22,7 @@ library RecoveryLib {
     bytes32 internal constant _RECOVERY_STORAGE_LOCATION =
         0xa66d1b580930935bfabcf1fd52b7ed6cbbde4be7c22c150ca93844cf61663900;
 
-    /// @notice Price impact tolerance for swapping assets to meta-vault tokens, 20_000 = 20%
+    /// @notice Price impact tolerance for swapping assets to meta-vault tokens,
     uint internal constant SWAP_PRICE_IMPACT_TOLERANCE_ASSETS = 20_000;
 
     //region -------------------------------------- Data types
@@ -83,7 +84,7 @@ library RecoveryLib {
     }
 
     /// @notice Select a pool using pseudo-random generator seeded by {seed}.
-    /// If the generated index is even then return index/2.
+    /// If the generated index is even then return index of the first pool with not unit price starting from (index / 2)
     /// If the generated index is odd then return index of the pool with minimum price.
     /// This approach gives 50% chance to select the pool with minimum price and 50% chance to select another pool.
     /// This is done to avoid always selecting the same pool with minimum price.
@@ -96,10 +97,26 @@ library RecoveryLib {
         LibPRNG.seed(prng, seed);
         uint index = LibPRNG.next(prng) % (2 * countPools);
         if (index % 2 == 0) {
-            return index / 2;
+            return getPoolWithNonUnitPrice(recoveryPools, index / 2);
         } else {
             return getPoolWithMinPrice(recoveryPools, prng);
         }
+    }
+
+    /// @notice Get index of the pool with non-unit price starting from the given index
+    function getPoolWithNonUnitPrice(
+        address[] memory recoveryPools,
+        uint startFromIndex0
+    ) internal view returns (uint index0) {
+        uint len = recoveryPools.length;
+        for (uint i; i < len; ++i) {
+            index0 = (startFromIndex0 + i) % len;
+            if (getNormalizedSqrtPrice(recoveryPools[index0]) != 1e18) {
+                return index0;
+            }
+        }
+
+        return startFromIndex0;
     }
 
     /// @notice Get index of the pool with minimum price
@@ -211,6 +228,70 @@ library RecoveryLib {
         $.receivers[recoveryToken_] = receiver_;
 
         emit SetReceiver(recoveryToken_, receiver_);
+    }
+
+    /// @notice Swap tokens explicitly through. It allows to swap meta-vault-tokens as well.
+    /// @param tokenIn Address of the token to be swapped
+    /// @param tokenOut Address of the token to receive on balance of this contract
+    /// @param amountIn Amount of {tokenIn} to be swapped
+    /// @param priceImpactTolerance Maximum tolerated price impact, 20_000 = 20%
+    function swapExplicitly(
+        ISwapper swapper_,
+        IPriceReader priceReader_,
+        address tokenIn,
+        address tokenOut,
+        uint amountIn,
+        uint priceImpactTolerance
+    ) internal {
+        RecoveryLib.RecoveryStorage storage $ = RecoveryLib.getRecoveryTokenStorage();
+
+        require(amountIn <= IERC20(tokenIn).balanceOf(address(this)), InsufficientBalance());
+
+        address[2] memory tokens = [tokenIn, tokenOut];
+        bool[2] memory isMetaVault = [false, false];
+
+        // ------------------------- check if any of the tokens is meta-vault-token
+        address[] memory recoveryPools = $.recoveryPools.values();
+        for (uint i; i < recoveryPools.length; ++i) {
+            address token1 = IUniswapV3Pool(recoveryPools[i]).token1();
+            for (uint j; j < 2; ++j) {
+                if (tokens[j] == token1) {
+                    isMetaVault[j] = true;
+                }
+            }
+        }
+
+        // ------------------------- disable last-block-defence and enable price cache for meta-vault-tokens
+        for (uint j; j < 2; ++j) {
+            if (isMetaVault[j]) {
+                IMetaVault metaVault = IMetaVault(IWrappedMetaVault(tokens[j]).metaVault());
+                metaVault.setLastBlockDefenseDisabledTx(
+                    uint(IMetaVault.LastBlockDefenseDisableMode.DISABLED_TX_UPDATE_MAPS_1)
+                );
+
+                priceReader_.preCalculatePriceTx(tokens[j]);
+                metaVault.cachePrices(false);
+            }
+        }
+
+        // ------------------------- swap
+        uint balanceBefore = IERC20(tokenOut).balanceOf(address(this));
+        _approveIfNeeds(tokenIn, amountIn, address(swapper_));
+        swapper_.swap(tokenIn, tokenOut, amountIn, priceImpactTolerance);
+
+        emit SwapAssets2(tokenIn, tokenOut, balanceBefore, IERC20(tokenOut).balanceOf(address(this)), address(0));
+
+        // ------------------------- disable last-block-defence back
+        for (uint j; j < 2; ++j) {
+            if (isMetaVault[j]) {
+                IMetaVault metaVault = IMetaVault(IWrappedMetaVault(tokens[j]).metaVault());
+                metaVault.setLastBlockDefenseDisabledTx(uint(IMetaVault.LastBlockDefenseDisableMode.ENABLED_0));
+
+                // Disable cache
+                priceReader_.preCalculatePriceTx(address(0));
+                metaVault.cachePrices(true);
+            }
+        }
     }
 
     //endregion -------------------------------------- Governance actions
