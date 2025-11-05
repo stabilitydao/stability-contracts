@@ -12,7 +12,6 @@ import {IUniswapV3Pool} from "../../integrations/uniswapv3/IUniswapV3Pool.sol";
 import {IWrappedMetaVault} from "../../interfaces/IWrappedMetaVault.sol";
 import {LibPRNG} from "../../../lib/solady/src/utils/LibPRNG.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {IPlatform} from "../../interfaces/IPlatform.sol";
 
 library RecoveryLib {
     using EnumerableSet for EnumerableSet.AddressSet;

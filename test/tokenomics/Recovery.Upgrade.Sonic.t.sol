@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {console} from "forge-std/console.sol";
+// import {console} from "forge-std/console.sol";
 import {IMetaVaultFactory} from "../../src/interfaces/IMetaVaultFactory.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
+import {ISwapper} from "../../src/interfaces/ISwapper.sol";
 import {IControllable} from "../../src/interfaces/IControllable.sol";
 import {IPriceReader} from "../../src/interfaces/IPriceReader.sol";
 import {IRecovery} from "../../src/interfaces/IRecovery.sol";
@@ -15,43 +16,66 @@ import {Recovery} from "../../src/tokenomics/Recovery.sol";
 import {RecoveryLib} from "../../src/tokenomics/libs/RecoveryLib.sol";
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 import {Test} from "forge-std/Test.sol";
-import {Swapper} from "../../src/core/Swapper.sol";
 
 contract RecoveryUpgradeTestSonic is Test {
     address public constant PLATFORM = SonicConstantsLib.PLATFORM;
 
     constructor() {}
 
-    /// @notice Both recovery-S pools have price 1 on the given block. Ensure that wmetaS is never selected.
     function testGetPoolWithNonUnitPrice() public {
         _setUpTest(53711121); // Nov-05-2025 05:07:58 AM +UTC
 
         IRecovery recovery = IRecovery(IPlatform(PLATFORM).recovery());
         address[] memory pools = recovery.recoveryPools();
 
-        for (uint i; i < pools.length; ++i) {
-            uint index = RecoveryLib.getPoolWithNonUnitPrice(pools, i);
-            assertEq(
-                IUniswapV3Pool(pools[index]).token1(),
-                SonicConstantsLib.WRAPPED_METAVAULT_METAUSD,
-                "wmetaUSD is selected 1"
-            );
+        // --------------- Both recovery-S pools have price 1 on the given block. Ensure that wmetaS is never selected
+        {
+            uint countWmetaUsd;
+            for (uint i; i < pools.length; ++i) {
+                uint index = RecoveryLib.getPoolWithNonUnitPrice(pools, i);
+                if (IUniswapV3Pool(pools[index]).token1() == SonicConstantsLib.WRAPPED_METAVAULT_METAUSD) {
+                    countWmetaUsd++;
+                }
+            }
+            assertEq(countWmetaUsd, pools.length, "wmetaUSD is always selected 1");
         }
 
-        for (uint i; i < 25; ++i) {
-            uint index = RecoveryLib.selectPool(i, pools);
-            assertEq(
-                IUniswapV3Pool(pools[index]).token1(),
-                SonicConstantsLib.WRAPPED_METAVAULT_METAUSD,
-                "wmetaUSD is selected 2"
+        {
+            uint countWmetaUsd;
+            for (uint i; i < 25; ++i) {
+                uint index = RecoveryLib.selectPool(i, pools);
+                if (IUniswapV3Pool(pools[index]).token1() == SonicConstantsLib.WRAPPED_METAVAULT_METAUSD) {
+                    countWmetaUsd++;
+                }
+            }
+            assertEq(countWmetaUsd, 25, "wmetaUSD is always selected 2");
+        }
+
+        // --------------- Make swap in Recovery-metaS-related pool
+        {
+            ISwapper swapper = ISwapper(IPlatform(PLATFORM).swapper());
+            deal(SonicConstantsLib.RECOVERY_TOKEN_CREDIX_WMETAS, address(this), 1e18);
+            IERC20(SonicConstantsLib.RECOVERY_TOKEN_CREDIX_WMETAS).approve(address(swapper), type(uint).max);
+            swapper.swap(
+                SonicConstantsLib.RECOVERY_TOKEN_CREDIX_WMETAS, SonicConstantsLib.WRAPPED_METAVAULT_METAS, 1e18, 10_000
             );
+
+            uint countWmetaUsd;
+            for (uint i; i < pools.length; ++i) {
+                uint index = RecoveryLib.getPoolWithNonUnitPrice(pools, i);
+                if (IUniswapV3Pool(pools[index]).token1() == SonicConstantsLib.WRAPPED_METAVAULT_METAUSD) {
+                    countWmetaUsd++;
+                }
+            }
+            assertNotEq(countWmetaUsd, pools.length, "wmetaS can be selected now");
         }
     }
 
-    function testSwapExplicitlyWmetaS2wS() public {
+    function testSwapExplicitly() public {
         // _setUpTest(53711121); // Nov-05-2025 05:07:58 AM +UTC
         _setUpTest(52711121);
         // _setUpTest(53711121); // Nov-05-2025 05:07:58 AM +UTC
+        address multisig = IPlatform(PLATFORM).multisig();
 
         IRecovery recovery = IRecovery(IPlatform(PLATFORM).recovery());
         uint[2] memory balanceBefore = [
@@ -67,8 +91,14 @@ contract RecoveryUpgradeTestSonic is Test {
             SonicConstantsLib.WRAPPED_METAVAULT_METAS, SonicConstantsLib.TOKEN_WS, balanceBefore[0], 10_000
         );
 
+        // --------------------------------- not sufficient balance
+        vm.prank(multisig);
+        vm.expectRevert(IControllable.InsufficientBalance.selector);
+        recovery.swapExplicitly(
+            SonicConstantsLib.WRAPPED_METAVAULT_METAS, SonicConstantsLib.TOKEN_WS, balanceBefore[0] + 1, 10_000
+        );
+
         // --------------------------------- successful swap
-        address multisig = IPlatform(PLATFORM).multisig();
         vm.prank(multisig);
         IPlatform(PLATFORM).addOperator(address(this));
 
@@ -121,8 +151,8 @@ contract RecoveryUpgradeTestSonic is Test {
             IERC20(SonicConstantsLib.WRAPPED_METAVAULT_METAUSD).balanceOf(address(recovery))
         ];
 
-        console.log("before", balanceBefore[0], balanceBefore[1]);
-        console.log("after", balanceAfter[0], balanceAfter[1]);
+        //        console.log("before", balanceBefore[0], balanceBefore[1]);
+        //        console.log("after", balanceAfter[0], balanceAfter[1]);
 
         assertEq(balanceAfter[0], 0, "all stS swapped");
         assertGt(balanceAfter[1], balanceAfter[0], "wmetaUSD received");
