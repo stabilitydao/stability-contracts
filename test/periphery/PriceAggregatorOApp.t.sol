@@ -4,6 +4,7 @@ pragma solidity ^0.8.23;
 import {console, Test, Vm} from "forge-std/Test.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
 import {IControllable} from "../../src/interfaces/IControllable.sol";
+import {IBridgedPriceOracle} from "../../src/interfaces/IBridgedPriceOracle.sol";
 import {IPriceAggregator} from "../../src/interfaces/IPriceAggregator.sol";
 import {IPriceAggregatorQApp} from "../../src/interfaces/IPriceAggregatorQApp.sol";
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
@@ -21,18 +22,19 @@ import {ExecutorConfig} from "@layerzerolabs/lz-evm-messagelib-v2/contracts/Send
 import {UlnConfig} from "@layerzerolabs/lz-evm-messagelib-v2/contracts/uln/UlnBase.sol";
 // import {InboundPacket, PacketDecoder} from "@layerzerolabs/lz-evm-protocol-v2/../oapp/contracts/precrime/libs/Packet.sol";
 import {PacketV1Codec} from "@layerzerolabs/lz-evm-protocol-v2/contracts/messagelib/libs/PacketV1Codec.sol";
+import { IOAppCore } from "@layerzerolabs/oapp-evm/contracts/oapp/interfaces/IOAppCore.sol";
+import { IOAppReceiver } from "@layerzerolabs/oapp-evm/contracts/oapp/interfaces/IOAppReceiver.sol";
 import {PriceAggregatorQApp} from "../../src/periphery/PriceAggregatorOApp.sol";
 import {BridgedPriceOracle} from "../../src/periphery/BridgedPriceOracle.sol";
+import {PlasmaConstantsLib} from "../../chains/plasma/PlasmaConstantsLib.sol";
 
 contract PriceAggregatorOAppTest is Test {
     using PacketV1Codec for bytes;
     using SafeERC20 for IERC20;
 
-    address public multisigSonic;
-    address public multisigAvalanche;
-
     uint private constant SONIC_FORK_BLOCK = 52228979; // Oct-28-2025 01:14:21 PM +UTC
     uint private constant AVALANCHE_FORK_BLOCK = 71037861; // Oct-28-2025 13:17:17 UTC
+    uint private constant PLASMA_FORK_BLOCK = 5398928; // Nov-5-2025 07:38:59 UTC
 
     /// @dev Set to 0 for immediate switch, or block number for gradual migration
     uint private constant GRACE_PERIOD = 0;
@@ -57,156 +59,165 @@ contract PriceAggregatorOAppTest is Test {
     address internal constant AVALANCHE_DVN_NETHERMIND = 0x1308151a7ebaC14f435d3Ad5fF95c34160D539A5; // Nethermind (lzRead)
     address internal constant AVALANCHE_DVN_HORIZON = 0x1a5Df1367F21d55B13D5E2f8778AD644BC97aC6d; // Horizen (lzRead)
 
+    // https://docs.layerzero.network/v2/deployments/chains/plasma
+    address internal constant PLASMA_DVN_LAYER_ZERO = 0x282b3386571f7f794450d5789911a9804FA346b4; // LayerZero Labs (push based)
+    address internal constant PLASMA_DVN_NETHERMIND = 0xa51cE237FaFA3052D5d3308Df38A024724Bb1274; // Nethermind (push based)
+    address internal constant PLASMA_DVN_HORIZON = 0xd4CE45957FBCb88b868ad2c759C7DB9BC2741e56; // Horizen (push based)
+
     // --------------- Confirmations: send >= receive, see https://docs.layerzero.network/v2/developers/evm/configuration/dvn-executor-config
     /// @dev Minimum block confirmations to wait on Sonic
     uint64 internal constant MIN_BLOCK_CONFIRMATIONS_SEND_SONIC = 15;
 
     /// @dev Minimum block confirmations required on Avalanche
-    uint64 internal constant MIN_BLOCK_CONFIRMATIONS_RECEIVE_AVALANCHE = 10;
+    uint64 internal constant MIN_BLOCK_CONFIRMATIONS_RECEIVE = 10;
 
-    uint internal forkSonic;
-    uint internal forkAvalanche;
+    PriceAggregatorQApp internal priceAggregatorOApp;
+    BridgedPriceOracle internal bridgedPriceOracleAvalanche;
+    BridgedPriceOracle internal bridgedPriceOraclePlasma;
 
-    PriceAggregatorQApp internal priceAggregatorQApp;
-    BridgedPriceOracle internal bridgedPriceOracle;
+    struct ChainConfig {
+        uint fork;
+        address multisig;
+        address oapp;
+        uint32 endpointId;
+        address endpoint;
+        address sendLib;
+        address receiveLib;
+        address platform;
+        address executor;
+    }
+
+    ChainConfig internal sonic;
+    ChainConfig internal avalanche;
+    ChainConfig internal plasma;
 
     constructor() {
-        forkSonic = vm.createFork(vm.envString("SONIC_RPC_URL"), SONIC_FORK_BLOCK);
-        forkAvalanche = vm.createFork(vm.envString("AVALANCHE_RPC_URL"), AVALANCHE_FORK_BLOCK);
+        {
+            uint forkSonic = vm.createFork(vm.envString("SONIC_RPC_URL"), SONIC_FORK_BLOCK);
+            uint forkAvalanche = vm.createFork(vm.envString("AVALANCHE_RPC_URL"), AVALANCHE_FORK_BLOCK);
+            uint forkPlasma = vm.createFork(vm.envString("PLASMA_RPC_URL"), PLASMA_FORK_BLOCK);
 
-        vm.selectFork(forkSonic);
-        multisigSonic = IPlatform(SonicConstantsLib.PLATFORM).multisig();
-
-        vm.selectFork(forkAvalanche);
-        multisigAvalanche = IPlatform(AvalancheConstantsLib.PLATFORM).multisig();
+            sonic = _createConfigSonic(forkSonic);
+            avalanche = _createConfigAvalanche(forkAvalanche);
+            plasma = _createConfigPlasma(forkPlasma);
+        }
 
         // ------------------- Create adapter and bridged token
-        bridgedPriceOracle = BridgedPriceOracle(setupBridgedPriceOracleOnAvalanche());
-        priceAggregatorQApp = PriceAggregatorQApp(setupPriceAggregatorQAppOnSonic());
+        priceAggregatorOApp = PriceAggregatorQApp(setupPriceAggregatorOAppOnSonic());
+        bridgedPriceOracleAvalanche = BridgedPriceOracle(setupBridgedPriceOracle(avalanche));
+        bridgedPriceOraclePlasma = BridgedPriceOracle(setupBridgedPriceOracle(plasma));
 
-        // ------------------- Set up sending chain - Sonic
-        _setupLayerZeroConfig(
-            forkSonic,
-            address(priceAggregatorQApp),
-            AvalancheConstantsLib.LAYER_ZERO_V2_ENDPOINT_ID,
-            SonicConstantsLib.LAYER_ZERO_V2_ENDPOINT,
-            SonicConstantsLib.LAYER_ZERO_V2_SEND_ULN_302,
-            SonicConstantsLib.LAYER_ZERO_V2_ENDPOINT_ID,
-            address(0), // we have one directional bridge: sonic -> avalanche, receive lib is not needed
-            multisigSonic
-        );
-        address[] memory requiredDVNs = new address[](1); // list must be sorted
-        //requiredDVNs[0] = SONIC_DVN_NETHERMIND;
-        requiredDVNs[0] = SONIC_DVN_LAYER_ZERO;
-        //requiredDVNs[2] = SONIC_DVN_HORIZEN;
-        _setSendConfig(
-            forkSonic,
-            SonicConstantsLib.LAYER_ZERO_V2_ENDPOINT,
-            address(priceAggregatorQApp),
-            AvalancheConstantsLib.LAYER_ZERO_V2_ENDPOINT_ID,
-            SonicConstantsLib.LAYER_ZERO_V2_EXECUTOR,
-            requiredDVNs,
-            multisigSonic,
-            SonicConstantsLib.LAYER_ZERO_V2_SEND_ULN_302,
-            MIN_BLOCK_CONFIRMATIONS_SEND_SONIC
-        );
+        sonic.oapp = address(priceAggregatorOApp);
+        avalanche.oapp = address(bridgedPriceOracleAvalanche);
+        plasma.oapp = address(bridgedPriceOraclePlasma);
 
-        // ------------------- Set up receiving chain - Avalanche
-        _setupLayerZeroConfig(
-            forkAvalanche,
-            address(bridgedPriceOracle),
-            SonicConstantsLib.LAYER_ZERO_V2_ENDPOINT_ID,
-            AvalancheConstantsLib.LAYER_ZERO_V2_ENDPOINT,
-            address(0), // we have one directional bridge: sonic -> avalanche, send lib is not needed
-            AvalancheConstantsLib.LAYER_ZERO_V2_ENDPOINT_ID,
-            AvalancheConstantsLib.LAYER_ZERO_V2_RECEIVE_ULN_302,
-            multisigAvalanche
-        );
-        requiredDVNs = new address[](1); // list must be sorted
-        requiredDVNs[0] = AVALANCHE_DVN_LAYER_ZERO;
-        //        requiredDVNs[1] = AVALANCHE_DVN_NETHERMIND;
-        //        requiredDVNs[2] = AVALANCHE_DVN_HORIZON;
-        _setReceiveConfig(
-            forkAvalanche,
-            AvalancheConstantsLib.LAYER_ZERO_V2_ENDPOINT,
-            address(bridgedPriceOracle),
-            SonicConstantsLib.LAYER_ZERO_V2_ENDPOINT_ID,
-            requiredDVNs,
-            multisigAvalanche,
-            AvalancheConstantsLib.LAYER_ZERO_V2_RECEIVE_ULN_302,
-            MIN_BLOCK_CONFIRMATIONS_RECEIVE_AVALANCHE
-        );
+        // ------------------- Set up Sonic:Avalanche
+        {
+            // ------------------- Set up sending chain for Sonic:Avalanche
+            _setupLayerZeroConfig(sonic, avalanche, false);
 
-        // ------------------- set peers
-        _setPeers();
+            address[] memory requiredDVNs = new address[](1); // list must be sorted
+            //requiredDVNs[0] = SONIC_DVN_NETHERMIND;
+            requiredDVNs[0] = SONIC_DVN_LAYER_ZERO;
+            //requiredDVNs[2] = SONIC_DVN_HORIZEN;
+            _setSendConfig(sonic, avalanche, requiredDVNs, MIN_BLOCK_CONFIRMATIONS_SEND_SONIC);
+
+            // ------------------- Set up receiving chain for Sonic:Avalanche
+            _setupLayerZeroConfig(avalanche, sonic, false);
+            requiredDVNs = new address[](1); // list must be sorted
+            requiredDVNs[0] = AVALANCHE_DVN_LAYER_ZERO;
+            //        requiredDVNs[1] = AVALANCHE_DVN_NETHERMIND;
+            //        requiredDVNs[2] = AVALANCHE_DVN_HORIZON;
+            _setReceiveConfig(avalanche, sonic, requiredDVNs, MIN_BLOCK_CONFIRMATIONS_RECEIVE);
+
+            // ------------------- set peers
+            _setPeers(sonic, avalanche);
+        }
+
+        // ------------------- Set up Sonic:Plasma
+// todo
+//        {
+//            // ------------------- Set up sending chain for Sonic:Plasma
+//            _setupLayerZeroConfig(sonic, plasma, false);
+//
+//            address[] memory requiredDVNs = new address[](1); // list must be sorted
+//            //requiredDVNs[0] = SONIC_DVN_NETHERMIND;
+//            requiredDVNs[0] = SONIC_DVN_LAYER_ZERO;
+//            //requiredDVNs[2] = SONIC_DVN_HORIZEN;
+//            _setSendConfig(sonic, plasma, requiredDVNs, MIN_BLOCK_CONFIRMATIONS_SEND_SONIC);
+//
+//            // ------------------- Set up receiving chain for Sonic:Plasma
+//            _setupLayerZeroConfig(plasma, sonic, false);
+//            requiredDVNs = new address[](1); // list must be sorted
+//            requiredDVNs[0] = PLASMA_DVN_LAYER_ZERO;
+//            //        requiredDVNs[1] = AVALANCHE_DVN_NETHERMIND;
+//            //        requiredDVNs[2] = AVALANCHE_DVN_HORIZON;
+//            _setReceiveConfig(plasma, sonic, requiredDVNs, MIN_BLOCK_CONFIRMATIONS_RECEIVE);
+//
+//            // ------------------- set peers
+//            _setPeers(sonic, plasma);
+//        }
     }
 
     //region ------------------------------------- Unit tests for PriceAggregatorQApp
     function testViewPriceAggregatorQApp() public {
-        vm.selectFork(forkSonic);
+        vm.selectFork(sonic.fork);
 
         //        console.log("erc7201:stability.PriceAggregatorQApp");
         //        console.logBytes32(
         //            keccak256(abi.encode(uint(keccak256("erc7201:stability.PriceAggregatorQApp")) - 1)) & ~bytes32(uint(0xff))
         //        );
 
-        assertEq(priceAggregatorQApp.entity(), SonicConstantsLib.TOKEN_STBL, "stbl");
-        assertEq(priceAggregatorQApp.platform(), SonicConstantsLib.PLATFORM, "priceAggregatorQApp - platform");
-        assertEq(priceAggregatorQApp.owner(), multisigSonic, "priceAggregatorQApp - owner");
+        assertEq(priceAggregatorOApp.entity(), SonicConstantsLib.TOKEN_STBL, "stbl");
+        assertEq(priceAggregatorOApp.platform(), SonicConstantsLib.PLATFORM, "priceAggregatorQApp - platform");
+        assertEq(priceAggregatorOApp.owner(), sonic.multisig, "priceAggregatorQApp - owner");
     }
 
     function testWhitelist() public {
-        vm.selectFork(forkSonic);
+        vm.selectFork(sonic.fork);
 
         vm.prank(address(this));
         vm.expectRevert(IControllable.NotOperator.selector);
-        priceAggregatorQApp.changeWhitelist(address(this), true);
+        priceAggregatorOApp.changeWhitelist(address(this), true);
 
-        vm.prank(multisigSonic);
-        priceAggregatorQApp.changeWhitelist(address(this), true);
+        vm.prank(sonic.multisig);
+        priceAggregatorOApp.changeWhitelist(address(this), true);
 
-        bool isWhitelisted = priceAggregatorQApp.isWhitelisted(address(this));
+        bool isWhitelisted = priceAggregatorOApp.isWhitelisted(address(this));
         assertEq(isWhitelisted, true, "is whitelisted");
 
-        vm.prank(multisigSonic);
-        priceAggregatorQApp.changeWhitelist(address(this), false);
+        vm.prank(sonic.multisig);
+        priceAggregatorOApp.changeWhitelist(address(this), false);
 
-        isWhitelisted = priceAggregatorQApp.isWhitelisted(address(this));
+        isWhitelisted = priceAggregatorOApp.isWhitelisted(address(this));
         assertEq(isWhitelisted, false, "not whitelisted");
     }
 
-    function testPriceAggregatorQAppSetPeers() public {
-        vm.selectFork(forkSonic);
+    function testPriceAggregatorOAppSetPeers() public {
+        vm.selectFork(sonic.fork);
 
         vm.prank(address(this));
         vm.expectRevert();
-        priceAggregatorQApp.setPeer(
-            AvalancheConstantsLib.LAYER_ZERO_V2_ENDPOINT_ID, bytes32(uint(uint160(address(bridgedPriceOracle))))
-        );
+        priceAggregatorOApp.setPeer(avalanche.endpointId, bytes32(uint(uint160(address(bridgedPriceOracleAvalanche)))));
 
-        vm.prank(multisigSonic);
-        priceAggregatorQApp.setPeer(
-            AvalancheConstantsLib.LAYER_ZERO_V2_ENDPOINT_ID, bytes32(uint(uint160(address(bridgedPriceOracle))))
-        );
+        vm.prank(sonic.multisig);
+        priceAggregatorOApp.setPeer(avalanche.endpointId, bytes32(uint(uint160(address(bridgedPriceOracleAvalanche)))));
 
-        assertEq(
-            priceAggregatorQApp.peers(AvalancheConstantsLib.LAYER_ZERO_V2_ENDPOINT_ID),
-            bytes32(uint(uint160(address(bridgedPriceOracle))))
-        );
+        assertEq(priceAggregatorOApp.peers(avalanche.endpointId), bytes32(uint(uint160(address(bridgedPriceOracleAvalanche)))));
     }
 
     function testLzReceiveUnsuppoted() public {
-        vm.selectFork(forkSonic);
+        vm.selectFork(sonic.fork);
 
         Origin memory origin = Origin({
             srcEid: AvalancheConstantsLib.LAYER_ZERO_V2_ENDPOINT_ID,
-            sender: bytes32(uint(uint160(address(bridgedPriceOracle)))),
+            sender: bytes32(uint(uint160(address(bridgedPriceOracleAvalanche)))),
             nonce: 1
         });
 
-        vm.prank(SonicConstantsLib.LAYER_ZERO_V2_ENDPOINT);
+        vm.prank(sonic.endpoint);
         vm.expectRevert(IPriceAggregatorQApp.UnsupportedOperation.selector);
-        priceAggregatorQApp.lzReceive(
+        priceAggregatorOApp.lzReceive(
             origin,
             bytes32(0), // guid: actual value doesn't matter
             hex"00", // empty message
@@ -217,98 +228,50 @@ contract PriceAggregatorOAppTest is Test {
 
     //endregion ------------------------------------- Unit tests for PriceAggregatorQApp
 
-    //region ------------------------------------- Unit tests for BridgedPriceOracle
+    //region ------------------------------------- Unit tests for BridgedPriceOracleAvalanche
     function testViewBridgedPriceOracle() public {
-        vm.selectFork(forkAvalanche);
+        vm.selectFork(avalanche.fork);
 
         //        console.log("erc7201:stability.BridgedPriceOracle");
         //        console.logBytes32(
         //            keccak256(abi.encode(uint(keccak256("erc7201:stability.BridgedPriceOracle")) - 1)) & ~bytes32(uint(0xff))
         //        );
 
-        assertEq(bridgedPriceOracle.decimals(), 8, "decimals in aave price oracle is 8");
-        assertEq(bridgedPriceOracle.platform(), AvalancheConstantsLib.PLATFORM, "bridgedPriceOracle - platform");
-        assertEq(bridgedPriceOracle.owner(), multisigAvalanche, "bridgedPriceOracle - owner");
+        assertEq(bridgedPriceOracleAvalanche.decimals(), 8, "decimals in aave price oracle is 8");
+        assertEq(bridgedPriceOracleAvalanche.platform(), AvalancheConstantsLib.PLATFORM, "bridgedPriceOracle - platform");
+        assertEq(bridgedPriceOracleAvalanche.owner(), avalanche.multisig, "bridgedPriceOracle - owner");
     }
 
     function testBridgedPriceOraclePeers() public {
-        vm.selectFork(forkAvalanche);
+        vm.selectFork(avalanche.fork);
 
         vm.prank(address(this));
         vm.expectRevert();
-        bridgedPriceOracle.setPeer(
-            SonicConstantsLib.LAYER_ZERO_V2_ENDPOINT_ID, bytes32(uint(uint160(address(priceAggregatorQApp))))
-        );
+        bridgedPriceOracleAvalanche.setPeer(sonic.endpointId, bytes32(uint(uint160(address(priceAggregatorOApp)))));
 
-        vm.prank(multisigAvalanche);
-        bridgedPriceOracle.setPeer(
-            SonicConstantsLib.LAYER_ZERO_V2_ENDPOINT_ID, bytes32(uint(uint160(address(priceAggregatorQApp))))
-        );
+        vm.prank(avalanche.multisig);
+        bridgedPriceOracleAvalanche.setPeer(sonic.endpointId, bytes32(uint(uint160(address(priceAggregatorOApp)))));
 
         assertEq(
-            bridgedPriceOracle.peers(SonicConstantsLib.LAYER_ZERO_V2_ENDPOINT_ID),
-            bytes32(uint(uint160(address(priceAggregatorQApp))))
+            bridgedPriceOracleAvalanche.peers(sonic.endpointId),
+            bytes32(uint(uint160(address(priceAggregatorOApp))))
         );
     }
 
-    //endregion ------------------------------------- Unit tests for BridgedPriceOracle
+    //endregion ------------------------------------- Unit tests for BridgedPriceOracleAvalanche
 
     //region ------------------------------------- Send price from Sonic to Avalanche
-    function testSendPrice() public {
-        // ------------------- Setup whitelist and trusted sender
-        vm.selectFork(forkSonic);
-
-        address sender = address(0x1);
-        deal(sender, 10 ether); // to pay fees
-
-        vm.prank(multisigSonic);
-        priceAggregatorQApp.changeWhitelist(sender, true);
-
-        vm.selectFork(forkAvalanche);
-
-        // ------------------- Check initial price on Sonic
-        vm.selectFork(forkAvalanche);
-        (uint priceBefore,) = bridgedPriceOracle.getPriceUsd18();
-        assertEq(priceBefore, 0, "initial price is not set");
-
-        // ------------------- Set price in PriceAggregator on Sonic
-        (uint priceSonic, uint timestampPriceSonic) = _setPriceOnSonic(1.7e18);
-
-        // ------------------- Send price to Avalanche
-        (uint priceAvalanche, uint timestampAvalanche) = _sendPriceToAvalanche(sender);
-
-        assertEq(priceSonic, 1.7e18, "price set on Sonic");
-        assertEq(priceAvalanche, 1.7e18, "price set on Avalanche");
-        assertEq(timestampAvalanche, timestampPriceSonic, "timestamp after matches timestamp sent");
-
-        {
-            int price8 = bridgedPriceOracle.latestAnswer();
-            assertEq(price8, 1.7e8, "price with 8 decimals");
-        }
-
-        // ------------------- Set TINY price in PriceAggregator on Sonic
-        (priceSonic, timestampPriceSonic) = _setPriceOnSonic(1);
-
-        // ------------------- Send new price to Avalanche
-        (priceAvalanche, timestampAvalanche) = _sendPriceToAvalanche(sender);
-
-        assertEq(priceSonic, 1, "price set on Sonic");
-        assertEq(priceAvalanche, 1, "price set on Avalanche");
-        assertEq(timestampAvalanche, timestampPriceSonic, "timestamp after matches timestamp sent");
-
-        // ------------------- Set HUGE price in PriceAggregator on Sonic
-        (priceSonic, timestampPriceSonic) = _setPriceOnSonic(17e38);
-
-        // ------------------- Send new price to Avalanche
-        (priceAvalanche, timestampAvalanche) = _sendPriceToAvalanche(sender);
-
-        assertEq(priceSonic, 17e38, "price set on Sonic");
-        assertEq(priceAvalanche, 17e38, "price set on Avalanche");
-        assertEq(timestampAvalanche, timestampPriceSonic, "timestamp after matches timestamp sent");
+    function testSendPriceToAvalanche() public {
+        _testSendPriceToDest(avalanche);
     }
 
-    function testSendPriceBadPaths() public {
-        vm.selectFork(forkSonic);
+    // todo
+    function testSendPriceToPlasma() internal {
+        _testSendPriceToDest(plasma);
+    }
+
+    function testSendPriceToAvalancheBadPaths() public {
+        vm.selectFork(sonic.fork);
 
         address sender = address(0x1);
         deal(sender, 2 ether); // to pay fees
@@ -316,43 +279,43 @@ contract PriceAggregatorOAppTest is Test {
         (uint priceSonic,) = _setPriceOnSonic(1.7e18);
 
         // ------------------- Send price to Avalanche
-        vm.selectFork(forkSonic);
+        vm.selectFork(sonic.fork);
 
         bytes memory options = OptionsBuilder.addExecutorLzReceiveOption(OptionsBuilder.newOptions(), 2_000_000, 0);
         MessagingFee memory msgFee =
-            priceAggregatorQApp.quotePriceMessage(AvalancheConstantsLib.LAYER_ZERO_V2_ENDPOINT_ID, options, false);
+            priceAggregatorOApp.quotePriceMessage(AvalancheConstantsLib.LAYER_ZERO_V2_ENDPOINT_ID, options, false);
 
         vm.recordLogs();
 
         // ------------------- Not whitelisted (!)
         vm.prank(sender);
         vm.expectRevert(IPriceAggregatorQApp.NotWhitelisted.selector);
-        priceAggregatorQApp.sendPriceMessage{value: msgFee.nativeFee}(
+        priceAggregatorOApp.sendPriceMessage{value: msgFee.nativeFee}(
             AvalancheConstantsLib.LAYER_ZERO_V2_ENDPOINT_ID, options, msgFee
         );
 
         // ------------------- Whitelisted
-        vm.selectFork(forkSonic);
-        vm.prank(multisigSonic);
-        priceAggregatorQApp.changeWhitelist(sender, true);
+        vm.selectFork(sonic.fork);
+        vm.prank(sonic.multisig);
+        priceAggregatorOApp.changeWhitelist(sender, true);
 
         vm.prank(sender);
-        priceAggregatorQApp.sendPriceMessage{value: msgFee.nativeFee}(
+        priceAggregatorOApp.sendPriceMessage{value: msgFee.nativeFee}(
             AvalancheConstantsLib.LAYER_ZERO_V2_ENDPOINT_ID, options, msgFee
         );
         bytes memory message = _extractPayload(vm.getRecordedLogs());
 
         // ------------------ Avalanche: simulate message reception
-        vm.selectFork(forkAvalanche);
+        vm.selectFork(avalanche.fork);
 
         Origin memory origin = Origin({
-            srcEid: SonicConstantsLib.LAYER_ZERO_V2_ENDPOINT_ID,
-            sender: bytes32(uint(uint160(address(priceAggregatorQApp)))),
+            srcEid: sonic.endpointId,
+            sender: bytes32(uint(uint160(address(priceAggregatorOApp)))),
             nonce: 1
         });
 
-        vm.prank(AvalancheConstantsLib.LAYER_ZERO_V2_ENDPOINT);
-        bridgedPriceOracle.lzReceive(
+        vm.prank(avalanche.endpoint);
+        bridgedPriceOracleAvalanche.lzReceive(
             origin,
             bytes32(0), // guid: actual value doesn't matter
             message,
@@ -360,22 +323,78 @@ contract PriceAggregatorOAppTest is Test {
             "" // extraData
         );
 
-        (uint priceAvalanche,) = _sendPriceToAvalanche(sender);
+        (uint priceAvalanche,) = _sendPriceFromSonicToDest(sender, avalanche);
         assertEq(priceSonic, 1.7e18, "new price set on Sonic");
         assertEq(priceAvalanche, 1.7e18, "new price set on Avalanche");
     }
 
     //endregion ------------------------------------- Send price from Sonic to Avalanche
 
+    //region ------------------------------------- Tests implementation
+    function _testSendPriceToDest(ChainConfig memory dest) public {
+        // ------------------- Setup whitelist and trusted sender
+        vm.selectFork(sonic.fork);
+
+        address sender = address(0x1);
+        deal(sender, 10 ether); // to pay fees
+
+        vm.prank(sonic.multisig);
+        priceAggregatorOApp.changeWhitelist(sender, true);
+
+        vm.selectFork(dest.fork);
+
+        // ------------------- Check initial price on Sonic
+        vm.selectFork(dest.fork);
+        (uint priceBefore,) = bridgedPriceOracleAvalanche.getPriceUsd18();
+        assertEq(priceBefore, 0, "initial price is not set");
+
+        // ------------------- Set price in PriceAggregator on Sonic
+        (uint priceSonic, uint timestampPriceSonic) = _setPriceOnSonic(1.7e18);
+
+        // ------------------- Send price to target chain
+        (uint priceAvalanche, uint timestampAvalanche) = _sendPriceFromSonicToDest(sender, dest);
+
+        assertEq(priceSonic, 1.7e18, "price set on Sonic");
+        assertEq(priceAvalanche, 1.7e18, "price set on target chain");
+        assertEq(timestampAvalanche, timestampPriceSonic, "timestamp after matches timestamp sent");
+
+        {
+            int price8 = bridgedPriceOracleAvalanche.latestAnswer();
+            assertEq(price8, 1.7e8, "price with 8 decimals");
+        }
+
+        // ------------------- Set TINY price in PriceAggregator on Sonic
+        (priceSonic, timestampPriceSonic) = _setPriceOnSonic(1);
+
+        // ------------------- Send new price to target chain
+        (priceAvalanche, timestampAvalanche) = _sendPriceFromSonicToDest(sender, dest);
+
+        assertEq(priceSonic, 1, "price set on Sonic");
+        assertEq(priceAvalanche, 1, "price set on target chain");
+        assertEq(timestampAvalanche, timestampPriceSonic, "timestamp after matches timestamp sent");
+
+        // ------------------- Set HUGE price in PriceAggregator on Sonic
+        (priceSonic, timestampPriceSonic) = _setPriceOnSonic(17e38);
+
+        // ------------------- Send new price to target chain
+        (priceAvalanche, timestampAvalanche) = _sendPriceFromSonicToDest(sender, dest);
+
+        assertEq(priceSonic, 17e38, "price set on Sonic");
+        assertEq(priceAvalanche, 17e38, "price set on target chain");
+        assertEq(timestampAvalanche, timestampPriceSonic, "timestamp after matches timestamp sent");
+    }
+
+    //endregion ------------------------------------- Tests implementation
+
     //region ------------------------------------- Internal logic
     function _setPriceOnSonic(uint targetPrice_) internal returns (uint price, uint timestamp) {
-        vm.selectFork(forkSonic);
+        vm.selectFork(sonic.fork);
         IPriceAggregator priceAggregator = IPriceAggregator(IPlatform(SonicConstantsLib.PLATFORM).priceAggregator());
 
-        vm.prank(multisigSonic);
+        vm.prank(sonic.multisig);
         priceAggregator.addAsset(SonicConstantsLib.TOKEN_STBL, 1, 1);
 
-        vm.prank(multisigSonic);
+        vm.prank(sonic.multisig);
         priceAggregator.setMinQuorum(1);
 
         (,, uint roundId) = priceAggregator.price(SonicConstantsLib.TOKEN_STBL);
@@ -389,36 +408,33 @@ contract PriceAggregatorOAppTest is Test {
         assertEq(price, targetPrice_, "expected price in price aggregator");
     }
 
-    function _sendPriceToAvalanche(address sender) internal returns (uint price, uint timestamp) {
-        vm.selectFork(forkSonic);
+    function _sendPriceFromSonicToDest(address sender, ChainConfig memory dest) internal returns (uint price, uint timestamp) {
+        vm.selectFork(sonic.fork);
 
         // ------------------- Send a message with new price to Avalanche
         bytes memory options = OptionsBuilder.addExecutorLzReceiveOption(OptionsBuilder.newOptions(), GAS_LIMIT, 0);
 
-        MessagingFee memory msgFee =
-            priceAggregatorQApp.quotePriceMessage(AvalancheConstantsLib.LAYER_ZERO_V2_ENDPOINT_ID, options, false);
+        MessagingFee memory msgFee = priceAggregatorOApp.quotePriceMessage(dest.endpointId, options, false);
         console.log("msgFee", msgFee.nativeFee);
 
         vm.recordLogs();
 
         vm.prank(sender);
-        priceAggregatorQApp.sendPriceMessage{value: msgFee.nativeFee}(
-            AvalancheConstantsLib.LAYER_ZERO_V2_ENDPOINT_ID, options, msgFee
-        );
+        priceAggregatorOApp.sendPriceMessage{value: msgFee.nativeFee}(dest.endpointId, options, msgFee);
         bytes memory message = _extractPayload(vm.getRecordedLogs());
 
         // ------------------ Avalanche: simulate message reception
-        vm.selectFork(forkAvalanche);
+        vm.selectFork(avalanche.fork);
 
         Origin memory origin = Origin({
-            srcEid: SonicConstantsLib.LAYER_ZERO_V2_ENDPOINT_ID,
-            sender: bytes32(uint(uint160(address(priceAggregatorQApp)))),
+            srcEid: sonic.endpointId,
+            sender: bytes32(uint(uint160(address(priceAggregatorOApp)))),
             nonce: 1
         });
 
         uint gas = gasleft();
-        vm.prank(AvalancheConstantsLib.LAYER_ZERO_V2_ENDPOINT);
-        bridgedPriceOracle.lzReceive(
+        vm.prank(dest.endpoint);
+        IOAppReceiver(dest.oapp).lzReceive(
             origin,
             bytes32(0), // guid: actual value doesn't matter
             message,
@@ -428,109 +444,85 @@ contract PriceAggregatorOAppTest is Test {
         uint gasUsed = gas - gasleft();
         assertLt(gasUsed, GAS_LIMIT, "gas used in lzReceive"); // ~ 30 ths
 
-        (price, timestamp) = bridgedPriceOracle.getPriceUsd18();
+        (price, timestamp) = IBridgedPriceOracle(dest.oapp).getPriceUsd18();
     }
 
-    function setupPriceAggregatorQAppOnSonic() internal returns (address) {
-        vm.selectFork(forkSonic);
+    function setupPriceAggregatorOAppOnSonic() internal returns (address) {
+        vm.selectFork(sonic.fork);
 
         Proxy proxy = new Proxy();
-        proxy.initProxy(address(new PriceAggregatorQApp(SonicConstantsLib.LAYER_ZERO_V2_ENDPOINT)));
+        proxy.initProxy(address(new PriceAggregatorQApp(sonic.endpoint)));
         PriceAggregatorQApp _priceAggregatorQApp = PriceAggregatorQApp(address(proxy));
-        _priceAggregatorQApp.initialize(SonicConstantsLib.PLATFORM, SonicConstantsLib.TOKEN_STBL);
+        _priceAggregatorQApp.initialize(sonic.platform, SonicConstantsLib.TOKEN_STBL);
 
-        assertEq(_priceAggregatorQApp.owner(), multisigSonic, "multisigSonic is owner");
+        assertEq(_priceAggregatorQApp.owner(), sonic.multisig, "multisigSonic is owner");
 
         return address(_priceAggregatorQApp);
     }
 
-    function setupBridgedPriceOracleOnAvalanche() internal returns (address) {
-        vm.selectFork(forkAvalanche);
+    function setupBridgedPriceOracle(ChainConfig memory chain) internal returns (address) {
+        vm.selectFork(chain.fork);
 
         Proxy proxy = new Proxy();
-        proxy.initProxy(address(new BridgedPriceOracle(AvalancheConstantsLib.LAYER_ZERO_V2_ENDPOINT)));
+        proxy.initProxy(address(new BridgedPriceOracle(chain.endpoint)));
         BridgedPriceOracle _bridgedPriceOracle = BridgedPriceOracle(address(proxy));
-        _bridgedPriceOracle.initialize(address(AvalancheConstantsLib.PLATFORM));
+        _bridgedPriceOracle.initialize(address(chain.platform));
 
-        assertEq(_bridgedPriceOracle.owner(), multisigAvalanche, "multisigAvalanche is owner");
+        assertEq(_bridgedPriceOracle.owner(), chain.multisig, "multisig is owner");
 
         return address(_bridgedPriceOracle);
     }
 
-    function _setupLayerZeroConfig(
-        uint forkId,
-        address oapp,
-        uint32 dstEid,
-        address endpoint,
-        address sendLib,
-        uint32 srcEid,
-        address receiveLib,
-        address multisig
-    ) internal {
-        vm.selectFork(forkId);
+    function _setupLayerZeroConfig(ChainConfig memory src, ChainConfig memory dst, bool setupBothWays) internal {
+        vm.selectFork(src.fork);
 
-        if (sendLib != address(0)) {
+        if (src.sendLib != address(0)) {
             // Set send library for outbound messages
-            vm.prank(multisig);
-            ILayerZeroEndpointV2(endpoint)
+            vm.prank(src.multisig);
+            ILayerZeroEndpointV2(src.endpoint)
                 .setSendLibrary(
-                    oapp, // OApp address
-                    dstEid, // Destination chain EID
-                    sendLib // SendUln302 address
+                    src.oapp, // OApp address
+                    dst.endpointId, // Destination chain EID
+                    src.sendLib // SendUln302 address
                 );
         }
 
         // Set receive library for inbound messages
-        if (receiveLib != address(0)) {
-            vm.prank(multisig);
-            ILayerZeroEndpointV2(endpoint)
+        if (setupBothWays) {
+            vm.prank(src.multisig);
+            ILayerZeroEndpointV2(src.endpoint)
                 .setReceiveLibrary(
-                    oapp, // OApp address
-                    srcEid, // Source chain EID
-                    receiveLib, // ReceiveUln302 address
+                    src.oapp, // OApp address
+                    src.endpointId, // Source chain EID
+                    src.receiveLib, // ReceiveUln302 address
                     GRACE_PERIOD // Grace period for library switch
                 );
         }
     }
 
-    function _setPeers() internal {
+    function _setPeers(ChainConfig memory src, ChainConfig memory dst) internal {
         // ------------------- Sonic: set up peer connection
-        vm.selectFork(forkSonic);
+        vm.selectFork(src.fork);
 
-        vm.prank(multisigSonic);
-        priceAggregatorQApp.setPeer(
-            AvalancheConstantsLib.LAYER_ZERO_V2_ENDPOINT_ID, bytes32(uint(uint160(address(bridgedPriceOracle))))
+        vm.prank(src.multisig);
+        IOAppCore(src.oapp).setPeer(
+            dst.endpointId, bytes32(uint(uint160(address(dst.oapp))))
         );
 
         // ------------------- Avalanche: set up peer connection
-        vm.selectFork(forkAvalanche);
+        vm.selectFork(dst.fork);
 
-        vm.prank(multisigAvalanche);
-        bridgedPriceOracle.setPeer(
-            SonicConstantsLib.LAYER_ZERO_V2_ENDPOINT_ID, bytes32(uint(uint160(address(priceAggregatorQApp))))
+        vm.prank(dst.multisig);
+        IOAppCore(dst.oapp).setPeer(
+            src.endpointId, bytes32(uint(uint160(address(src.oapp))))
         );
     }
 
     /// @notice Configures both ULN (DVN validators) and Executor for an OApp
-    /// @param forkId        Foundry fork ID to select the target chain
-    /// @param endpoint      LayerZero V2 endpoint address for this network
-    /// @param oapp          Address of the OApp (adapter or bridged token)
-    /// @param remoteEid     Endpoint ID (EID) of the remote chain
-    /// @param executor      Address of the LayerZero Executor contract
     /// @param requiredDVNs  Array of DVN validator addresses
     /// @param confirmations  Minimum block confirmations
-    function _setSendConfig(
-        uint forkId,
-        address endpoint,
-        address oapp,
-        uint32 remoteEid,
-        address executor,
-        address[] memory requiredDVNs,
-        address multisig,
-        address sendLib,
-        uint64 confirmations
-    ) internal {
-        vm.selectFork(forkId);
+    function _setSendConfig(ChainConfig memory src, ChainConfig memory dst, address[] memory requiredDVNs, uint64 confirmations) internal {
+        vm.selectFork(src.fork);
 
         // ---------------------- ULN (DVN) configuration ----------------------
         UlnConfig memory uln = UlnConfig({
@@ -544,41 +536,26 @@ contract PriceAggregatorOAppTest is Test {
 
         ExecutorConfig memory exec = ExecutorConfig({
             maxMessageSize: 32, // max bytes per cross-chain message
-            executor: executor // address that pays destination execution fees
+            executor: src.executor // address that pays destination execution fees
         });
 
         bytes memory encodedUln = abi.encode(uln);
         bytes memory encodedExec = abi.encode(exec);
 
         SetConfigParam[] memory params = new SetConfigParam[](2);
-        params[0] = SetConfigParam({eid: remoteEid, configType: CONFIG_TYPE_EXECUTOR, config: encodedExec});
-        params[1] = SetConfigParam({eid: remoteEid, configType: CONFIG_TYPE_ULN, config: encodedUln});
+        params[0] = SetConfigParam({eid: dst.endpointId, configType: CONFIG_TYPE_EXECUTOR, config: encodedExec});
+        params[1] = SetConfigParam({eid: dst.endpointId, configType: CONFIG_TYPE_ULN, config: encodedUln});
 
-        vm.prank(multisig);
-        ILayerZeroEndpointV2(endpoint).setConfig(oapp, sendLib, params);
+        vm.prank(src.multisig);
+        ILayerZeroEndpointV2(src.endpoint).setConfig(src.oapp, src.sendLib, params);
     }
 
     /// @notice Configures ULN (DVN validators) for on receiving chain
     /// @dev https://docs.layerzero.network/v2/developers/evm/configuration/dvn-executor-config
-    /// @param forkId        Foundry fork ID to select the target chain
-    /// @param endpoint      LayerZero V2 endpoint address for this network
-    /// @param oapp          Address of the OApp (adapter or bridged token)
-    /// @param remoteEid     Endpoint ID (EID) of the remote chain
     /// @param requiredDVNs  Array of DVN validator addresses
     /// @param confirmations Minimum block confirmations for ULN
-    /// @param multisig      Address of the multisig wallet to authorize the config change
-    /// @param receiveLib       Address of the ReceiveUln302 library
-    function _setReceiveConfig(
-        uint forkId,
-        address endpoint,
-        address oapp,
-        uint32 remoteEid,
-        address[] memory requiredDVNs,
-        address multisig,
-        address receiveLib,
-        uint64 confirmations
-    ) internal {
-        vm.selectFork(forkId);
+    function _setReceiveConfig(ChainConfig memory src, ChainConfig memory dst, address[] memory requiredDVNs, uint64 confirmations) internal {
+        vm.selectFork(src.fork);
 
         // ---------------------- ULN (DVN) configuration ----------------------
         UlnConfig memory uln = UlnConfig({
@@ -591,10 +568,10 @@ contract PriceAggregatorOAppTest is Test {
         });
 
         SetConfigParam[] memory params = new SetConfigParam[](1);
-        params[0] = SetConfigParam({eid: remoteEid, configType: CONFIG_TYPE_ULN, config: abi.encode(uln)});
+        params[0] = SetConfigParam({eid: dst.endpointId, configType: CONFIG_TYPE_ULN, config: abi.encode(uln)});
 
-        vm.prank(multisig);
-        ILayerZeroEndpointV2(endpoint).setConfig(oapp, receiveLib, params);
+        vm.prank(src.multisig);
+        ILayerZeroEndpointV2(src.endpoint).setConfig(src.oapp, src.receiveLib, params);
     }
 
     /// @notice Calls getConfig on the specified LayerZero Endpoint.
@@ -675,4 +652,52 @@ contract PriceAggregatorOAppTest is Test {
         return message;
     }
     //endregion ------------------------------------- Internal logic
+
+    //region ------------------------------------- Chains
+    function _createConfigSonic(uint forkId) internal returns (ChainConfig memory) {
+        vm.selectFork(forkId);
+        return ChainConfig({
+            fork: forkId,
+            multisig: IPlatform(SonicConstantsLib.PLATFORM).multisig(),
+            oapp: address(0), // to be set later
+            endpointId: SonicConstantsLib.LAYER_ZERO_V2_ENDPOINT_ID,
+            endpoint: SonicConstantsLib.LAYER_ZERO_V2_ENDPOINT,
+            sendLib: SonicConstantsLib.LAYER_ZERO_V2_SEND_ULN_302,
+            receiveLib: SonicConstantsLib.LAYER_ZERO_V2_RECEIVE_ULN_302,
+            platform: SonicConstantsLib.PLATFORM,
+            executor: SonicConstantsLib.LAYER_ZERO_V2_EXECUTOR
+        });
+    }
+
+    function _createConfigAvalanche(uint forkId) internal returns (ChainConfig memory) {
+        vm.selectFork(forkId);
+        return ChainConfig({
+            fork: forkId,
+            multisig: IPlatform(AvalancheConstantsLib.PLATFORM).multisig(),
+            oapp: address(0), // to be set later
+            endpointId: AvalancheConstantsLib.LAYER_ZERO_V2_ENDPOINT_ID,
+            endpoint: AvalancheConstantsLib.LAYER_ZERO_V2_ENDPOINT,
+            sendLib: AvalancheConstantsLib.LAYER_ZERO_V2_SEND_ULN_302,
+            receiveLib: AvalancheConstantsLib.LAYER_ZERO_V2_RECEIVE_ULN_302,
+            platform: AvalancheConstantsLib.PLATFORM,
+            executor: AvalancheConstantsLib.LAYER_ZERO_V2_EXECUTOR
+        });
+    }
+
+    function _createConfigPlasma(uint forkId) internal returns (ChainConfig memory) {
+        vm.selectFork(forkId);
+        return ChainConfig({
+            fork: forkId,
+            multisig: IPlatform(PlasmaConstantsLib.PLATFORM).multisig(),
+            oapp: address(0), // to be set later
+            endpointId: PlasmaConstantsLib.LAYER_ZERO_V2_ENDPOINT_ID,
+            endpoint: PlasmaConstantsLib.LAYER_ZERO_V2_ENDPOINT,
+            sendLib: PlasmaConstantsLib.LAYER_ZERO_V2_SEND_ULN_302,
+            receiveLib: PlasmaConstantsLib.LAYER_ZERO_V2_RECEIVE_ULN_302,
+            platform: PlasmaConstantsLib.PLATFORM,
+            executor: PlasmaConstantsLib.LAYER_ZERO_V2_EXECUTOR
+        });
+    }
+
+    //endregion ------------------------------------- Chains
 }
