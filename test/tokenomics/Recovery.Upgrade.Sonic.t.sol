@@ -28,46 +28,22 @@ contract RecoveryUpgradeTestSonic is Test {
         IRecovery recovery = IRecovery(IPlatform(PLATFORM).recovery());
         address[] memory pools = recovery.recoveryPools();
 
-        // --------------- Both recovery-S pools have price 1 on the given block. Ensure that wmetaS is never selected
-        {
-            uint countWmetaUsd;
-            for (uint i; i < pools.length; ++i) {
-                uint index = RecoveryLib.getPoolWithNonUnitPrice(pools, i);
-                if (IUniswapV3Pool(pools[index]).token1() == SonicConstantsLib.WRAPPED_METAVAULT_METAUSD) {
-                    countWmetaUsd++;
-                }
-            }
-            assertEq(countWmetaUsd, pools.length, "wmetaUSD is always selected 1");
-        }
-
-        {
-            uint countWmetaUsd;
-            for (uint i; i < 25; ++i) {
-                uint index = RecoveryLib.selectPool(i, pools);
-                if (IUniswapV3Pool(pools[index]).token1() == SonicConstantsLib.WRAPPED_METAVAULT_METAUSD) {
-                    countWmetaUsd++;
-                }
-            }
-            assertEq(countWmetaUsd, 25, "wmetaUSD is always selected 2");
+        for (uint i; i < 5; ++i) {
+            assertEq(RecoveryLib.selectPool(i, pools), 2, "pool 2 has min price");
         }
 
         // --------------- Make swap in Recovery-metaS-related pool
         {
             ISwapper swapper = ISwapper(IPlatform(PLATFORM).swapper());
-            deal(SonicConstantsLib.RECOVERY_TOKEN_CREDIX_WMETAS, address(this), 1e18);
+            deal(SonicConstantsLib.RECOVERY_TOKEN_CREDIX_WMETAS, address(this), 100e18);
             IERC20(SonicConstantsLib.RECOVERY_TOKEN_CREDIX_WMETAS).approve(address(swapper), type(uint).max);
             swapper.swap(
-                SonicConstantsLib.RECOVERY_TOKEN_CREDIX_WMETAS, SonicConstantsLib.WRAPPED_METAVAULT_METAS, 1e18, 10_000
+                SonicConstantsLib.RECOVERY_TOKEN_CREDIX_WMETAS,
+                SonicConstantsLib.WRAPPED_METAVAULT_METAS,
+                100e18,
+                90_000
             );
-
-            uint countWmetaUsd;
-            for (uint i; i < pools.length; ++i) {
-                uint index = RecoveryLib.getPoolWithNonUnitPrice(pools, i);
-                if (IUniswapV3Pool(pools[index]).token1() == SonicConstantsLib.WRAPPED_METAVAULT_METAUSD) {
-                    countWmetaUsd++;
-                }
-            }
-            assertNotEq(countWmetaUsd, pools.length, "wmetaS can be selected now");
+            assertEq(RecoveryLib.selectPool(0, pools), 5, "now pool 5 has min price");
         }
     }
 

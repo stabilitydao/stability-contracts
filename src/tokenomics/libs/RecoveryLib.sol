@@ -82,40 +82,14 @@ library RecoveryLib {
         (sqrtPriceX96,,,,,,) = IUniswapV3Pool(pool).slot0();
     }
 
-    /// @notice Select a pool using pseudo-random generator seeded by {seed}.
-    /// If the generated index is even then return index of the first pool with not unit price starting from (index / 2)
-    /// If the generated index is odd then return index of the pool with minimum price.
-    /// This approach gives 50% chance to select the pool with minimum price and 50% chance to select another pool.
-    /// This is done to avoid always selecting the same pool with minimum price.
+    /// @notice Return index of the pool with minimum price.
     /// @param seed Seed for pseudo-random generator
     /// @param recoveryPools List of recovery pools
     /// @return index0 Selected pool 0-based index
     function selectPool(uint seed, address[] memory recoveryPools) internal view returns (uint index0) {
-        uint countPools = recoveryPools.length;
         LibPRNG.PRNG memory prng;
         LibPRNG.seed(prng, seed);
-        uint index = LibPRNG.next(prng) % (2 * countPools);
-        if (index % 2 == 0) {
-            return getPoolWithNonUnitPrice(recoveryPools, index / 2);
-        } else {
-            return getPoolWithMinPrice(recoveryPools, prng);
-        }
-    }
-
-    /// @notice Get index of the pool with non-unit price starting from the given index
-    function getPoolWithNonUnitPrice(
-        address[] memory recoveryPools,
-        uint startFromIndex0
-    ) internal view returns (uint index0) {
-        uint len = recoveryPools.length;
-        for (uint i; i < len; ++i) {
-            index0 = (startFromIndex0 + i) % len;
-            if (getNormalizedSqrtPrice(recoveryPools[index0]) != 1e18) {
-                return index0;
-            }
-        }
-
-        return startFromIndex0;
+        return getPoolWithMinPrice(recoveryPools, prng);
     }
 
     /// @notice Get index of the pool with minimum price
