@@ -1,0 +1,1 @@
+Rename Platform.setup = to avoid skipping Platform in the list of contracts at forge build --size
