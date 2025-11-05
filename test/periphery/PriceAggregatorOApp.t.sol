@@ -50,19 +50,21 @@ contract PriceAggregatorOAppTest is Test {
     // --------------- DVN config: List of DVN providers must be equal on both chains (!)
 
     // https://docs.layerzero.network/v2/deployments/chains/sonic
-    address internal constant SONIC_DVN_NETHERMIND = 0x3b0531eB02Ab4aD72e7a531180beeF9493a00dD2; // Nethermind (lzRead)
-    address internal constant SONIC_DVN_LAYER_ZERO = 0x78f607fc38e071cEB8630B7B12c358eE01C31E96; // LayerZero Labs (lzRead)
-    address internal constant SONIC_DVN_HORIZEN = 0xCA764b512E2d2fD15fcA1c0a38F7cFE9153148F0; // Horizen (lzRead)
+    address internal constant SONIC_DVN_NETHERMIND_PULL = 0x3b0531eB02Ab4aD72e7a531180beeF9493a00dD2; // Nethermind (lzRead)
+    address internal constant SONIC_DVN_LAYER_ZERO_PULL = 0x78f607fc38e071cEB8630B7B12c358eE01C31E96; // LayerZero Labs (lzRead)
+    address internal constant SONIC_DVN_LAYER_ZERO_PUSH = 0x282b3386571f7f794450d5789911a9804FA346b4;
+    address internal constant SONIC_DVN_HORIZEN_PULL = 0xCA764b512E2d2fD15fcA1c0a38F7cFE9153148F0; // Horizen (lzRead)
 
     // https://docs.layerzero.network/v2/deployments/chains/avalanche
-    address internal constant AVALANCHE_DVN_LAYER_ZERO = 0x0Ffe02DF012299A370D5dd69298A5826EAcaFdF8; // LayerZero Labs (lzRead)
-    address internal constant AVALANCHE_DVN_NETHERMIND = 0x1308151a7ebaC14f435d3Ad5fF95c34160D539A5; // Nethermind (lzRead)
-    address internal constant AVALANCHE_DVN_HORIZON = 0x1a5Df1367F21d55B13D5E2f8778AD644BC97aC6d; // Horizen (lzRead)
+    address internal constant AVALANCHE_DVN_LAYER_ZERO_PULL = 0x0Ffe02DF012299A370D5dd69298A5826EAcaFdF8; // LayerZero Labs (lzRead)
+    address internal constant AVALANCHE_DVN_LAYER_ZERO_PUSH = 0x962F502A63F5FBeB44DC9ab932122648E8352959;
+    address internal constant AVALANCHE_DVN_NETHERMIND_PULL = 0x1308151a7ebaC14f435d3Ad5fF95c34160D539A5; // Nethermind (lzRead)
+    address internal constant AVALANCHE_DVN_HORIZON_PULL = 0x1a5Df1367F21d55B13D5E2f8778AD644BC97aC6d; // Horizen (lzRead)
 
     // https://docs.layerzero.network/v2/deployments/chains/plasma
-    address internal constant PLASMA_DVN_LAYER_ZERO = 0x282b3386571f7f794450d5789911a9804FA346b4; // LayerZero Labs (push based)
-    address internal constant PLASMA_DVN_NETHERMIND = 0xa51cE237FaFA3052D5d3308Df38A024724Bb1274; // Nethermind (push based)
-    address internal constant PLASMA_DVN_HORIZON = 0xd4CE45957FBCb88b868ad2c759C7DB9BC2741e56; // Horizen (push based)
+    address internal constant PLASMA_DVN_LAYER_ZERO_PUSH = 0x282b3386571f7f794450d5789911a9804FA346b4; // LayerZero Labs (push based)
+    address internal constant PLASMA_DVN_NETHERMIND_PUSH = 0xa51cE237FaFA3052D5d3308Df38A024724Bb1274; // Nethermind (push based)
+    address internal constant PLASMA_DVN_HORIZON_PUSH = 0xd4CE45957FBCb88b868ad2c759C7DB9BC2741e56; // Horizen (push based)
 
     // --------------- Confirmations: send >= receive, see https://docs.layerzero.network/v2/developers/evm/configuration/dvn-executor-config
     /// @dev Minimum block confirmations to wait on Sonic
@@ -117,17 +119,17 @@ contract PriceAggregatorOAppTest is Test {
             _setupLayerZeroConfig(sonic, avalanche, false);
 
             address[] memory requiredDVNs = new address[](1); // list must be sorted
-            //requiredDVNs[0] = SONIC_DVN_NETHERMIND;
-            requiredDVNs[0] = SONIC_DVN_LAYER_ZERO;
-            //requiredDVNs[2] = SONIC_DVN_HORIZEN;
+//            requiredDVNs[0] = SONIC_DVN_NETHERMIND_PULL;
+            requiredDVNs[0] = SONIC_DVN_LAYER_ZERO_PULL;
+//            requiredDVNs[2] = SONIC_DVN_HORIZEN_PULL;
             _setSendConfig(sonic, avalanche, requiredDVNs, MIN_BLOCK_CONFIRMATIONS_SEND_SONIC);
 
             // ------------------- Set up receiving chain for Sonic:Avalanche
             _setupLayerZeroConfig(avalanche, sonic, false);
             requiredDVNs = new address[](1); // list must be sorted
-            requiredDVNs[0] = AVALANCHE_DVN_LAYER_ZERO;
-            //        requiredDVNs[1] = AVALANCHE_DVN_NETHERMIND;
-            //        requiredDVNs[2] = AVALANCHE_DVN_HORIZON;
+            requiredDVNs[0] = AVALANCHE_DVN_LAYER_ZERO_PULL;
+//            requiredDVNs[1] = AVALANCHE_DVN_NETHERMIND_PULL;
+//            requiredDVNs[2] = AVALANCHE_DVN_HORIZON_PULL;
             _setReceiveConfig(avalanche, sonic, requiredDVNs, MIN_BLOCK_CONFIRMATIONS_RECEIVE);
 
             // ------------------- set peers
@@ -135,28 +137,27 @@ contract PriceAggregatorOAppTest is Test {
         }
 
         // ------------------- Set up Sonic:Plasma
-// todo
-//        {
-//            // ------------------- Set up sending chain for Sonic:Plasma
-//            _setupLayerZeroConfig(sonic, plasma, false);
-//
-//            address[] memory requiredDVNs = new address[](1); // list must be sorted
-//            //requiredDVNs[0] = SONIC_DVN_NETHERMIND;
-//            requiredDVNs[0] = SONIC_DVN_LAYER_ZERO;
-//            //requiredDVNs[2] = SONIC_DVN_HORIZEN;
-//            _setSendConfig(sonic, plasma, requiredDVNs, MIN_BLOCK_CONFIRMATIONS_SEND_SONIC);
-//
-//            // ------------------- Set up receiving chain for Sonic:Plasma
-//            _setupLayerZeroConfig(plasma, sonic, false);
-//            requiredDVNs = new address[](1); // list must be sorted
-//            requiredDVNs[0] = PLASMA_DVN_LAYER_ZERO;
-//            //        requiredDVNs[1] = AVALANCHE_DVN_NETHERMIND;
-//            //        requiredDVNs[2] = AVALANCHE_DVN_HORIZON;
-//            _setReceiveConfig(plasma, sonic, requiredDVNs, MIN_BLOCK_CONFIRMATIONS_RECEIVE);
-//
-//            // ------------------- set peers
-//            _setPeers(sonic, plasma);
-//        }
+        {
+            // ------------------- Set up sending chain for Sonic:Plasma
+            _setupLayerZeroConfig(sonic, plasma, false);
+
+            address[] memory requiredDVNs = new address[](1); // list must be sorted
+//            requiredDVNs[0] = SONIC_DVN_NETHERMIND_PULL;
+            requiredDVNs[0] = SONIC_DVN_LAYER_ZERO_PUSH;
+//            requiredDVNs[2] = SONIC_DVN_HORIZEN_PULL;
+            _setSendConfig(sonic, plasma, requiredDVNs, MIN_BLOCK_CONFIRMATIONS_SEND_SONIC);
+
+            // ------------------- Set up receiving chain for Sonic:Plasma
+            _setupLayerZeroConfig(plasma, sonic, false);
+            requiredDVNs = new address[](1); // list must be sorted
+            requiredDVNs[0] = PLASMA_DVN_LAYER_ZERO_PUSH;
+            //        requiredDVNs[1] = PLASMA_DVN_NETHERMIND;
+            //        requiredDVNs[2] = PLASMA_DVN_HORIZON;
+            _setReceiveConfig(plasma, sonic, requiredDVNs, MIN_BLOCK_CONFIRMATIONS_RECEIVE);
+
+            // ------------------- set peers
+            _setPeers(sonic, plasma);
+        }
     }
 
     //region ------------------------------------- Unit tests for PriceAggregatorQApp
@@ -265,8 +266,7 @@ contract PriceAggregatorOAppTest is Test {
         _testSendPriceToDest(avalanche);
     }
 
-    // todo
-    function testSendPriceToPlasma() internal {
+    function testSendPriceToPlasma() public {
         _testSendPriceToDest(plasma);
     }
 
@@ -345,7 +345,7 @@ contract PriceAggregatorOAppTest is Test {
 
         // ------------------- Check initial price on Sonic
         vm.selectFork(dest.fork);
-        (uint priceBefore,) = bridgedPriceOracleAvalanche.getPriceUsd18();
+        (uint priceBefore,) = IBridgedPriceOracle(dest.oapp).getPriceUsd18();
         assertEq(priceBefore, 0, "initial price is not set");
 
         // ------------------- Set price in PriceAggregator on Sonic
@@ -359,7 +359,7 @@ contract PriceAggregatorOAppTest is Test {
         assertEq(timestampAvalanche, timestampPriceSonic, "timestamp after matches timestamp sent");
 
         {
-            int price8 = bridgedPriceOracleAvalanche.latestAnswer();
+            int price8 = IBridgedPriceOracle(dest.oapp).latestAnswer();
             assertEq(price8, 1.7e8, "price with 8 decimals");
         }
 
@@ -411,11 +411,10 @@ contract PriceAggregatorOAppTest is Test {
     function _sendPriceFromSonicToDest(address sender, ChainConfig memory dest) internal returns (uint price, uint timestamp) {
         vm.selectFork(sonic.fork);
 
-        // ------------------- Send a message with new price to Avalanche
+        // ------------------- Send a message with new price to target chain
         bytes memory options = OptionsBuilder.addExecutorLzReceiveOption(OptionsBuilder.newOptions(), GAS_LIMIT, 0);
 
         MessagingFee memory msgFee = priceAggregatorOApp.quotePriceMessage(dest.endpointId, options, false);
-        console.log("msgFee", msgFee.nativeFee);
 
         vm.recordLogs();
 
@@ -423,8 +422,8 @@ contract PriceAggregatorOAppTest is Test {
         priceAggregatorOApp.sendPriceMessage{value: msgFee.nativeFee}(dest.endpointId, options, msgFee);
         bytes memory message = _extractPayload(vm.getRecordedLogs());
 
-        // ------------------ Avalanche: simulate message reception
-        vm.selectFork(avalanche.fork);
+        // ------------------ Target chain: simulate message reception
+        vm.selectFork(dest.fork);
 
         Origin memory origin = Origin({
             srcEid: sonic.endpointId,
@@ -443,6 +442,7 @@ contract PriceAggregatorOAppTest is Test {
         );
         uint gasUsed = gas - gasleft();
         assertLt(gasUsed, GAS_LIMIT, "gas used in lzReceive"); // ~ 30 ths
+        console.log("gas limit, used, fee", GAS_LIMIT, gasUsed, msgFee.nativeFee);
 
         (price, timestamp) = IBridgedPriceOracle(dest.oapp).getPriceUsd18();
     }
