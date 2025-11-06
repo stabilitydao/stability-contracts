@@ -9,14 +9,14 @@ import {
 import {IControllable, Controllable} from "../core/base/Controllable.sol";
 import {IPlatform} from "../interfaces/IPlatform.sol";
 import {OAppEncodingLib} from "./libs/OAppEncodingLib.sol";
-import {IPriceAggregatorQApp} from "../interfaces/IPriceAggregatorQApp.sol";
+import {IPriceAggregatorOApp} from "../interfaces/IPriceAggregatorOApp.sol";
 import {IPriceAggregator} from "../interfaces/IPriceAggregator.sol";
 
 /// @notice Get price of given entity (vault or asset) from PriceAggregator
 /// and send it to BridgetPriceOracle on the given chain through LayerZero OApp
 /// by command of whitelisted address (backend). Each call sends single price
 /// as packet of price value (usd, decimals 18) and timestamp of the price update.
-contract PriceAggregatorQApp is Controllable, OAppUpgradeable, IPriceAggregatorQApp {
+contract PriceAggregatorOApp is Controllable, OAppUpgradeable, IPriceAggregatorOApp {
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         CONSTANTS                          */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -24,12 +24,11 @@ contract PriceAggregatorQApp is Controllable, OAppUpgradeable, IPriceAggregatorQ
     /// @inheritdoc IControllable
     string public constant VERSION = "1.0.0";
 
-    // keccak256(abi.encode(uint(keccak256("erc7201:stability.PriceAggregatorQApp")) - 1)) & ~bytes32(uint(0xff));
-    bytes32 internal constant _PRICE_AGGREGATOR_QAPP_STORAGE_LOCATION =
-        0x4ae4669e0847cbd8ac112b506c168d94d95debd740cba7df24fb81bf6d925200;
+    // keccak256(abi.encode(uint(keccak256("erc7201:stability.PriceAggregatorOApp")) - 1)) & ~bytes32(uint(0xff));
+    bytes32 internal constant _PRICE_AGGREGATOR_OAPP_STORAGE_LOCATION = 0; // todo
 
-    /// @custom:storage-location erc7201:stability.PriceAggregatorQApp
-    struct PriceAggregatorQAppStorage {
+    /// @custom:storage-location erc7201:stability.PriceAggregatorOApp
+    struct PriceAggregatorOAppStorage {
         address entity;
 
         /// @notice All users trusted to send price updates
@@ -53,7 +52,7 @@ contract PriceAggregatorQApp is Controllable, OAppUpgradeable, IPriceAggregatorQ
         __OApp_init(_delegate);
         __Ownable_init(_delegate);
 
-        getPriceAggregatorQAppStorage().entity = entity_;
+        getPriceAggregatorOAppStorage().entity = entity_;
     }
 
     //endregion --------------------------------- Initializers
@@ -63,24 +62,24 @@ contract PriceAggregatorQApp is Controllable, OAppUpgradeable, IPriceAggregatorQ
     /*                             VIEW                           */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    /// @inheritdoc IPriceAggregatorQApp
+    /// @inheritdoc IPriceAggregatorOApp
     function entity() external view returns (address) {
-        return getPriceAggregatorQAppStorage().entity;
+        return getPriceAggregatorOAppStorage().entity;
     }
 
-    /// @inheritdoc IPriceAggregatorQApp
+    /// @inheritdoc IPriceAggregatorOApp
     function isWhitelisted(address caller) external view returns (bool) {
-        PriceAggregatorQAppStorage storage $ = getPriceAggregatorQAppStorage();
+        PriceAggregatorOAppStorage storage $ = getPriceAggregatorOAppStorage();
         return $.whitelist[caller];
     }
 
-    /// @inheritdoc IPriceAggregatorQApp
+    /// @inheritdoc IPriceAggregatorOApp
     function quotePriceMessage(
         uint32 dstEid_,
         bytes memory options_,
         bool payInLzToken_
     ) public view returns (MessagingFee memory fee) {
-        PriceAggregatorQAppStorage storage $ = getPriceAggregatorQAppStorage();
+        PriceAggregatorOAppStorage storage $ = getPriceAggregatorOAppStorage();
         // combineOptions (from OAppOptionsType3) merges enforced options set by the contract owner
         // with any additional execution options provided by the caller
         (bytes memory message,,) = _getPriceMessage($.entity);
@@ -94,17 +93,17 @@ contract PriceAggregatorQApp is Controllable, OAppUpgradeable, IPriceAggregatorQ
     /*                   Restricted actions                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    /// @inheritdoc IPriceAggregatorQApp
+    /// @inheritdoc IPriceAggregatorOApp
     function changeWhitelist(address caller, bool whitelisted) external onlyOperator {
-        PriceAggregatorQAppStorage storage $ = getPriceAggregatorQAppStorage();
+        PriceAggregatorOAppStorage storage $ = getPriceAggregatorOAppStorage();
         $.whitelist[caller] = whitelisted;
 
         emit ChangeWhitelist(caller, whitelisted);
     }
 
-    /// @inheritdoc IPriceAggregatorQApp
+    /// @inheritdoc IPriceAggregatorOApp
     function sendPriceMessage(uint32 dstEid_, bytes memory options_, MessagingFee memory fee_) external payable {
-        PriceAggregatorQAppStorage storage $ = getPriceAggregatorQAppStorage();
+        PriceAggregatorOAppStorage storage $ = getPriceAggregatorOAppStorage();
         require($.whitelist[msg.sender], NotWhitelisted());
 
         (bytes memory message, uint price, uint timestamp) = _getPriceMessage($.entity);
@@ -138,10 +137,10 @@ contract PriceAggregatorQApp is Controllable, OAppUpgradeable, IPriceAggregatorQ
     //endregion --------------------------------- Overrides
 
     //region --------------------------------- Internal logic
-    function getPriceAggregatorQAppStorage() internal pure returns (PriceAggregatorQAppStorage storage $) {
+    function getPriceAggregatorOAppStorage() internal pure returns (PriceAggregatorOAppStorage storage $) {
         //slither-disable-next-line assembly
         assembly {
-            $.slot := _PRICE_AGGREGATOR_QAPP_STORAGE_LOCATION
+            $.slot := _PRICE_AGGREGATOR_OAPP_STORAGE_LOCATION
         }
     }
 

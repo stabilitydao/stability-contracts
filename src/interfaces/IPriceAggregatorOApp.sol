@@ -3,7 +3,7 @@ pragma solidity ^0.8.22;
 
 import {MessagingFee} from "@layerzerolabs/oapp-evm-upgradeable/contracts/oapp/OAppUpgradeable.sol";
 
-interface IPriceAggregatorQApp {
+interface IPriceAggregatorOApp {
     error NotWhitelisted();
     error UnsupportedOperation();
 

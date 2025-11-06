@@ -15,4 +15,10 @@ interface IBridgedPriceOracle is IAggregatorInterfaceMinimal {
     /// @return price Price in USD with 18 decimals
     /// @return priceTimestamp Timestamp of the price - moment of price update in source PriceAggregator
     function getPriceUsd18() external view returns (uint price, uint priceTimestamp);
+
+    /// @notice Token for which this oracle provides price
+    function tokenSymbol() external view returns (string memory);
+
+    /// @notice Initialize with platform and token symbol
+    function initialize(address platform_, string memory tokenSymbol_) external;
 }

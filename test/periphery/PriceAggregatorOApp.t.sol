@@ -6,7 +6,7 @@ import {IPlatform} from "../../src/interfaces/IPlatform.sol";
 import {IControllable} from "../../src/interfaces/IControllable.sol";
 import {IBridgedPriceOracle} from "../../src/interfaces/IBridgedPriceOracle.sol";
 import {IPriceAggregator} from "../../src/interfaces/IPriceAggregator.sol";
-import {IPriceAggregatorQApp} from "../../src/interfaces/IPriceAggregatorQApp.sol";
+import {IPriceAggregatorOApp} from "../../src/interfaces/IPriceAggregatorOApp.sol";
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 import {Proxy} from "../../src/core/proxy/Proxy.sol";
 import {AvalancheConstantsLib} from "../../chains/avalanche/AvalancheConstantsLib.sol";
@@ -24,7 +24,7 @@ import {UlnConfig} from "@layerzerolabs/lz-evm-messagelib-v2/contracts/uln/UlnBa
 import {PacketV1Codec} from "@layerzerolabs/lz-evm-protocol-v2/contracts/messagelib/libs/PacketV1Codec.sol";
 import {IOAppCore} from "@layerzerolabs/oapp-evm/contracts/oapp/interfaces/IOAppCore.sol";
 import {IOAppReceiver} from "@layerzerolabs/oapp-evm/contracts/oapp/interfaces/IOAppReceiver.sol";
-import {PriceAggregatorQApp} from "../../src/periphery/PriceAggregatorOApp.sol";
+import {PriceAggregatorOApp} from "../../src/periphery/PriceAggregatorOApp.sol";
 import {BridgedPriceOracle} from "../../src/periphery/BridgedPriceOracle.sol";
 import {PlasmaConstantsLib} from "../../chains/plasma/PlasmaConstantsLib.sol";
 
@@ -73,7 +73,7 @@ contract PriceAggregatorOAppTest is Test {
     /// @dev Minimum block confirmations required on Avalanche
     uint64 internal constant MIN_BLOCK_CONFIRMATIONS_RECEIVE = 10;
 
-    PriceAggregatorQApp internal priceAggregatorOApp;
+    PriceAggregatorOApp internal priceAggregatorOApp;
     BridgedPriceOracle internal bridgedPriceOracleAvalanche;
     BridgedPriceOracle internal bridgedPriceOraclePlasma;
 
@@ -105,7 +105,7 @@ contract PriceAggregatorOAppTest is Test {
         }
 
         // ------------------- Create adapter and bridged token
-        priceAggregatorOApp = PriceAggregatorQApp(setupPriceAggregatorOAppOnSonic());
+        priceAggregatorOApp = PriceAggregatorOApp(setupPriceAggregatorOAppOnSonic());
         bridgedPriceOracleAvalanche = BridgedPriceOracle(setupBridgedPriceOracle(avalanche));
         bridgedPriceOraclePlasma = BridgedPriceOracle(setupBridgedPriceOracle(plasma));
 
@@ -160,18 +160,18 @@ contract PriceAggregatorOAppTest is Test {
         }
     }
 
-    //region ------------------------------------- Unit tests for PriceAggregatorQApp
-    function testViewPriceAggregatorQApp() public {
+    //region ------------------------------------- Unit tests for PriceAggregatorOApp
+    function testViewPriceAggregatorOApp() public {
         vm.selectFork(sonic.fork);
 
-        //        console.log("erc7201:stability.PriceAggregatorQApp");
+        //        console.log("erc7201:stability.PriceAggregatorOApp");
         //        console.logBytes32(
-        //            keccak256(abi.encode(uint(keccak256("erc7201:stability.PriceAggregatorQApp")) - 1)) & ~bytes32(uint(0xff))
+        //            keccak256(abi.encode(uint(keccak256("erc7201:stability.PriceAggregatorOApp")) - 1)) & ~bytes32(uint(0xff))
         //        );
 
         assertEq(priceAggregatorOApp.entity(), SonicConstantsLib.TOKEN_STBL, "stbl");
-        assertEq(priceAggregatorOApp.platform(), SonicConstantsLib.PLATFORM, "priceAggregatorQApp - platform");
-        assertEq(priceAggregatorOApp.owner(), sonic.multisig, "priceAggregatorQApp - owner");
+        assertEq(priceAggregatorOApp.platform(), SonicConstantsLib.PLATFORM, "PriceAggregatorOApp - platform");
+        assertEq(priceAggregatorOApp.owner(), sonic.multisig, "PriceAggregatorOApp - owner");
     }
 
     function testWhitelist() public {
@@ -220,7 +220,7 @@ contract PriceAggregatorOAppTest is Test {
         });
 
         vm.prank(sonic.endpoint);
-        vm.expectRevert(IPriceAggregatorQApp.UnsupportedOperation.selector);
+        vm.expectRevert(IPriceAggregatorOApp.UnsupportedOperation.selector);
         priceAggregatorOApp.lzReceive(
             origin,
             bytes32(0), // guid: actual value doesn't matter
@@ -230,7 +230,7 @@ contract PriceAggregatorOAppTest is Test {
         );
     }
 
-    //endregion ------------------------------------- Unit tests for PriceAggregatorQApp
+    //endregion ------------------------------------- Unit tests for PriceAggregatorOApp
 
     //region ------------------------------------- Unit tests for BridgedPriceOracleAvalanche
     function testViewBridgedPriceOracle() public {
@@ -246,6 +246,7 @@ contract PriceAggregatorOAppTest is Test {
             bridgedPriceOracleAvalanche.platform(), AvalancheConstantsLib.PLATFORM, "bridgedPriceOracle - platform"
         );
         assertEq(bridgedPriceOracleAvalanche.owner(), avalanche.multisig, "bridgedPriceOracle - owner");
+        assertEq(bridgedPriceOracleAvalanche.tokenSymbol(), "STBL", "token symbol is correct");
     }
 
     function testBridgedPriceOraclePeers() public {
@@ -293,7 +294,7 @@ contract PriceAggregatorOAppTest is Test {
 
         // ------------------- Not whitelisted (!)
         vm.prank(sender);
-        vm.expectRevert(IPriceAggregatorQApp.NotWhitelisted.selector);
+        vm.expectRevert(IPriceAggregatorOApp.NotWhitelisted.selector);
         priceAggregatorOApp.sendPriceMessage{value: msgFee.nativeFee}(
             AvalancheConstantsLib.LAYER_ZERO_V2_ENDPOINT_ID, options, msgFee
         );
@@ -453,13 +454,13 @@ contract PriceAggregatorOAppTest is Test {
         vm.selectFork(sonic.fork);
 
         Proxy proxy = new Proxy();
-        proxy.initProxy(address(new PriceAggregatorQApp(sonic.endpoint)));
-        PriceAggregatorQApp _priceAggregatorQApp = PriceAggregatorQApp(address(proxy));
-        _priceAggregatorQApp.initialize(sonic.platform, SonicConstantsLib.TOKEN_STBL);
+        proxy.initProxy(address(new PriceAggregatorOApp(sonic.endpoint)));
+        PriceAggregatorOApp _PriceAggregatorOApp = PriceAggregatorOApp(address(proxy));
+        _PriceAggregatorOApp.initialize(sonic.platform, SonicConstantsLib.TOKEN_STBL);
 
-        assertEq(_priceAggregatorQApp.owner(), sonic.multisig, "multisigSonic is owner");
+        assertEq(_PriceAggregatorOApp.owner(), sonic.multisig, "multisigSonic is owner");
 
-        return address(_priceAggregatorQApp);
+        return address(_PriceAggregatorOApp);
     }
 
     function setupBridgedPriceOracle(ChainConfig memory chain) internal returns (address) {
@@ -468,7 +469,7 @@ contract PriceAggregatorOAppTest is Test {
         Proxy proxy = new Proxy();
         proxy.initProxy(address(new BridgedPriceOracle(chain.endpoint)));
         BridgedPriceOracle _bridgedPriceOracle = BridgedPriceOracle(address(proxy));
-        _bridgedPriceOracle.initialize(address(chain.platform));
+        _bridgedPriceOracle.initialize(address(chain.platform), "STBL");
 
         assertEq(_bridgedPriceOracle.owner(), chain.multisig, "multisig is owner");
 

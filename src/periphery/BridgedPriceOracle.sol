@@ -31,6 +31,8 @@ contract BridgedPriceOracle is Controllable, OAppUpgradeable, IBridgedPriceOracl
 
     /// @custom:storage-location erc7201:stability.BridgedPriceOracle
     struct BridgedPriceOracleStorage {
+        string tokenSymbol;
+
         /// @notice Last stored price
         PriceInfo lastPriceInfo;
     }
@@ -45,12 +47,15 @@ contract BridgedPriceOracle is Controllable, OAppUpgradeable, IBridgedPriceOracl
         _disableInitializers();
     }
 
-    function initialize(address platform_) public initializer {
+    /// @inheritdoc IBridgedPriceOracle
+    function initialize(address platform_, string memory tokenSymbol_) public initializer {
         address _delegate = IPlatform(platform_).multisig();
 
         __Controllable_init(platform_);
         __OApp_init(_delegate);
         __Ownable_init(_delegate);
+
+        getBridgedPriceOracleStorage().tokenSymbol = tokenSymbol_;
     }
 
     //endregion --------------------------------- Initializers
@@ -59,6 +64,11 @@ contract BridgedPriceOracle is Controllable, OAppUpgradeable, IBridgedPriceOracl
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                             VIEW                           */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    /// @inheritdoc IBridgedPriceOracle
+    function tokenSymbol() external view returns (string memory) {
+        return getBridgedPriceOracleStorage().tokenSymbol;
+    }
 
     /// @inheritdoc IBridgedPriceOracle
     function getPriceUsd18() external view returns (uint price, uint priceTimestamp) {
