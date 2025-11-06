@@ -81,7 +81,7 @@ abstract contract FullMockSetup is MockSetup {
         proxy.initProxy(address(new MetaVaultFactory()));
         MetaVaultFactory metaVaultFactory = MetaVaultFactory(address(proxy));
 
-        platform.setup(
+        platform.setupPlatform(
             IPlatform.SetupAddresses({
                 factory: address(factory),
                 priceReader: address(priceReader),

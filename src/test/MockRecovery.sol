@@ -95,4 +95,11 @@ contract MockRecovery is IRecovery {
         recoveryToken_;
         receiver_;
     }
+
+    function swapExplicitly(address tokenIn, address tokenOut, uint amountIn, uint priceImpactTolerance) external pure {
+        tokenIn;
+        tokenOut;
+        amountIn;
+        priceImpactTolerance;
+    }
 }

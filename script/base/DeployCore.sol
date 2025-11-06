@@ -106,7 +106,7 @@ abstract contract DeployCore {
 
         // setup platform
         vars.platform
-            .setup(
+            .setupPlatform(
                 IPlatform.SetupAddresses({
                     factory: address(vars.factory),
                     priceReader: address(vars.priceReader),
