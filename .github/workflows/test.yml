@@ -27,11 +27,6 @@ jobs:
         with:
           version: stable
 
-      - name: Check forge-std version
-        run: |
-          cd lib/forge-std
-          git describe --tags
-
       - name: Run forge build
         run: |
           forge --version

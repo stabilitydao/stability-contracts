@@ -6,16 +6,28 @@
     "rev": "77ba15585252d58e1f613d69bef5013b15be0240"
   },
   "lib/forge-std": {
-    "rev": "1eea5bae12ae557d589f9f0f0edae2faa47cb262"
+    "tag": {
+      "name": "v1.11.0",
+      "rev": "8e40513d678f392f398620b3ef2b418648b33e89"
+    }
   },
   "lib/openzeppelin-contracts": {
-    "rev": "932fddf69a699a9a80fd2396fd1a2ab91cdda123"
+    "tag": {
+      "name": "v5.4.0",
+      "rev": "c64a1edb67b6e3f4a15cca8909c9482ad33a02b0"
+    }
   },
   "lib/openzeppelin-contracts-upgradeable": {
-    "rev": "625fb3c2b2696f1747ba2e72d1e1113066e6c177"
+    "tag": {
+      "name": "v5.4.0",
+      "rev": "e725abddf1e01cf05ace496e950fc8e243cc7cab"
+    }
   },
   "lib/solady": {
-    "rev": "fe918e7d7b560dee66e657f49ef75645ec10f2e4"
+    "tag": {
+      "name": "v0.1.26",
+      "rev": "acd959aa4bd04720d640bf4e6a5c71037510cc4b"
+    }
   },
   "lib/solidity-bytes-utils": {
     "rev": "fc502455bb2a7e26a743378df042612dd50d1eb9"
