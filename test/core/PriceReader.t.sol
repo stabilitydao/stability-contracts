@@ -64,7 +64,7 @@ contract PriceReaderTest is Test, MockSetup {
     }
 
     function testOraclePrices() public {
-        platform.setup(
+        platform.setupPlatform(
             IPlatform.SetupAddresses({
                 factory: address(1),
                 priceReader: address(priceReader),

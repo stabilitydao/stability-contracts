@@ -364,7 +364,7 @@ contract GammaQuickSwapMerklFarmStrategy is LPStrategyBase, MerklStrategyBase, F
             (amounts_[0], amounts_[1]) = hypervisor.getTotalAmounts();
             uint totalInHypervisor = hypervisor.totalSupply();
             (amounts_[0], amounts_[1]) =
-                (amounts_[0] * _total / totalInHypervisor, amounts_[1] * _total / totalInHypervisor);
+            (amounts_[0] * _total / totalInHypervisor, amounts_[1] * _total / totalInHypervisor);
         }
     }
 

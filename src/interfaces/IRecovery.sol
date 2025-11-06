@@ -63,4 +63,11 @@ interface IRecovery {
     /// all other pools will be ignored.
     /// @param maxCountPools Maximum number of pools to be used for swapping. 0 - no limits
     function fillRecoveryPools(address metaVaultToken_, uint indexFirstRecoveryPool1, uint maxCountPools) external;
+
+    /// @notice Swap tokens explicitly. Allow to swap any tokens including both meta-vault-tokens.
+    /// @param tokenIn Address of the token to be swapped
+    /// @param tokenOut Address of the token to receive on balance of this contract
+    /// @param amountIn Amount of {tokenIn} to be swapped
+    /// @param priceImpactTolerance Maximum tolerated price impact, 20_000 = 20%
+    function swapExplicitly(address tokenIn, address tokenOut, uint amountIn, uint priceImpactTolerance) external;
 }

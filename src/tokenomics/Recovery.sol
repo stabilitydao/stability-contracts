@@ -12,6 +12,7 @@ import {IPriceReader} from "../interfaces/IPriceReader.sol";
 /// @title Recovery contract to swap assets on recovery tokens in recovery pools
 /// @author dvpublic (https://github.com/dvpublic)
 /// Changelog:
+///   1.2.2: add swapExplicitly, selectPool tries to avoid pools with price = 1 - #427
 ///   1.2.1: replace event SwapAssets by event SwapAssets2
 ///   1.2.0: getListTokensToSwap excludes meta vault tokens, add getListRegisteredTokens, fix getPoolWithMinPrice logic
 ///          Use onlyOperator restrictions for setThresholds and changeWhitelist
@@ -25,7 +26,7 @@ contract Recovery is Controllable, IRecovery, IUniswapV3SwapCallback {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.2.1";
+    string public constant VERSION = "1.2.2";
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      INITIALIZATION                        */
@@ -119,8 +120,27 @@ contract Recovery is Controllable, IRecovery, IUniswapV3SwapCallback {
         RecoveryLib.changeWhitelist(operator_, add_);
     }
 
+    /// @inheritdoc IRecovery
     function setReceiver(address recoveryToken_, address receiver_) external onlyOperator {
         RecoveryLib.setReceiver(recoveryToken_, receiver_);
+    }
+
+    /// @inheritdoc IRecovery
+    function swapExplicitly(
+        address tokenIn,
+        address tokenOut,
+        uint amountIn,
+        uint priceImpactTolerance
+    ) external onlyOperator {
+        IPlatform platform_ = IPlatform(platform());
+        RecoveryLib.swapExplicitly(
+            ISwapper(platform_.swapper()),
+            IPriceReader(platform_.priceReader()),
+            tokenIn,
+            tokenOut,
+            amountIn,
+            priceImpactTolerance
+        );
     }
 
     //endregion ----------------------------------- Restricted actions
