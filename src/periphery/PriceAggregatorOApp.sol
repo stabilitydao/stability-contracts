@@ -25,7 +25,8 @@ contract PriceAggregatorOApp is Controllable, OAppUpgradeable, IPriceAggregatorO
     string public constant VERSION = "1.0.0";
 
     // keccak256(abi.encode(uint(keccak256("erc7201:stability.PriceAggregatorOApp")) - 1)) & ~bytes32(uint(0xff));
-    bytes32 internal constant _PRICE_AGGREGATOR_OAPP_STORAGE_LOCATION = 0; // todo
+    bytes32 internal constant _PRICE_AGGREGATOR_OAPP_STORAGE_LOCATION =
+        0x03c24ae0f93ab26cb98c742598023b6422f9f4ca86d7754aa8be1070fd418e00;
 
     /// @custom:storage-location erc7201:stability.PriceAggregatorOApp
     struct PriceAggregatorOAppStorage {

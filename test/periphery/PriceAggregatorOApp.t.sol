@@ -164,10 +164,10 @@ contract PriceAggregatorOAppTest is Test {
     function testViewPriceAggregatorOApp() public {
         vm.selectFork(sonic.fork);
 
-        //        console.log("erc7201:stability.PriceAggregatorOApp");
-        //        console.logBytes32(
-        //            keccak256(abi.encode(uint(keccak256("erc7201:stability.PriceAggregatorOApp")) - 1)) & ~bytes32(uint(0xff))
-        //        );
+        console.log("erc7201:stability.PriceAggregatorOApp");
+        console.logBytes32(
+            keccak256(abi.encode(uint(keccak256("erc7201:stability.PriceAggregatorOApp")) - 1)) & ~bytes32(uint(0xff))
+        );
 
         assertEq(priceAggregatorOApp.entity(), SonicConstantsLib.TOKEN_STBL, "stbl");
         assertEq(priceAggregatorOApp.platform(), SonicConstantsLib.PLATFORM, "PriceAggregatorOApp - platform");
