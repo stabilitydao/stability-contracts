@@ -17,7 +17,7 @@ import {MetaVaultLib} from "../libs/MetaVaultLib.sol";
 /// @title Stability MetaVault implementation
 /// @dev Rebase vault that deposit to other vaults
 /// Changelog:
-///   1.6.0: add vault manager - #408
+///   1.6.0: add meta-vault-manager - #408
 ///   1.5.0: withdrawUnderlying - #360
 ///   1.4.2: add cachePrices - #348, use USD_THRESHOLD_REMOVE_VAULT in removeVault
 ///   1.4.1: add LastBlockDefenseDisableMode
@@ -142,8 +142,8 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         _;
     }
 
-    modifier onlyVaultManager() virtual {
-        _requireVaultManager();
+    modifier onlyMetaVaultManager() virtual {
+        _requireMetaVaultManager();
         _;
     }
 
@@ -155,7 +155,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IMetaVault
-    function setTargetProportions(uint[] memory newTargetProportions) external onlyVaultManager {
+    function setTargetProportions(uint[] memory newTargetProportions) external onlyMetaVaultManager {
         MetaVaultStorage storage $ = _getMetaVaultStorage();
         require(newTargetProportions.length == $.vaults.length, IControllable.IncorrectArrayLength());
         MetaVaultLib._checkProportions(newTargetProportions);
@@ -192,12 +192,12 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
     }
 
     /// @inheritdoc IMetaVault
-    function addVault(address vault, uint[] memory newTargetProportions) external onlyVaultManager {
+    function addVault(address vault, uint[] memory newTargetProportions) external onlyMetaVaultManager {
         MetaVaultLib.addVault(_getMetaVaultStorage(), vault, newTargetProportions);
     }
 
     /// @inheritdoc IMetaVault
-    function removeVault(address vault) external onlyVaultManager {
+    function removeVault(address vault) external onlyMetaVaultManager {
         MetaVaultLib.removeVault(_getMetaVaultStorage(), vault, MetaVaultLib.USD_THRESHOLD_REMOVE_VAULT);
     }
 
@@ -218,14 +218,14 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
     }
 
     /// @inheritdoc IStabilityVault
-    function setName(string calldata newName) external onlyOperator {
+    function setName(string calldata newName) external onlyMetaVaultManager {
         MetaVaultStorage storage $ = _getMetaVaultStorage();
         $.name = newName;
         emit VaultName(newName);
     }
 
     /// @inheritdoc IStabilityVault
-    function setSymbol(string calldata newSymbol) external onlyOperator {
+    function setSymbol(string calldata newSymbol) external onlyMetaVaultManager {
         MetaVaultStorage storage $ = _getMetaVaultStorage();
         $.symbol = newSymbol;
         emit VaultSymbol(newSymbol);
@@ -300,9 +300,10 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         $.recoveryTokens[cVault_] = recoveryToken_;
     }
 
-    function setVaultManager(address vaultManager_) external onlyGovernanceOrMultisig {
+    /// @inheritdoc IMetaVault
+    function setMetaVaultManager(address vaultManager_) external onlyGovernanceOrMultisig {
         MetaVaultStorage storage $ = _getMetaVaultStorage();
-        $.vaultManager = vaultManager_;
+        $.metaVaultManager = vaultManager_;
 
         emit SetVaultManager(vaultManager_);
     }
@@ -610,8 +611,9 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         return _getMetaVaultStorage().recoveryTokens[cVault_];
     }
 
-    function vaultManager() external view returns (address) {
-        return _getMetaVaultStorage().vaultManager;
+    /// @inheritdoc IMetaVault
+    function metaVaultManager() external view returns (address) {
+        return _getMetaVaultStorage().metaVaultManager;
     }
     //endregion --------------------------------- View functions
 
@@ -814,15 +816,16 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         );
     }
 
-    /// @notice Require that msg.sender is vault manager. If vault manager is not set, require that msg.sender is multisig.
-    function _requireVaultManager() internal view {
+    /// @notice Require that msg.sender is meta-vault-manager.
+    /// If meta-vault-manager is not set, require that msg.sender is multisig.
+    function _requireMetaVaultManager() internal view {
         MetaVaultStorage storage $ = _getMetaVaultStorage();
-        address _vaultManager = $.vaultManager;
-        if (_vaultManager == address(0)) {
+        address _metaVaultManager = $.metaVaultManager;
+        if (_metaVaultManager == address(0)) {
             address _platform = platform();
-            _vaultManager = IPlatform(_platform).multisig();
+            _metaVaultManager = IPlatform(_platform).multisig();
         }
-        require(msg.sender == _vaultManager, IControllable.IncorrectMsgSender());
+        require(msg.sender == _metaVaultManager, IMetaVault.NotMetaVaultManager());
     }
 
     function _getMetaVaultStorage() internal pure returns (MetaVaultStorage storage $) {

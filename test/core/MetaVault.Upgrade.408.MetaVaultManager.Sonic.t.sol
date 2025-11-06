@@ -1,32 +1,19 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {AaveStrategy} from "../../src/strategies/AaveStrategy.sol";
-import {CVault} from "../../src/core/vaults/CVault.sol";
-import {CommonLib} from "../../src/core/libs/CommonLib.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {IFactory} from "../../src/interfaces/IFactory.sol";
 import {IMetaVaultFactory} from "../../src/interfaces/IMetaVaultFactory.sol";
 import {IMetaVault} from "../../src/interfaces/IMetaVault.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
 import {IPriceReader} from "../../src/interfaces/IPriceReader.sol";
-import {IVault} from "../../src/interfaces/IVault.sol";
-import {IchiSwapXFarmStrategy} from "../../src/strategies/IchiSwapXFarmStrategy.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {MetaVault, IMetaVault, IStabilityVault} from "../../src/core/vaults/MetaVault.sol";
-import {SiloFarmStrategy} from "../../src/strategies/SiloFarmStrategy.sol";
-import {SiloManagedFarmStrategy} from "../../src/strategies/SiloManagedFarmStrategy.sol";
-import {SiloStrategy} from "../../src/strategies/SiloStrategy.sol";
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
-import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
-import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
-import {console, Test} from "forge-std/Test.sol";
-import {Factory} from "../../src/core/Factory.sol";
-import {IProxy} from "../../src/interfaces/IProxy.sol";
+import {Test} from "forge-std/Test.sol";
 
-/// @dev #408: introduce vault manager
-contract MetaVaultUpgrade408VaultManagerSonicTest is Test {
+/// @dev #408: introduce meta vault manager
+contract MetaVaultUpgrade408MetaVaultManagerSonicTest is Test {
     uint internal constant FORK_BLOCK = 51289172; // Oct-20-2025 07:13:57 AM +UTC
 
     address public constant PLATFORM = SonicConstantsLib.PLATFORM;
@@ -47,7 +34,7 @@ contract MetaVaultUpgrade408VaultManagerSonicTest is Test {
         _upgradeMetaVault(SonicConstantsLib.METAVAULT_METAUSDC);
     }
 
-    function testAddVaultVaultManagerIsNotSet() public {
+    function testAddVaultMetaVaultManagerIsNotSet() public {
         address vault = SonicConstantsLib.VAULT_C_USDC_S_49;
 
         address[] memory vaults = metaVault.vaults();
@@ -55,14 +42,14 @@ contract MetaVaultUpgrade408VaultManagerSonicTest is Test {
             assertNotEq(vaults[i], vault, "vault is not present before addition");
         }
 
-        // ------------------------ only multisig is able to add vault because vault manager is not set
-        assertEq(metaVault.vaultManager(), address(0), "vault manager is not set");
+        // ------------------------ only multisig is able to add vault because meta vault manager is not set
+        assertEq(metaVault.metaVaultManager(), address(0), "meta vault manager is not set");
 
         // for simplicity set 100% for the new vault
         uint[] memory newTargetProportions = new uint[](vaults.length + 1);
         newTargetProportions[vaults.length] = 1e18;
 
-        vm.expectRevert();
+        vm.expectRevert(IMetaVault.NotMetaVaultManager.selector);
         vm.prank(address(this));
         metaVault.addVault(vault, newTargetProportions);
 
@@ -83,7 +70,7 @@ contract MetaVaultUpgrade408VaultManagerSonicTest is Test {
         assertEq(indexNewVault, vaults.length - 1, "vault is added to the end");
     }
 
-    function testAddVaultVaultManagerIsSet() public {
+    function testAddVaultMetaVaultManagerIsSet() public {
         address vault = SonicConstantsLib.VAULT_C_USDC_S_49;
 
         address[] memory vaults = metaVault.vaults();
@@ -91,30 +78,30 @@ contract MetaVaultUpgrade408VaultManagerSonicTest is Test {
             assertNotEq(vaults[i], vault, "vault is not present before addition");
         }
 
-        // ------------------------ set vault manager
-        address vaultManager = makeAddr("VaultManager");
+        // ------------------------ set meta-vault-manager
+        address metaVaultManager = makeAddr("MetaVaultManager");
 
         vm.prank(multisig);
-        metaVault.setVaultManager(vaultManager);
+        metaVault.setMetaVaultManager(metaVaultManager);
 
-        assertEq(metaVault.vaultManager(), vaultManager, "vault manager is set");
+        assertEq(metaVault.metaVaultManager(), metaVaultManager, "meta vault manager is set");
 
-        // ------------------------ only vault manager is able to add vault because vault manager is not set
+        // ------------------------ mot meta-vault-manager (even multisig) is NOT able to add vault
 
         // for simplicity set 100% for the new vault
         uint[] memory newTargetProportions = new uint[](vaults.length + 1);
         newTargetProportions[vaults.length] = 1e18;
 
-        vm.expectRevert();
+        vm.expectRevert(IMetaVault.NotMetaVaultManager.selector);
         vm.prank(address(this));
         metaVault.addVault(vault, newTargetProportions);
 
-        vm.expectRevert();
+        vm.expectRevert(IMetaVault.NotMetaVaultManager.selector);
         vm.prank(multisig);
         metaVault.addVault(vault, newTargetProportions);
 
-        // ------------------------ vault manager can add the vault
-        vm.prank(vaultManager);
+        // ------------------------ meta vault manager can add the vault
+        vm.prank(metaVaultManager);
         metaVault.addVault(vault, newTargetProportions);
 
         // ------------------------ vault is added
@@ -130,16 +117,16 @@ contract MetaVaultUpgrade408VaultManagerSonicTest is Test {
         assertEq(indexNewVault, vaults.length - 1, "vault is added to the end");
     }
 
-    function testRemoveVaultVaultManagerIsNotSet() public {
+    function testRemoveVaultMetaVaultManagerIsNotSet() public {
         address vault = _prepareVaultToRemove(2);
 
         address[] memory vaults = metaVault.vaults();
         assertEq(vaults[2], vault, "vault is present before removal");
 
-        // ------------------------ only multisig is able to remove vault because vault manager is not set
-        assertEq(metaVault.vaultManager(), address(0), "vault manager is not set");
+        // ------------------------ only multisig is able to remove vault
+        assertEq(metaVault.metaVaultManager(), address(0), "meta vault manager is not set");
 
-        vm.expectRevert();
+        vm.expectRevert(IMetaVault.NotMetaVaultManager.selector);
         vm.prank(address(this));
         metaVault.removeVault(vault);
 
@@ -154,31 +141,31 @@ contract MetaVaultUpgrade408VaultManagerSonicTest is Test {
         }
     }
 
-    function testRemoveVaultVaultManagerIsSet() public {
+    function testRemoveVaultMetaVaultManagerIsSet() public {
         address vault = _prepareVaultToRemove(2);
 
         address[] memory vaults = metaVault.vaults();
         assertEq(vaults[2], vault, "vault is present before removal");
 
-        address vaultManager = makeAddr("VaultManager");
+        address metaVaultManager = makeAddr("MetaVaultManager");
 
         vm.prank(multisig);
-        metaVault.setVaultManager(vaultManager);
+        metaVault.setMetaVaultManager(metaVaultManager);
 
-        assertEq(metaVault.vaultManager(), vaultManager, "vault manager is set");
+        assertEq(metaVault.metaVaultManager(), metaVaultManager, "meta vault manager is set");
 
-        // ------------------------ only vault manager is able to remove vault
-        vm.expectRevert();
+        // ------------------------ only meta-vault-manager is able to remove vault
+        vm.expectRevert(IMetaVault.NotMetaVaultManager.selector);
         vm.prank(address(this));
         metaVault.removeVault(vault);
 
         // ------------------------ even multisig is not able to remove vault
-        vm.expectRevert();
+        vm.expectRevert(IMetaVault.NotMetaVaultManager.selector);
         vm.prank(multisig);
         metaVault.removeVault(vault);
 
-        // ------------------------ vault manager can remove vault
-        vm.prank(vaultManager);
+        // ------------------------ meta-vault-manager can remove vault
+        vm.prank(metaVaultManager);
         metaVault.removeVault(vault);
 
         // ------------------------ vault is removed
@@ -188,7 +175,7 @@ contract MetaVaultUpgrade408VaultManagerSonicTest is Test {
         }
     }
 
-    function testChangeProportionsVaultManagerIsNotSet() public {
+    function testChangeProportionsMetaVaultManagerIsNotSet() public {
         address[] memory vaults = metaVault.vaults();
 
         // for simplicity set 100% for the the last vault
@@ -196,7 +183,7 @@ contract MetaVaultUpgrade408VaultManagerSonicTest is Test {
         newTargetProportions[vaults.length - 1] = 1e18;
 
         // ------------------------ not-multisig cannot change proportions
-        vm.expectRevert();
+        vm.expectRevert(IMetaVault.NotMetaVaultManager.selector);
         vm.prank(address(this));
         metaVault.setTargetProportions(newTargetProportions);
 
@@ -212,32 +199,32 @@ contract MetaVaultUpgrade408VaultManagerSonicTest is Test {
         }
     }
 
-    function testChangeProportionsVaultManagerIsSet() public {
+    function testChangeProportionsMetaVaultManagerIsSet() public {
         address[] memory vaults = metaVault.vaults();
 
         // for simplicity set 100% for the the last vault
         uint[] memory newTargetProportions = new uint[](vaults.length);
         newTargetProportions[vaults.length - 1] = 1e18;
 
-        // ------------------------ set vault manager
-        address vaultManager = makeAddr("VaultManager");
+        // ------------------------ set meta vault manager
+        address metaVaultManager = makeAddr("MetaVaultManager");
 
         vm.prank(multisig);
-        metaVault.setVaultManager(vaultManager);
+        metaVault.setMetaVaultManager(metaVaultManager);
 
-        assertEq(metaVault.vaultManager(), vaultManager, "vault manager is set");
+        assertEq(metaVault.metaVaultManager(), metaVaultManager, "meta vault manager is set");
 
         // ------------------------ not-vault-manager cannot change proportions
-        vm.expectRevert();
+        vm.expectRevert(IMetaVault.NotMetaVaultManager.selector);
         vm.prank(address(this));
         metaVault.setTargetProportions(newTargetProportions);
 
-        vm.expectRevert();
+        vm.expectRevert(IMetaVault.NotMetaVaultManager.selector);
         vm.prank(multisig);
         metaVault.setTargetProportions(newTargetProportions);
 
-        // ------------------------ vault-manager can change proportions
-        vm.prank(vaultManager);
+        // ------------------------ meta-vault-manager can change proportions
+        vm.prank(metaVaultManager);
         metaVault.setTargetProportions(newTargetProportions);
 
         // ------------------------ proportions are changed
@@ -246,6 +233,67 @@ contract MetaVaultUpgrade408VaultManagerSonicTest is Test {
         for (uint i; i < vaults.length; ++i) {
             assertEq(updatedProportions[i], newTargetProportions[i], "proportion for vault is updated");
         }
+    }
+
+    function testSetNameSymbolMetaVaultManagerIsNotSet() public {
+        assertEq(metaVault.metaVaultManager(), address(0), "meta vault manager is not set");
+
+        // ------------------------ not multisig is NOT able to set name or symbol
+        vm.expectRevert(IMetaVault.NotMetaVaultManager.selector);
+        vm.prank(address(this));
+        metaVault.setName("new name");
+
+        vm.expectRevert(IMetaVault.NotMetaVaultManager.selector);
+        vm.prank(address(this));
+        metaVault.setSymbol("new symbol");
+
+        // ------------------------ multisig is able to set name or symbol
+        vm.prank(multisig);
+        metaVault.setName("new name");
+
+        vm.prank(multisig);
+        metaVault.setSymbol("new symbol");
+
+        assertEq(metaVault.name(), "new name", "name is updated");
+        assertEq(metaVault.symbol(), "new symbol", "symbol is updated");
+    }
+
+    function testSetNameSymbolMetaVaultManagerIsSet() public {
+        // ------------------------ set meta vault manager
+        address metaVaultManager = makeAddr("MetaVaultManager");
+
+        vm.prank(multisig);
+        metaVault.setMetaVaultManager(metaVaultManager);
+
+        assertEq(metaVault.metaVaultManager(), metaVaultManager, "meta vault manager is set");
+
+        // ------------------------ not meta-vault-manager is NOT able to set name or symbol
+        vm.expectRevert(IMetaVault.NotMetaVaultManager.selector);
+        vm.prank(address(this));
+        metaVault.setName("new name");
+
+        vm.expectRevert(IMetaVault.NotMetaVaultManager.selector);
+        vm.prank(address(this));
+        metaVault.setSymbol("new symbol");
+
+        // ------------------------ even multisig is NOT able to set name or symbol
+        vm.expectRevert(IMetaVault.NotMetaVaultManager.selector);
+        vm.prank(multisig);
+        metaVault.setName("new name");
+
+        vm.expectRevert(IMetaVault.NotMetaVaultManager.selector);
+        vm.prank(multisig);
+        metaVault.setSymbol("new symbol");
+
+        // ------------------------ meta-vault-manager is able to set name or symbol
+        vm.prank(metaVaultManager);
+        metaVault.setName("new name");
+
+        vm.prank(metaVaultManager);
+        metaVault.setSymbol("new symbol");
+
+        assertEq(metaVault.name(), "new name", "name is updated");
+        assertEq(metaVault.symbol(), "new symbol", "symbol is updated");
     }
 
     //region ------------------------------ Internal logic
