@@ -44,6 +44,8 @@ interface IMetaVault is IStabilityVault {
         mapping(address owner => bool whitelisted) lastBlockDefenseWhitelist;
         /// @dev Recovery tokens for broken c-vaults
         mapping(address cVault => address recoveryToken) recoveryTokens;
+        /// @notice Manager allowed to edit sub-vaults and proportions
+        address metaVaultManager;
     }
 
     /// @notice Types of last-block-defense disable modes
@@ -66,6 +68,7 @@ interface IMetaVault is IStabilityVault {
     event TargetProportions(uint[] proportions);
     event WhitelistChanged(address owner, bool whitelisted);
     event RemoveVault(address vault);
+    event SetVaultManager(address newManager);
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       CUSTOM ERRORS                        */
@@ -81,6 +84,7 @@ interface IMetaVault is IStabilityVault {
     error VaultNotFound(address vault);
     error TooHighAmount(uint amount, uint maxAmount);
     error RecoveryTokenNotSet(address cVault_);
+    error NotMetaVaultManager();
 
     //region --------------------------------------- View functions
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -140,6 +144,10 @@ interface IMetaVault is IStabilityVault {
 
     /// @notice Recovery token for the given cVault. Zero for not-broken vaults
     function recoveryToken(address cVault_) external view returns (address);
+
+    /// @notice Address allowed to manage vaults, proportions, name and symbol.
+    /// If 0 then multisig is the manager
+    function metaVaultManager() external view returns (address);
     //endregion --------------------------------------- View functions
 
     //region --------------------------------------- Write functions
@@ -235,5 +243,8 @@ interface IMetaVault is IStabilityVault {
     /// @custom:access Governance, multisig
     function setRecoveryToken(address cVault_, address recoveryToken_) external;
 
+    /// @notice Set new meta-vault-manager address
+    /// @custom:access Governance, multisig
+    function setMetaVaultManager(address newManager) external;
     //endregion --------------------------------------- Write functions
 }

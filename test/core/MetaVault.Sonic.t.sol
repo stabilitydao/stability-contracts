@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.28;
 
+// import {console} from "forge-std/console.sol";
 import {
     MetaVault,
     IMetaVault,
@@ -412,11 +413,16 @@ contract MetaVaultSonicTest is Test {
         IMetaVault metavault = IMetaVault(metaVaults[0]);
 
         // setName, setSymbol
-        vm.expectRevert(IControllable.NotOperator.selector);
+        vm.expectRevert(IMetaVault.NotMetaVaultManager.selector);
         metavault.setName("new name");
+
         vm.prank(multisig);
         metavault.setName("new name");
         assertEq(IERC20Metadata(address(metavault)).name(), "new name");
+
+        vm.expectRevert(IMetaVault.NotMetaVaultManager.selector);
+        metavault.setSymbol("new symbol");
+
         vm.prank(multisig);
         metavault.setSymbol("new symbol");
         assertEq(IERC20Metadata(address(metavault)).symbol(), "new symbol");
@@ -424,7 +430,7 @@ contract MetaVaultSonicTest is Test {
         // change proportions
         uint[] memory newTargetProportions = new uint[](2);
 
-        vm.expectRevert(IControllable.IncorrectMsgSender.selector);
+        vm.expectRevert(IMetaVault.NotMetaVaultManager.selector);
         metavault.setTargetProportions(newTargetProportions);
 
         vm.startPrank(multisig);
@@ -445,7 +451,7 @@ contract MetaVaultSonicTest is Test {
         address vault = SonicConstantsLib.VAULT_C_USDC_SCUSD_ISF_SCUSD;
         newTargetProportions = new uint[](3);
 
-        vm.expectRevert(IControllable.NotGovernanceAndNotMultisig.selector);
+        vm.expectRevert(IMetaVault.NotMetaVaultManager.selector);
         metavault.addVault(vault, newTargetProportions);
 
         vm.startPrank(multisig);
