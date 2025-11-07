@@ -10,7 +10,6 @@ import {IControllable} from "../../src/interfaces/IControllable.sol";
 import {IPriceReader} from "../../src/interfaces/IPriceReader.sol";
 import {IRecovery} from "../../src/interfaces/IRecovery.sol";
 import {IMetaVault} from "../../src/interfaces/IMetaVault.sol";
-import {IUniswapV3Pool} from "../../src/integrations/uniswapv3/IUniswapV3Pool.sol";
 import {MetaVault} from "../../src/core/vaults/MetaVault.sol";
 import {Recovery} from "../../src/tokenomics/Recovery.sol";
 import {RecoveryLib} from "../../src/tokenomics/libs/RecoveryLib.sol";

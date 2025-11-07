@@ -24,9 +24,12 @@ import {MerklStrategyBase} from "./base/MerklStrategyBase.sol";
 import {StrategyIdLib} from "./libs/StrategyIdLib.sol";
 import {StrategyLib} from "./libs/StrategyLib.sol";
 import {VaultTypeLib} from "../core/libs/VaultTypeLib.sol";
+import {IAaveAddressProvider} from "../integrations/aave/IAaveAddressProvider.sol";
+import {IAaveDataProvider} from "../integrations/aave/IAaveDataProvider.sol";
 
 /// @title Earns APR by lending assets on AAVE
 /// Changelog:
+///   1.2.0: implement maxDepositAssets - #429
 ///   1.1.0: add support of underlying operations - #360
 ///   1.0.0: initial release
 /// @author dvpublic (https://github.com/dvpublic)
@@ -38,7 +41,7 @@ contract AaveMerklFarmStrategy is FarmingStrategyBase, MerklStrategyBase {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.1.0";
+    string public constant VERSION = "1.2.0";
 
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.AaveMerklFarmStrategy")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant AAVE_MERKL_FARM_STRATEGY_STORAGE_LOCATION =
@@ -243,9 +246,35 @@ contract AaveMerklFarmStrategy is FarmingStrategyBase, MerklStrategyBase {
         amounts_[0] = StrategyLib.balance(aaveToken());
     }
 
+    /// @inheritdoc StrategyBase
     function _previewDepositUnderlying(uint amount) internal pure override returns (uint[] memory amountsConsumed) {
         amountsConsumed = new uint[](1);
         amountsConsumed[0] = amount;
+    }
+
+    /// @inheritdoc IStrategy
+    function maxDepositAssets() public view override returns (uint[] memory amounts) {
+        amounts = new uint[](1);
+
+        address aToken = aaveToken();
+        address asset = IAToken(aToken).UNDERLYING_ASSET_ADDRESS();
+
+        // get supply cap for the borrow asset
+        (, uint supplyCap) = IAaveDataProvider(
+                IAaveAddressProvider(IPool(IAToken(aToken).POOL()).ADDRESSES_PROVIDER()).getPoolDataProvider()
+            ).getReserveCaps(asset);
+
+        if (supplyCap == 0) {
+            amounts[0] = type(uint).max; // max deposit is not limited
+        } else {
+            supplyCap *= 10 ** IERC20Metadata(asset).decimals();
+
+            // get total supplied amount for the borrow asset
+            uint totalSupplied = IAToken(aToken).totalSupply();
+
+            // calculate available amount to supply as (supply cap - total supplied)
+            amounts[0] = (supplyCap > totalSupplied ? supplyCap - totalSupplied : 0) * 99 / 100; // leave 1% margin
+        }
     }
 
     //endregion ----------------------- View functions
