@@ -34,7 +34,7 @@ contract FactoryTest is Test, MockSetup {
 
         ammAdapter = new MockAmmAdapter(address(tokenA), address(tokenB));
 
-        platform.setup(
+        platform.setupPlatform(
             IPlatform.SetupAddresses({
                 factory: address(factory),
                 priceReader: address(0),

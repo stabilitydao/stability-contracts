@@ -17,6 +17,7 @@ import {ISwapper} from "../interfaces/ISwapper.sol";
 ///         ┗┓ ┃ ┣┫┣┫┃┃ ┃ ┃ ┗┫  ┃┃┃ ┣┫ ┃ ┣ ┃┃┣┫┃┃┃
 ///         ┗┛ ┻ ┛┗┻┛┻┗┛┻ ┻ ┗┛  ┣┛┗┛┛┗ ┻ ┻ ┗┛┛┗┛ ┗
 /// Changelog:
+///   1.6.4: setup => setupPlatform
 ///   1.6.3: rename vaultPriceOracle to priceAggregator - #414
 ///   1.6.2: IPlatform.stabilityDAO()
 ///   1.6.1: IPlatform.recovery()
@@ -43,7 +44,7 @@ contract Platform is Controllable, IPlatform {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @dev Version of Platform contract implementation
-    string public constant VERSION = "1.6.3";
+    string public constant VERSION = "1.6.4";
 
     /// @inheritdoc IPlatform
     uint public constant TIME_LOCK = 16 hours;
@@ -149,7 +150,7 @@ contract Platform is Controllable, IPlatform {
         emit PlatformVersion(version);
     }
 
-    function setup(
+    function setupPlatform(
         IPlatform.SetupAddresses memory addresses,
         IPlatform.PlatformSettings memory settings
     ) external onlyOperator {

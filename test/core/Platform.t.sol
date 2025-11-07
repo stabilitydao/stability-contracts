@@ -57,7 +57,7 @@ contract PlatformTest is Test {
         proxy.initProxy(address(new Platform()));
         Platform platform2 = Platform(address(proxy));
         platform2.initialize(address(this), "23.11.0-dev");
-        platform.setup(
+        platform.setupPlatform(
             IPlatform.SetupAddresses({
                 factory: address(1),
                 priceReader: address(2),
@@ -81,7 +81,7 @@ contract PlatformTest is Test {
         assertEq(platform.ecosystemRevenueReceiver(), address(0));
 
         vm.expectRevert(abi.encodeWithSelector(IControllable.AlreadyExist.selector));
-        platform.setup(
+        platform.setupPlatform(
             IPlatform.SetupAddresses({
                 factory: address(1),
                 priceReader: address(2),
@@ -315,7 +315,7 @@ contract PlatformTest is Test {
         Swapper _swapper = Swapper(address(proxy));
         _swapper.initialize(address(platform));
 
-        platform.setup(
+        platform.setupPlatform(
             IPlatform.SetupAddresses({
                 factory: address(factory),
                 priceReader: address(2),

@@ -51,9 +51,9 @@ contract XStakingUpgrade404SonicTest is Test {
         vm.prank(multisig);
         xStaking.syncStabilityDAOBalances(users);
 
-        assertEq(stabilityDao.userPower(USER1), 5000e18, "1: user 1 power");
-        assertEq(stabilityDao.userPower(USER2), 0, "1: user 2 power");
-        assertEq(stabilityDao.userPower(USER3), 0, "1: user 3 power");
+        assertEq(stabilityDao.getVotes(USER1), 5000e18, "1: user 1 power");
+        assertEq(stabilityDao.getVotes(USER2), 0, "1: user 2 power");
+        assertEq(stabilityDao.getVotes(USER3), 0, "1: user 3 power");
 
         assertEq(xStaking.balanceOf(USER1), 5000e18, "1: user 1 xStaking balance");
         assertEq(xStaking.balanceOf(USER2), 3000e18, "1: user 2 xStaking balance");
@@ -66,9 +66,9 @@ contract XStakingUpgrade404SonicTest is Test {
         vm.prank(USER1);
         xStaking.withdraw(1000e18);
 
-        assertEq(stabilityDao.userPower(USER1), 4000e18, "2: user 1 power");
-        assertEq(stabilityDao.userPower(USER2), 4000e18, "2: user 2 power");
-        assertEq(stabilityDao.userPower(USER3), 4000e18, "2: user 3 power");
+        assertEq(stabilityDao.getVotes(USER1), 4000e18, "2: user 1 power");
+        assertEq(stabilityDao.getVotes(USER2), 4000e18, "2: user 2 power");
+        assertEq(stabilityDao.getVotes(USER3), 4000e18, "2: user 3 power");
 
         assertEq(xStaking.balanceOf(USER1), 4000e18, "2: user 1 xStaking balance");
         assertEq(xStaking.balanceOf(USER2), 4000e18, "2: user 2 xStaking balance");
@@ -81,9 +81,9 @@ contract XStakingUpgrade404SonicTest is Test {
         vm.prank(USER1);
         xStaking.withdraw(1000e18);
 
-        assertEq(stabilityDao.userPower(USER1), 0, "3: user 1 power");
-        assertEq(stabilityDao.userPower(USER2), 5000e18, "3: user 2 power");
-        assertEq(stabilityDao.userPower(USER3), 5000e18, "3: user 3 power");
+        assertEq(stabilityDao.getVotes(USER1), 0, "3: user 1 power");
+        assertEq(stabilityDao.getVotes(USER2), 5000e18, "3: user 2 power");
+        assertEq(stabilityDao.getVotes(USER3), 5000e18, "3: user 3 power");
 
         assertEq(xStaking.balanceOf(USER1), 3000e18, "3: user 1 xStaking balance");
         assertEq(xStaking.balanceOf(USER2), 5000e18, "3: user 2 xStaking balance");
@@ -98,9 +98,9 @@ contract XStakingUpgrade404SonicTest is Test {
         vm.prank(USER3);
         xStaking.withdraw(1500e18);
 
-        assertEq(stabilityDao.userPower(USER1), 8000e18, "4: user 1 power");
-        assertEq(stabilityDao.userPower(USER2), 0, "4: user 2 power");
-        assertEq(stabilityDao.userPower(USER3), 0, "4: user 3 power");
+        assertEq(stabilityDao.getVotes(USER1), 8000e18, "4: user 1 power");
+        assertEq(stabilityDao.getVotes(USER2), 0, "4: user 2 power");
+        assertEq(stabilityDao.getVotes(USER3), 0, "4: user 3 power");
 
         assertEq(xStaking.balanceOf(USER1), 8000e18, "4: user 1 xStaking balance");
         assertEq(xStaking.balanceOf(USER2), 0, "4: user 2 xStaking balance");
@@ -134,9 +134,9 @@ contract XStakingUpgrade404SonicTest is Test {
         assertEq(xStaking.balanceOf(USER2), balance2, "1: user 2 xStaking balance");
         assertEq(xStaking.balanceOf(USER3), balance3, "1: user 3 xStaking balance");
 
-        assertEq(stabilityDao.userPower(USER1), 0, "1: user 1 power");
-        assertEq(stabilityDao.userPower(USER2), 0, "1: user 2 power");
-        assertEq(stabilityDao.userPower(USER3), 0, "1: user 3 power");
+        assertEq(stabilityDao.getVotes(USER1), 0, "1: user 1 power");
+        assertEq(stabilityDao.getVotes(USER2), 0, "1: user 2 power");
+        assertEq(stabilityDao.getVotes(USER3), 0, "1: user 3 power");
 
         // ------------------------------- Users 1 and 3 delegate to user 2
         vm.prank(USER1);
@@ -146,9 +146,9 @@ contract XStakingUpgrade404SonicTest is Test {
         stabilityDao.setPowerDelegation(USER2);
 
         // ------------------------------- Threshold is too high, users don't have any power
-        assertEq(stabilityDao.userPower(USER1), 0, "2: user 1 power");
-        assertEq(stabilityDao.userPower(USER2), 0, "2: user 2 power");
-        assertEq(stabilityDao.userPower(USER3), 0, "2: user 3 power");
+        assertEq(stabilityDao.getVotes(USER1), 0, "2: user 1 power");
+        assertEq(stabilityDao.getVotes(USER2), 0, "2: user 2 power");
+        assertEq(stabilityDao.getVotes(USER3), 0, "2: user 3 power");
 
         assertEq(xStaking.balanceOf(USER1), balance1, "2: user 1 xStaking balance");
         assertEq(xStaking.balanceOf(USER2), balance2, "2: user 2 xStaking balance");
@@ -160,9 +160,9 @@ contract XStakingUpgrade404SonicTest is Test {
         xStaking.syncStabilityDAOBalances(users);
 
         // ------------------------------- Now user 2 has all power because users 1 and 3 have delegated him their powers
-        assertEq(stabilityDao.userPower(USER1), 0, "2: user 1 power");
-        assertEq(stabilityDao.userPower(USER2), balance2 + balance1 + balance3, "2: user 2 power");
-        assertEq(stabilityDao.userPower(USER3), 0, "2: user 3 power");
+        assertEq(stabilityDao.getVotes(USER1), 0, "2: user 1 power");
+        assertEq(stabilityDao.getVotes(USER2), balance2 + balance1 + balance3, "2: user 2 power");
+        assertEq(stabilityDao.getVotes(USER3), 0, "2: user 3 power");
 
         assertEq(xStaking.balanceOf(USER1), balance1, "2: user 1 xStaking balance");
         assertEq(xStaking.balanceOf(USER2), balance2, "2: user 2 xStaking balance");
@@ -175,9 +175,9 @@ contract XStakingUpgrade404SonicTest is Test {
         vm.prank(USER3);
         stabilityDao.setPowerDelegation(USER3);
 
-        assertEq(stabilityDao.userPower(USER1), balance1, "4: user 1 power");
-        assertEq(stabilityDao.userPower(USER2), balance2, "4: user 2 power");
-        assertEq(stabilityDao.userPower(USER3), balance3, "4: user 3 power");
+        assertEq(stabilityDao.getVotes(USER1), balance1, "4: user 1 power");
+        assertEq(stabilityDao.getVotes(USER2), balance2, "4: user 2 power");
+        assertEq(stabilityDao.getVotes(USER3), balance3, "4: user 3 power");
 
         assertEq(xStaking.balanceOf(USER1), balance1, "4: user 1 xStaking balance");
         assertEq(xStaking.balanceOf(USER2), balance2, "4: user 2 xStaking balance");
@@ -193,9 +193,9 @@ contract XStakingUpgrade404SonicTest is Test {
         vm.prank(USER2);
         stabilityDao.setPowerDelegation(USER3);
 
-        assertEq(stabilityDao.userPower(USER1), 0, "5: user 1 power");
-        assertEq(stabilityDao.userPower(USER2), balance3, "5: user 2 power");
-        assertEq(stabilityDao.userPower(USER3), balance1 + balance2, "5: user 3 power");
+        assertEq(stabilityDao.getVotes(USER1), 0, "5: user 1 power");
+        assertEq(stabilityDao.getVotes(USER2), balance3, "5: user 2 power");
+        assertEq(stabilityDao.getVotes(USER3), balance1 + balance2, "5: user 3 power");
 
         assertEq(xStaking.balanceOf(USER1), balance1, "5: user 1 xStaking balance");
         assertEq(xStaking.balanceOf(USER2), balance2, "5: user 2 xStaking balance");
@@ -206,9 +206,9 @@ contract XStakingUpgrade404SonicTest is Test {
         _mintAndDepositToStaking(USER2, balance2);
         _mintAndDepositToStaking(USER3, balance3);
 
-        assertEq(stabilityDao.userPower(USER1), 0, "6: user 1 power");
-        assertEq(stabilityDao.userPower(USER2), 2 * balance3, "6: user 2 power");
-        assertEq(stabilityDao.userPower(USER3), 2 * (balance1 + balance2), "6: user 3 power");
+        assertEq(stabilityDao.getVotes(USER1), 0, "6: user 1 power");
+        assertEq(stabilityDao.getVotes(USER2), 2 * balance3, "6: user 2 power");
+        assertEq(stabilityDao.getVotes(USER3), 2 * (balance1 + balance2), "6: user 3 power");
 
         assertEq(xStaking.balanceOf(USER1), 2 * balance1, "6: user 1 xStaking balance");
         assertEq(xStaking.balanceOf(USER2), 2 * balance2, "6: user 2 xStaking balance");
@@ -221,9 +221,9 @@ contract XStakingUpgrade404SonicTest is Test {
         vm.prank(USER2);
         xStaking.withdraw(balance2 * 2);
 
-        assertEq(stabilityDao.userPower(USER1), 0, "7: user 1 power");
-        assertEq(stabilityDao.userPower(USER2), 2 * balance3, "7: user 2 power");
-        assertEq(stabilityDao.userPower(USER3), 0, "7: user 3 power");
+        assertEq(stabilityDao.getVotes(USER1), 0, "7: user 1 power");
+        assertEq(stabilityDao.getVotes(USER2), 2 * balance3, "7: user 2 power");
+        assertEq(stabilityDao.getVotes(USER3), 0, "7: user 3 power");
 
         assertEq(xStaking.balanceOf(USER1), 0, "7: user 1 xStaking balance");
         assertEq(xStaking.balanceOf(USER2), 0, "7: user 2 xStaking balance");
