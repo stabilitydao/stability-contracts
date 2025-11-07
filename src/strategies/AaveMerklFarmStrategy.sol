@@ -260,6 +260,7 @@ contract AaveMerklFarmStrategy is FarmingStrategyBase, MerklStrategyBase {
         address asset = IAToken(aToken).UNDERLYING_ASSET_ADDRESS();
 
         // get supply cap for the borrow asset
+        // slither-disable-next-line unused-return
         (, uint supplyCap) = IAaveDataProvider(
                 IAaveAddressProvider(IPool(IAToken(aToken).POOL()).ADDRESSES_PROVIDER()).getPoolDataProvider()
             ).getReserveCaps(asset);
