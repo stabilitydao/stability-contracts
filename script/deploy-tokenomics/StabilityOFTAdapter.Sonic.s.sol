@@ -13,7 +13,8 @@ contract DeployStabilityOFTAdapterSonic is Script {
     function run() external {
         uint deployerPrivateKey = vm.envUint("PRIVATE_KEY");
 
-        StdConfig config = new StdConfig("./config.toml", true);
+        StdConfig config = new StdConfig("./config.toml", false); // read only config
+        StdConfig configDeployed = new StdConfig("./config.d.toml", true); // auto-write deployed addresses
 
         vm.startBroadcast(deployerPrivateKey);
         Proxy proxy = new Proxy();
@@ -26,7 +27,7 @@ contract DeployStabilityOFTAdapterSonic is Script {
         );
         StabilityOFTAdapter(address(proxy)).initialize(config.get("PLATFORM").toAddress());
 
-        config.set("STABILITY_OFT_ADAPTER", address(proxy));
+        configDeployed.set("STABILITY_OFT_ADAPTER", address(proxy));
 
         vm.stopBroadcast();
     }

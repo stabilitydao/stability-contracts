@@ -13,7 +13,8 @@ contract DeployPriceAggregatorOApp is Script {
     function run() external {
         uint deployerPrivateKey = vm.envUint("PRIVATE_KEY");
 
-        StdConfig config = new StdConfig("./config.toml", true);
+        StdConfig config = new StdConfig("./config.toml", false); // read only config
+        StdConfig configDeployed = new StdConfig("./config.d.toml", true); // auto-write deployed addresses
 
         vm.startBroadcast(deployerPrivateKey);
         Proxy proxy = new Proxy();
@@ -24,7 +25,7 @@ contract DeployPriceAggregatorOApp is Script {
             .initialize(config.get("PLATFORM").toAddress(), config.get("TOKEN_STBL").toAddress());
 
         // @dev assume here that we deploy price oracle for STBL token
-        config.set("PRICE_AGGREGATOR_OAPP_STBL", address(proxy));
+        configDeployed.set("PRICE_AGGREGATOR_OAPP_STBL", address(proxy));
 
         vm.stopBroadcast();
     }
