@@ -256,4 +256,10 @@ contract MockMetaVaultUpgrade is Controllable, IMetaVault {
     function setRecoveryToken(address cVault_, address recoveryToken_) external {}
 
     function recoveryToken(address cVault_) external view returns (address) {}
+
+    function metaVaultManager() external view returns (address) {}
+
+    function setMetaVaultManager(
+        address /*newManager*/
+    ) external {}
 }

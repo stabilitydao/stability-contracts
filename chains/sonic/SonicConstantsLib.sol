@@ -101,6 +101,9 @@ library SonicConstantsLib {
     address public constant VAULT_LEV_SIAL_WSTKSCETH_WETH = 0x46bc0F0073FF1a6281d401cDC6cd56Cec0495047;
     address public constant VAULT_LEV_SIAL_ASONUSDC_SCUSD_14AUG2025 = 0x6BD40759E38ed47EF360A8618ac8Fe6d3b2EA959;
 
+    // STBL
+    address public constant VAULT_C_STBL_USDC = 0xDe4b29E64e5E5eC5290dF2888Df5b4565836085F;
+
     // ERC20
     address public constant TOKEN_WS = 0x039e2fB66102314Ce7b64Ce5Ce3E5183bc94aD38;
     address public constant TOKEN_WETH = 0x50c42dEAcD8Fc9773493ED674b675bE577f2634b;
