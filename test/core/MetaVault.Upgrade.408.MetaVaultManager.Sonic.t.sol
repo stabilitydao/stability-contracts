@@ -5,6 +5,7 @@ import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IER
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IMetaVaultFactory} from "../../src/interfaces/IMetaVaultFactory.sol";
 import {IMetaVault} from "../../src/interfaces/IMetaVault.sol";
+import {IControllable} from "../../src/interfaces/IControllable.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
 import {IPriceReader} from "../../src/interfaces/IPriceReader.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
@@ -49,7 +50,7 @@ contract MetaVaultUpgrade408MetaVaultManagerSonicTest is Test {
         uint[] memory newTargetProportions = new uint[](vaults.length + 1);
         newTargetProportions[vaults.length] = 1e18;
 
-        vm.expectRevert(IMetaVault.NotMetaVaultManager.selector);
+        vm.expectRevert(IControllable.NotMultisig.selector);
         vm.prank(address(this));
         metaVault.addVault(vault, newTargetProportions);
 
@@ -126,7 +127,7 @@ contract MetaVaultUpgrade408MetaVaultManagerSonicTest is Test {
         // ------------------------ only multisig is able to remove vault
         assertEq(metaVault.metaVaultManager(), address(0), "meta vault manager is not set");
 
-        vm.expectRevert(IMetaVault.NotMetaVaultManager.selector);
+        vm.expectRevert(IControllable.NotMultisig.selector);
         vm.prank(address(this));
         metaVault.removeVault(vault);
 
@@ -183,12 +184,15 @@ contract MetaVaultUpgrade408MetaVaultManagerSonicTest is Test {
         newTargetProportions[vaults.length - 1] = 1e18;
 
         // ------------------------ not-multisig cannot change proportions
-        vm.expectRevert(IMetaVault.NotMetaVaultManager.selector);
+        vm.expectRevert(IControllable.IncorrectMsgSender.selector);
         vm.prank(address(this));
         metaVault.setTargetProportions(newTargetProportions);
 
-        // ------------------------ multisig can change proportions
+        // ------------------------ allowed operator can change proportions
         vm.prank(multisig);
+        IPlatform(PLATFORM).addOperator(address(this));
+
+        vm.prank(address(this));
         metaVault.setTargetProportions(newTargetProportions);
 
         // ------------------------ proportions are changed
@@ -239,11 +243,11 @@ contract MetaVaultUpgrade408MetaVaultManagerSonicTest is Test {
         assertEq(metaVault.metaVaultManager(), address(0), "meta vault manager is not set");
 
         // ------------------------ not multisig is NOT able to set name or symbol
-        vm.expectRevert(IMetaVault.NotMetaVaultManager.selector);
+        vm.expectRevert(IControllable.NotMultisig.selector);
         vm.prank(address(this));
         metaVault.setName("new name");
 
-        vm.expectRevert(IMetaVault.NotMetaVaultManager.selector);
+        vm.expectRevert(IControllable.NotMultisig.selector);
         vm.prank(address(this));
         metaVault.setSymbol("new symbol");
 
