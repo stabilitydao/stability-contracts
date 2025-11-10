@@ -9,6 +9,8 @@ import {IVaultMainV3} from "../integrations/balancerv3/IVaultMainV3.sol";
 import {IUniswapV3FlashCallback} from "../integrations/uniswapv3/IUniswapV3FlashCallback.sol";
 import {IAlgebraFlashCallback} from "../integrations/algebrav4/callback/IAlgebraFlashCallback.sol";
 import {IBalancerV3FlashCallback} from "../integrations/balancerv3/IBalancerV3FlashCallback.sol";
+import {IStrategy} from "../../interfaces/IStrategy.sol";
+import {StrategyLib} from "./StrategyLib.sol";
 
 
 library ALMFLib {
@@ -229,4 +231,47 @@ library ALMFLib {
 
     //endregion ------------------------------------- Flash loan
 
+//region ------------------------------------- Deposit
+    function depositAssets(
+        ILeverageLendingStrategy.LeverageLendingBaseStorage storage $,
+        IStrategy.StrategyBaseStorage storage $base,
+        uint amount,
+        address asset
+    ) external returns (uint value) {
+        ILeverageLendingStrategy.LeverageLendingAddresses memory v = _getLeverageLendingAddresses($);
+
+        (uint priceCtoB, uint priceBtoC) = getPrices(v.lendingVault, v.borrowingVault);
+        uint valueWas = StrategyLib.balance(asset) + calcTotal(v, priceBtoC);
+
+        _deposit($, v, amount, priceCtoB);
+
+        (, priceBtoC) = getPrices(v.lendingVault, v.borrowingVault);
+        uint valueNow = StrategyLib.balance(asset) + calcTotal(v, priceBtoC);
+
+        if (valueNow > valueWas) {
+            value = amount + (valueNow - valueWas);
+        } else {
+            value = amount - (valueWas - valueNow);
+        }
+
+        $base.total += value;
+
+        // ensure that result LTV doesn't exceed max
+        (uint maxLtv,,) = getLtvData(v.lendingVault, $.targetLeveragePercent);
+        _ensureLtvValid($, maxLtv);
+    }
+
+    function _deposit(
+        ILeverageLendingStrategy.LeverageLendingBaseStorage storage $,
+        ILeverageLendingStrategy.LeverageLendingAddresses memory v,
+        uint amountToDeposit,
+        uint priceCtoB
+    ) internal {
+        uint borrowAmount = _getDepositFlashAmount($, v, amountToDeposit, priceCtoB);
+        (address[] memory flashAssets, uint[] memory flashAmounts) = _getFlashLoanAmounts(borrowAmount, v.borrowAsset);
+
+        $.tempAction = ILeverageLendingStrategy.CurrentAction.Deposit;
+        LeverageLendingLib.requestFlashLoan($, flashAssets, flashAmounts);
+    }
+//endregion ------------------------------------- Deposit
 }
