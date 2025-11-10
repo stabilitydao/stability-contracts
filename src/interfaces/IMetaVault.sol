@@ -173,6 +173,7 @@ interface IMetaVault is IStabilityVault {
     ) external returns (uint[] memory proportions, int cost);
 
     /// @notice Set new target proportions
+    /// @custom:restriction Either meta-vault-manager or allowed operator
     function setTargetProportions(uint[] memory newTargetProportions) external;
 
     /// @notice Add CVault to MetaVault
