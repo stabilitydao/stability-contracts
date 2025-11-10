@@ -47,7 +47,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.6.0";
+    string public constant VERSION = "1.6.1";
 
     /// @dev Delay between deposits/transfers and withdrawals
     uint internal constant _TRANSFER_DELAY_BLOCKS = 5;
