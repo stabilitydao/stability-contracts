@@ -417,7 +417,7 @@ contract AaveLeverageMerklFarmStrategy is
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
         address[] memory _assets = assets();
 
-        value = ALMFLib.depositAssets($, $base, amounts[0], _assets[0]);
+        value = ALMFLib.depositAssets(platform(), $, $base, amounts[0], _assets[0]);
     }
 
     /// @inheritdoc StrategyBase
