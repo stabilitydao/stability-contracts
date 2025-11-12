@@ -24,7 +24,6 @@ import {IPool} from "../integrations/aave/IPool.sol";
 import {IPriceReader} from "../interfaces/IPriceReader.sol";
 import {IStrategy} from "../interfaces/IStrategy.sol";
 import {IUniswapV3FlashCallback} from "../integrations/uniswapv3/IUniswapV3FlashCallback.sol";
-import {IVaultMainV3} from "../integrations/balancerv3/IVaultMainV3.sol";
 import {LeverageLendingBase} from "./base/LeverageLendingBase.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {MerklStrategyBase} from "./base/MerklStrategyBase.sol";
@@ -264,12 +263,6 @@ contract AaveLeverageMerklFarmStrategy is
     }
 
     /// @inheritdoc IStrategy
-    function getAssetsProportions() external pure override(IStrategy, LeverageLendingBase) returns (uint[] memory proportions) {
-        proportions = new uint[](1);
-        proportions[0] = 1e18;
-    }
-
-    /// @inheritdoc IStrategy
     function getRevenue() public view override(IStrategy, LeverageLendingBase) returns (address[] memory assets_, uint[] memory amounts) {
         address aToken = _getAToken();
         uint newPrice = _getSharePrice(aToken);
@@ -355,7 +348,8 @@ contract AaveLeverageMerklFarmStrategy is
     /// @inheritdoc ILeverageLendingStrategy
     function realTvl() public view returns (uint tvl, bool trusted) {
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
-        return ALMFLib.realTvl(platform(), $);
+        address _platform = platform();
+        return ALMFLib.realTvl(_platform, $, _getFarm(_platform, farmId()));
     }
 
     function _realSharePrice() internal view override returns (uint sharePrice, bool trusted) {
@@ -378,17 +372,23 @@ contract AaveLeverageMerklFarmStrategy is
         uint collateralAmount,
         uint debtAmount,
         uint targetLeveragePercent
-    )
-    {
+    ) {
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
-        return ALMFLib.health(platform(), $);
+        return ALMFLib.health(platform(), $, _getFarm());
     }
 
     /// @inheritdoc ILeverageLendingStrategy
     function getSupplyAndBorrowAprs() external view returns (uint supplyApr, uint borrowApr) {
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
-        return (0, 0); // todo
+        return ALMFLib._getDepositAndBorrowAprs($.lendingVault, $.collateralAsset, $.borrowAsset);
     }
+
+    function _rebalanceDebt(uint newLtv) internal override returns (uint resultLtv) {
+        LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
+
+        resultLtv = ALMFLib.rebalanceDebt(platform(), newLtv, $, _getFarm());
+    }
+
 //endregion ----------------------------------- ILeverageLendingStrategy
 
 //region ----------------------------------- Strategy base
@@ -408,58 +408,20 @@ contract AaveLeverageMerklFarmStrategy is
     //slither-disable-next-line unused-return
     function _depositAssets(uint[] memory amounts, bool) internal override returns (uint value) {
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
-        StrategyBaseStorage storage $base = _getStrategyBaseStorage();
+        AlmfStrategyStorage storage $a = _getStorage();
 
-        value = ALMFLib.depositAssets(platform(), $, $base, amounts[0]);
+        value = ALMFLib.depositAssets(platform(), $, _getFarm(), amounts[0]);
+        if ($a.lastSharePrice == 0) {
+            $a.lastSharePrice = _getSharePrice(address($.lendingVault));
+        }
     }
 
     /// @inheritdoc StrategyBase
     function _withdrawAssets(uint value, address receiver) internal override returns (uint[] memory amountsOut) {
-        StrategyBaseStorage storage $base = _getStrategyBaseStorage();
-
-        return _withdrawAssets($base._assets, value, receiver);
-    }
-
-    /// @inheritdoc StrategyBase
-    //slither-disable-next-line unused-return
-    function _withdrawAssets(
-        address[] memory,
-        uint value,
-        address receiver
-    ) internal override returns (uint[] memory amountsOut) {
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
-        StrategyBaseStorage storage $base = _getStrategyBaseStorage();
 
-        amountsOut = ALMFLib.withdrawAssets(platform(), $, $base, value, receiver);
+        amountsOut = ALMFLib.withdrawAssets(platform(), $, _getFarm(), value, receiver);
     }
-
-    /// @inheritdoc StrategyBase
-    function _previewDepositAssets(uint[] memory amountsMax)
-    internal
-    pure
-    override(StrategyBase)
-    returns (uint[] memory amountsConsumed, uint value)
-    {
-        amountsConsumed = new uint[](1);
-        amountsConsumed[0] = amountsMax[0];
-        value = amountsMax[0];
-    }
-
-    /// @inheritdoc StrategyBase
-    function _previewDepositAssets(
-        address[] memory, /*assets_*/
-        uint[] memory amountsMax
-    ) internal pure override(LeverageLendingBase, StrategyBase) returns (uint[] memory amountsConsumed, uint value) {
-        return _previewDepositAssets(amountsMax);
-    }
-
-//    /// @inheritdoc StrategyBase
-//    function _processRevenue(
-//        address[] memory, /*assets_*/
-//        uint[] memory /*amountsRemaining*/
-//    ) internal pure override returns (bool needCompound) {
-//        needCompound = true;
-//    }
 
     /// @inheritdoc StrategyBase
     function _claimRevenue()
@@ -473,39 +435,67 @@ contract AaveLeverageMerklFarmStrategy is
     )
     {
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
-
-        __assets = assets();
-        (__amounts, __rewardAssets, __rewardAmounts) =
-        ALMFLib._claimRevenue($, _getStrategyBaseStorage(), _getFarmingStrategyBaseStorage());
-    }
-
-    /// @inheritdoc StrategyBase
-    function _compound() internal override(StrategyBase, LeverageLendingBase) {
-        LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
-
-        ALMFLib._compound(platform(), vault(), $, _getStrategyBaseStorage());
-    }
-
-    /// @inheritdoc StrategyBase
-    function _depositUnderlying(uint amount) internal override returns (uint[] memory amountsConsumed) {
-        // todo
-
-        AlmfStrategyStorage storage $ = _getStorage();
+        AlmfStrategyStorage storage $a = _getStorage();
+        FarmingStrategyBaseStorage storage $f = _getFarmingStrategyBaseStorage();
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
 
-        amountsConsumed = _previewDepositUnderlying(amount);
+        address aToken = $.lendingVault;
+        uint newPrice = _getSharePrice(aToken);
+        (__assets, __amounts) = _getRevenue(newPrice, aToken);
+        $a.lastSharePrice = newPrice;
 
-        if ($.lastSharePrice == 0) {
-            $.lastSharePrice = _getSharePrice($base._underlying);
+        // ---------------------- collect Merkl rewards
+        __rewardAssets = $f._rewardAssets;
+        uint rwLen = __rewardAssets.length;
+        __rewardAmounts = new uint[](rwLen);
+        for (uint i; i < rwLen; ++i) {
+            // Reward asset can be equal to the borrow asset.
+            // The borrow asset is never left on the balance, see _receiveFlashLoan().
+            // So, any borrow asset on balance can be considered as a reward.
+            __rewardAmounts[i] = StrategyLib.balance(__rewardAssets[i]);
         }
+
+        // This strategy doesn't use $base.total at all
+        // but StrategyBase expects it to be set in doHardWork in order to calculate aprCompound
+        // so, we set it twice: here (old value) and in _compound (new value)
+        $base.total = total();
     }
 
     /// @inheritdoc StrategyBase
-    function _withdrawUnderlying(uint amount, address receiver) internal override {
-        // todo
+    function _compound() internal override (LeverageLendingBase, StrategyBase) {
+        address[] memory _assets = assets();
+        uint len = _assets.length;
+        uint[] memory amounts = new uint[](len);
+
+        //slither-disable-next-line uninitialized-local
+        bool notZero;
+
+        for (uint i; i < len; ++i) {
+            amounts[i] = StrategyLib.balance(_assets[i]);
+            if (amounts[i] != 0) {
+                notZero = true;
+            }
+        }
+        if (notZero) {
+            _depositAssets(amounts, false);
+        }
 
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
-        IERC20($base._underlying).safeTransfer(receiver, amount);
+
+        // This strategy doesn't use $base.total at all
+        // but StrategyBase expects it to be set in doHardWork in order to calculate aprCompound
+        // so, we set it twice: here (new value) and in _claimRevenue (old value)
+        $base.total = total();
+    }
+
+    /// @inheritdoc StrategyBase
+    function _depositUnderlying(uint /*amount*/) internal pure override returns (uint[] memory /*amountsConsumed*/) {
+        revert("not supported");
+    }
+
+    /// @inheritdoc StrategyBase
+    function _withdrawUnderlying(uint /*amount*/, address /*receiver*/) internal pure override {
+        revert("not supported");
     }
 
     /// @inheritdoc IStrategy
@@ -518,6 +508,19 @@ contract AaveLeverageMerklFarmStrategy is
     {
         return true;
     }
+
+    /// @inheritdoc StrategyBase
+    function _previewDepositAssets(uint[] memory amountsMax)
+    internal
+    pure
+    override
+    returns (uint[] memory amountsConsumed, uint value)
+    {
+        amountsConsumed = new uint[](1);
+        amountsConsumed[0] = amountsMax[0];
+        value = amountsMax[0];
+    }
+
 
 //endregion ----------------------------------- Strategy base
 
@@ -532,7 +535,6 @@ contract AaveLeverageMerklFarmStrategy is
         address[] memory rewardAssets_,
         uint[] memory rewardAmounts_
     ) internal override(FarmingStrategyBase, StrategyBase, LeverageLendingBase) returns (uint earnedExchangeAsset) {
-        LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
         earnedExchangeAsset = FarmingStrategyBase._liquidateRewards(exchangeAsset, rewardAssets_, rewardAmounts_);
     }
 
@@ -595,8 +597,8 @@ contract AaveLeverageMerklFarmStrategy is
     }
 
     function _getAToken() internal view returns (address) {
-        LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
-        return _getFarm(platform(), $.farmId).addresses[0];
+        FarmingStrategyBaseStorage storage $f = _getFarmingStrategyBaseStorage();
+        return _getFarm(platform(), $f.farmId).addresses[0];
     }
 
 //endregion ----------------------------------- Internal logic

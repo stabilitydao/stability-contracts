@@ -60,17 +60,6 @@ library ALMFCalcLib {
 }
 
 //region ------------------------------------- Deposit logic
-    /// @notice Calculate minimum additional amount to deposit to reach target leverage
-    /// @param targetLeverage Target leverage, INTERNAL_PRECISION
-    /// @param collateralBase Current collateral amount in base asset
-    /// @param debtBase Current debt amount in base asset
-    /// @return Additional amount to deposit in base asset.
-    /// @dev Formula: A_min = TL * D0 / (TL - 1) - C0
-    function aMin(uint targetLeverage, uint collateralBase, uint debtBase) internal pure returns (uint) {
-        // we assume that current leverage is less than the target leverage and should be increased
-        // we assume that targetLeverage is always greater than INTERNAL_PRECISION (1.0)
-        return (targetLeverage * debtBase) / (targetLeverage - INTERNAL_PRECISION) - debtBase;
-    }
 
     /// @notice Split deposit amount on two parts: amount to deposit as collateral and amount to be used to repay
     /// @param amount Total amount to deposit in base asset
@@ -95,7 +84,7 @@ library ALMFCalcLib {
     /// @param valueToWithdraw Value that user is going to withdraw, in USD, decimals 18
     /// @return flashAmount Flash loan amount in borrow asset
     /// @return collateralToWithdraw Amount of collateral to withdraw from aave in collateral asset
-    function calcWithdrawAmounts(uint valueToWithdraw, uint leverageAdj, StaticData memory data, State memory state) internal view returns (uint flashAmount, uint collateralToWithdraw) {
+    function calcWithdrawAmounts(uint valueToWithdraw, uint leverageAdj, StaticData memory data, State memory state) internal pure returns (uint flashAmount, uint collateralToWithdraw) {
         //  state.collateralBase  — initial collateral (in base units)
         //  state.debtBase  — initial debt (same units)
         //  valueToWithdraw   — amount the user must receive (user payout, formerly “value”)
