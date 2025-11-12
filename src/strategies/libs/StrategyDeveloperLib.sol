@@ -108,7 +108,7 @@ library StrategyDeveloperLib {
             return 0xcd18A818f2eC5C21EEF6771183eD5641B15da247;
         }
         if (CommonLib.eq(strategyId, StrategyIdLib.AAVE_LEVERAGE_MERKL_FARM)) {
-            return 0xd1807f5a04a7bd11c26aa14f076054f75d8c6255;
+            return 0xD1807F5A04a7bd11C26aA14F076054f75d8C6255;
         }
         return address(0);
     }

@@ -19,6 +19,7 @@ import {IFarmingStrategy} from "../interfaces/IFarmingStrategy.sol";
 import {IFlashLoanRecipient} from "../integrations/balancer/IFlashLoanRecipient.sol";
 import {IMerklStrategy} from "../interfaces/IMerklStrategy.sol";
 import {IPlatform} from "../interfaces/IPlatform.sol";
+import {ILeverageLendingStrategy} from "../interfaces/ILeverageLendingStrategy.sol";
 import {IPool} from "../integrations/aave/IPool.sol";
 import {IPriceReader} from "../interfaces/IPriceReader.sol";
 import {IStrategy} from "../interfaces/IStrategy.sol";
@@ -83,7 +84,7 @@ contract AaveLeverageMerklFarmStrategy is
             revert IControllable.IncorrectInitParams();
         }
         IFactory.Farm memory farm = _getFarm(addresses[0], nums[0]);
-        if (farm.addresses.length != 4 || farm.nums.length != 0 || farm.ticks.length != 0) {
+        if (farm.addresses.length != 4 || farm.nums.length != 3 || farm.ticks.length != 0) {
             revert IFarmingStrategy.BadFarm();
         }
 
@@ -98,8 +99,8 @@ contract AaveLeverageMerklFarmStrategy is
         params.lendingVault = farm.addresses[ALMFLib.FARM_ADDRESS_LENDING_VAULT_INDEX];
         params.borrowingVault = farm.addresses[ALMFLib.FARM_ADDRESS_BORROWING_VAULT_INDEX];
         params.flashLoanVault = farm.addresses[ALMFLib.FARM_ADDRESS_FLASH_LOAN_VAULT_INDEX];
-        params.helper = address(0); // todo
-        params.targetLeveragePercent = 85_00; // todo targetMinLtv and targetMaxLtv (from nums)
+        // params.helper = address(0); // not used
+        // params.targetLeveragePercent = 0; // not used
 
         __LeverageLendingBase_init(params); // __StrategyBase_init is called inside
         __FarmingStrategyBase_init(addresses[0], nums[0]);
@@ -111,29 +112,33 @@ contract AaveLeverageMerklFarmStrategy is
         IERC20(params.collateralAsset).forceApprove(swapper, type(uint).max);
         IERC20(params.borrowAsset).forceApprove(swapper, type(uint).max);
 
-        // todo
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
-        // Multiplier of flash amount for borrow on deposit. Default is 100_00 = 100%
-        $.depositParam0 = 100_00;
-        // Multiplier of borrow amount to take into account max flash loan fee in maxDeposit. Default is 99_80 = 99.8%
-        $.depositParam1 = 99_80;
-        // Multiplier of debt diff
-        $.increaseLtvParam0 = 100_80;
-        // Multiplier of swap borrow asset to collateral in flash loan callback
-        $.increaseLtvParam1 = 99_00;
-        // Multiplier of collateral diff
-        $.decreaseLtvParam0 = 101_00;
 
-        // Swap price impact tolerance
+// todo set up necessary params
+//        // Multiplier of flash amount for borrow on deposit. Default is 100_00 = 100%
+//        $.depositParam0 = 100_00;
+//        // Multiplier of borrow amount to take into account max flash loan fee in maxDeposit. Default is 99_80 = 99.8%
+//        $.depositParam1 = 99_80;
+//        // Multiplier of debt diff
+//        $.increaseLtvParam0 = 100_80;
+//        // Multiplier of swap borrow asset to collateral in flash loan callback
+//        $.increaseLtvParam1 = 99_00;
+//        // Multiplier of collateral diff
+//        $.decreaseLtvParam0 = 101_00;
+//
+        // Swap price impact tolerance, ConstantsLib.DENOMINATOR
         $.swapPriceImpactTolerance0 = 1_000;
         $.swapPriceImpactTolerance1 = 1_000;
 
-        // Multiplier of flash amount for withdraw. Default is 100_00 == 100%.
+        // Leverage correction coefficient, INTERNAL_PRECISION. Default is 300 = 0.03
         $.withdrawParam0 = 100_00;
-        // Multiplier of amount allowed to be deposited after withdraw. Default is 100_00 == 100% (deposit forbidden)
-        $.withdrawParam1 = 100_00;
-        // withdrawParam2 allows to disable withdraw through increasing ltv if leverage is near to target
-        $.withdrawParam2 = 100_00;
+
+//        // Multiplier of amount allowed to be deposited after withdraw. Default is 100_00 == 100% (deposit forbidden)
+//        $.withdrawParam1 = 100_00;
+//        // withdrawParam2 allows to disable withdraw through increasing ltv if leverage is near to target
+//        $.withdrawParam2 = 100_00;
+
+        $.flashLoanKind = farm.nums[2];
     }
 
 //endregion ----------------------------------- Initialization and restricted actions
@@ -210,12 +215,6 @@ contract AaveLeverageMerklFarmStrategy is
     }
 
     /// @inheritdoc IStrategy
-    function extra() external pure returns (bytes32) {
-        //slither-disable-next-line too-many-digits
-        return CommonLib.bytesToBytes32(abi.encodePacked(bytes3(0x00d395), bytes3(0x000000)));
-    }
-
-    /// @inheritdoc IStrategy
     function getSpecificName() external view override returns (string memory, bool) {
         address atoken = _getAToken();
         string memory shortAddr = SharedLib.shortAddress(IAToken(atoken).POOL());
@@ -223,7 +222,7 @@ contract AaveLeverageMerklFarmStrategy is
     }
 
     /// @inheritdoc IStrategy
-    function supportedVaultTypes() external pure override returns (string[] memory types) {
+    function supportedVaultTypes() external pure override(LeverageLendingBase, StrategyBase) returns (string[] memory types) {
         types = new string[](1);
         types[0] = VaultTypeLib.COMPOUNDING;
     }
@@ -260,30 +259,25 @@ contract AaveLeverageMerklFarmStrategy is
     }
 
     /// @inheritdoc IStrategy
-    function isHardWorkOnDepositAllowed() external pure returns (bool) {
-        return false;
-    }
-
-    /// @inheritdoc IStrategy
     function total() public view override returns (uint) {
         return StrategyLib.balance(_getAToken());
     }
 
     /// @inheritdoc IStrategy
-    function getAssetsProportions() external pure override returns (uint[] memory proportions) {
+    function getAssetsProportions() external pure override(IStrategy, LeverageLendingBase) returns (uint[] memory proportions) {
         proportions = new uint[](1);
         proportions[0] = 1e18;
     }
 
     /// @inheritdoc IStrategy
-    function getRevenue() public view override returns (address[] memory assets_, uint[] memory amounts) {
+    function getRevenue() public view override(IStrategy, LeverageLendingBase) returns (address[] memory assets_, uint[] memory amounts) {
         address aToken = _getAToken();
         uint newPrice = _getSharePrice(aToken);
         (assets_, amounts) = _getRevenue(newPrice, aToken);
     }
 
     /// @inheritdoc IStrategy
-    function isReadyForHardWork() external pure override returns (bool isReady) {
+    function isReadyForHardWork() external pure override(IStrategy, LeverageLendingBase) returns (bool isReady) {
         isReady = true;
     }
 
@@ -415,9 +409,8 @@ contract AaveLeverageMerklFarmStrategy is
     function _depositAssets(uint[] memory amounts, bool) internal override returns (uint value) {
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
-        address[] memory _assets = assets();
 
-        value = ALMFLib.depositAssets(platform(), $, $base, amounts[0], _assets[0]);
+        value = ALMFLib.depositAssets(platform(), $, $base, amounts[0]);
     }
 
     /// @inheritdoc StrategyBase
@@ -444,7 +437,7 @@ contract AaveLeverageMerklFarmStrategy is
     function _previewDepositAssets(uint[] memory amountsMax)
     internal
     pure
-    override
+    override(StrategyBase)
     returns (uint[] memory amountsConsumed, uint value)
     {
         amountsConsumed = new uint[](1);
@@ -456,17 +449,17 @@ contract AaveLeverageMerklFarmStrategy is
     function _previewDepositAssets(
         address[] memory, /*assets_*/
         uint[] memory amountsMax
-    ) internal pure override returns (uint[] memory amountsConsumed, uint value) {
+    ) internal pure override(LeverageLendingBase, StrategyBase) returns (uint[] memory amountsConsumed, uint value) {
         return _previewDepositAssets(amountsMax);
     }
 
-    /// @inheritdoc StrategyBase
-    function _processRevenue(
-        address[] memory, /*assets_*/
-        uint[] memory /*amountsRemaining*/
-    ) internal pure override returns (bool needCompound) {
-        needCompound = true;
-    }
+//    /// @inheritdoc StrategyBase
+//    function _processRevenue(
+//        address[] memory, /*assets_*/
+//        uint[] memory /*amountsRemaining*/
+//    ) internal pure override returns (bool needCompound) {
+//        needCompound = true;
+//    }
 
     /// @inheritdoc StrategyBase
     function _claimRevenue()
@@ -487,7 +480,7 @@ contract AaveLeverageMerklFarmStrategy is
     }
 
     /// @inheritdoc StrategyBase
-    function _compound() internal override {
+    function _compound() internal override(StrategyBase, LeverageLendingBase) {
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
 
         ALMFLib._compound(platform(), vault(), $, _getStrategyBaseStorage());
@@ -513,6 +506,17 @@ contract AaveLeverageMerklFarmStrategy is
 
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
         IERC20($base._underlying).safeTransfer(receiver, amount);
+    }
+
+    /// @inheritdoc IStrategy
+    function autoCompoundingByUnderlyingProtocol()
+    public
+    view
+    virtual
+    override(LeverageLendingBase, StrategyBase)
+    returns (bool)
+    {
+        return true;
     }
 
 //endregion ----------------------------------- Strategy base
@@ -590,8 +594,10 @@ contract AaveLeverageMerklFarmStrategy is
         );
     }
 
-    function _getAToken(FarmingStrategyBaseStorage storage $) internal view returns (address) {
+    function _getAToken() internal view returns (address) {
+        LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
         return _getFarm(platform(), $.farmId).addresses[0];
     }
+
 //endregion ----------------------------------- Internal logic
 }
