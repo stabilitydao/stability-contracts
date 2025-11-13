@@ -10,6 +10,7 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 import {IVaultMainV3} from "../../integrations/balancerv3/IVaultMainV3.sol";
 import {IUniswapV3PoolActions} from "../../integrations/uniswapv3/pool/IUniswapV3PoolActions.sol";
 import {IUniswapV3PoolImmutables} from "../../integrations/uniswapv3/pool/IUniswapV3PoolImmutables.sol";
+import {IVaultExtension} from "../../integrations/balancerv3/IVaultExtension.sol";
 
 /// @notice Shared functions for Leverage Lending strategies
 library LeverageLendingLib {
@@ -75,7 +76,7 @@ library LeverageLendingLib {
     /// @notice Get flash loan fee, decimals 18
     function getFlashFee18(address flashLoanVault, uint flashLoanKind) internal view returns (uint) {
         if (flashLoanKind == uint(ILeverageLendingStrategy.FlashLoanKind.Default_0)) {
-            return IBComposableStablePoolMinimal(flashLoanVault).getSwapFeePercentage(); // decimals 18
+            return IBComposableStablePoolMinimal(IBVault(flashLoanVault).getProtocolFeesCollector()).getFlashLoanFeePercentage(); // decimals 18
         } else if (flashLoanKind == uint(ILeverageLendingStrategy.FlashLoanKind.BalancerV3_1)) {
             // flash loan in balancer v3 is free
             return 0;

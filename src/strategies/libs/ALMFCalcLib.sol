@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
+
+import {console} from "forge-std/console.sol";
 import {ISwapper} from "../../interfaces/ISwapper.sol";
 import {IPlatform} from "../../interfaces/IPlatform.sol";
 import {StrategyLib} from "./StrategyLib.sol";
@@ -52,8 +54,8 @@ library ALMFCalcLib {
         /// @notice debt amount in base asset (USD, 18 decimals)
         uint debtBase;
 
-        /// @notice Current user LTV in AAVE, INTERNAL_PRECISION
-        uint ltv;
+        /// @notice Max allowed LTV for the user, INTERNAL_PRECISION
+        uint maxLtv;
 
         /// @notice Health factor, decimals 18; unhealthy if less than 1e18
         uint healthFactor;
@@ -97,15 +99,34 @@ library ALMFCalcLib {
         //  β = α * LTVa
         //  C1 — amount of collateral withdrawn from the pool
         //  F  — flash-loan size in borrow-asset units
+        console.log("calcWithdrawAmounts.valueToWithdraw", valueToWithdraw);
+        console.log("calcWithdrawAmounts.leverageAdj", leverageAdj);
+        console.log("calcWithdrawAmounts.collateralBase", state.collateralBase);
+        console.log("calcWithdrawAmounts.debtBase", state.debtBase);
 
-        uint ltvAdj = INTERNAL_PRECISION - INTERNAL_PRECISION / leverageAdj;
-        uint f = (state.debtBase - ltvAdj * state.collateralBase + ltvAdj * valueToWithdraw ) / (1 - ltvAdj);
-        uint c1 = (valueToWithdraw + state.debtBase - ltvAdj * state.collateralBase ) / (1 - ltvAdj);
+        uint ltvAdj = leverageToLtv(leverageAdj);
+        console.log("calcWithdrawAmounts.ltvAdj", ltvAdj);
 
-        return (
-            _baseToBorrow(f, data.priceB18, data.decimalsB),
-            _baseToCollateral(c1, data.priceC18, data.decimalsC)
-        );
+        uint alpha = INTERNAL_PRECISION; // todo optimize
+        uint beta = ltvAdj;
+
+        int c1 = (int(INTERNAL_PRECISION * valueToWithdraw) + int(alpha * state.debtBase) - int(beta * state.collateralBase) ) / int(INTERNAL_PRECISION - beta);
+        console.logInt(c1);
+
+        int f = (int(INTERNAL_PRECISION * state.debtBase) - int(ltvAdj * state.collateralBase) + int(ltvAdj * valueToWithdraw)) / int(INTERNAL_PRECISION - beta);
+        console.logInt(f);
+
+        if (f < 0 || c1 < 0) {
+            return (
+                0,
+                _baseToCollateral(valueToWithdraw, data.priceC18, data.decimalsC)
+            );
+        } else {
+            return (
+                _baseToBorrow(uint(f), data.priceB18, data.decimalsB),
+                _baseToCollateral(uint(c1), data.priceC18, data.decimalsC)
+            );
+        }
     }
 
     /// @notice Estimate amount of collateral to swap to receive {amountToRepay} on balance
@@ -157,18 +178,29 @@ library ALMFCalcLib {
         return (collateralBase * INTERNAL_PRECISION) / (collateralBase - debtBase);
     }
 
+    /// @notice Calculate loan-to-value ratio (LTV)
+    /// @param collateralBase Current collateral amount in base asset
+    /// @param debtBase Current debt amount in base asset
+    /// @return LTV, INTERNAL_PRECISION
+    function getLtv(uint collateralBase, uint debtBase) internal pure returns (uint) {
+        if (collateralBase == 0) {
+            return 0;
+        }
+        return (debtBase * INTERNAL_PRECISION) / collateralBase;
+    }
+
     /// @notice Calculate loan-to-value ratio (LTV) from leverage
     /// @param leverage Leverage, INTERNAL_PRECISION
     /// @return LTV, INTERNAL_PRECISION
-    function getLtv(uint leverage) internal pure returns (uint) {
+    function leverageToLtv(uint leverage) internal pure returns (uint) {
         if (leverage <= INTERNAL_PRECISION) {
             return 0;
         }
-        return INTERNAL_PRECISION - INTERNAL_PRECISION / leverage;
+        return INTERNAL_PRECISION - INTERNAL_PRECISION * INTERNAL_PRECISION / leverage;
     }
 
     function ltvToLeverage(uint ltv) internal pure returns (uint) {
-        return INTERNAL_PRECISION / (INTERNAL_PRECISION - ltv);
+        return INTERNAL_PRECISION * INTERNAL_PRECISION / (INTERNAL_PRECISION - ltv);
     }
 
     /// @notice Calculate collateral balance in base asset (USD, 18 decimals)

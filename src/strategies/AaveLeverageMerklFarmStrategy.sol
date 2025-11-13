@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+import {console} from "forge-std/console.sol";
 import {ALMFLib} from "./libs/ALMFLib.sol";
+import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {CommonLib} from "../core/libs/CommonLib.sol";
 import {FarmMechanicsLib} from "./libs/FarmMechanicsLib.sol";
 import {FarmingStrategyBase} from "./base/FarmingStrategyBase.sol";
@@ -83,7 +85,7 @@ contract AaveLeverageMerklFarmStrategy is
             revert IControllable.IncorrectInitParams();
         }
         IFactory.Farm memory farm = _getFarm(addresses[0], nums[0]);
-        if (farm.addresses.length != 4 || farm.nums.length != 3 || farm.ticks.length != 0) {
+        if (farm.addresses.length != 3 || farm.nums.length != 3 || farm.ticks.length != 0) {
             revert IFarmingStrategy.BadFarm();
         }
 
@@ -104,8 +106,9 @@ contract AaveLeverageMerklFarmStrategy is
         __LeverageLendingBase_init(params); // __StrategyBase_init is called inside
         __FarmingStrategyBase_init(addresses[0], nums[0]);
 
-        IERC20(params.collateralAsset).forceApprove(params.lendingVault, type(uint).max);
-        IERC20(params.borrowAsset).forceApprove(params.borrowingVault, type(uint).max);
+        address pool = IAToken(params.lendingVault).POOL();
+        IERC20(params.collateralAsset).forceApprove(pool, type(uint).max);
+        IERC20(params.borrowAsset).forceApprove(pool, type(uint).max);
 
         address swapper = IPlatform(params.platform).swapper();
         IERC20(params.collateralAsset).forceApprove(swapper, type(uint).max);
@@ -113,24 +116,25 @@ contract AaveLeverageMerklFarmStrategy is
 
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
 
-// todo set up necessary params
+        // ------------------------------ Set up all params in use
 //        // Multiplier of flash amount for borrow on deposit. Default is 100_00 = 100%
 //        $.depositParam0 = 100_00;
 //        // Multiplier of borrow amount to take into account max flash loan fee in maxDeposit. Default is 99_80 = 99.8%
 //        $.depositParam1 = 99_80;
-//        // Multiplier of debt diff
-//        $.increaseLtvParam0 = 100_80;
-//        // Multiplier of swap borrow asset to collateral in flash loan callback
-//        $.increaseLtvParam1 = 99_00;
-//        // Multiplier of collateral diff
-//        $.decreaseLtvParam0 = 101_00;
+
+        // Multiplier of debt diff
+        $.increaseLtvParam0 = 100_80;
+        // Multiplier of swap borrow asset to collateral in flash loan callback
+        $.increaseLtvParam1 = 99_00;
+        // Multiplier of collateral diff
+        $.decreaseLtvParam0 = 101_00;
 //
         // Swap price impact tolerance, ConstantsLib.DENOMINATOR
         $.swapPriceImpactTolerance0 = 1_000;
         $.swapPriceImpactTolerance1 = 1_000;
 
         // Leverage correction coefficient, INTERNAL_PRECISION. Default is 300 = 0.03
-        $.withdrawParam0 = 100_00;
+        $.withdrawParam0 = 300;
 
 //        // Multiplier of amount allowed to be deposited after withdraw. Default is 100_00 == 100% (deposit forbidden)
 //        $.withdrawParam1 = 100_00;
@@ -215,9 +219,11 @@ contract AaveLeverageMerklFarmStrategy is
 
     /// @inheritdoc IStrategy
     function getSpecificName() external view override returns (string memory, bool) {
-        address atoken = _getAToken();
-        string memory shortAddr = SharedLib.shortAddress(IAToken(atoken).POOL());
-        return (string.concat(IERC20Metadata(atoken).symbol(), " ", shortAddr), true);
+        LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
+        IFactory.Farm memory farm = _getFarm();
+        (uint targetMinLtv, uint targetMaxLtv) = ALMFLib._getFarmLtvConfig(farm);
+
+        return (string.concat(IERC20Metadata($.borrowAsset).symbol(), " ", Strings.toString(targetMinLtv/100), "-", Strings.toString(targetMaxLtv/100)), true);
     }
 
     /// @inheritdoc IStrategy
@@ -259,7 +265,9 @@ contract AaveLeverageMerklFarmStrategy is
 
     /// @inheritdoc IStrategy
     function total() public view override returns (uint) {
-        return StrategyLib.balance(_getAToken());
+        LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
+        address _platform = platform();
+        return ALMFLib.total(_platform, $, _getFarm(_platform, farmId()));
     }
 
     /// @inheritdoc IStrategy
@@ -359,6 +367,7 @@ contract AaveLeverageMerklFarmStrategy is
         if (totalSupply != 0) {
             sharePrice = _realTvl * 1e18 / totalSupply;
         }
+        return (sharePrice, trusted);
     }
 
     /// @inheritdoc ILeverageLendingStrategy
@@ -384,9 +393,11 @@ contract AaveLeverageMerklFarmStrategy is
     }
 
     function _rebalanceDebt(uint newLtv) internal override returns (uint resultLtv) {
+        console.log("++++++++++++++++++++++++++++ _rebalanceDebt.start");
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
 
         resultLtv = ALMFLib.rebalanceDebt(platform(), newLtv, $, _getFarm());
+        console.log("++++++++++++++++++++++++++++ _rebalanceDebt.end");
     }
 
 //endregion ----------------------------------- ILeverageLendingStrategy
@@ -414,6 +425,7 @@ contract AaveLeverageMerklFarmStrategy is
         if ($a.lastSharePrice == 0) {
             $a.lastSharePrice = _getSharePrice(address($.lendingVault));
         }
+        console.log("_depositAssets.end.total", total());
     }
 
     /// @inheritdoc StrategyBase
@@ -421,6 +433,7 @@ contract AaveLeverageMerklFarmStrategy is
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
 
         amountsOut = ALMFLib.withdrawAssets(platform(), $, _getFarm(), value, receiver);
+        console.log("_withdrawAssets.end.total", total());
     }
 
     /// @inheritdoc StrategyBase
@@ -434,6 +447,7 @@ contract AaveLeverageMerklFarmStrategy is
         uint[] memory __rewardAmounts
     )
     {
+        console.log("************************* _claimRevenue.start");
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
         AlmfStrategyStorage storage $a = _getStorage();
         FarmingStrategyBaseStorage storage $f = _getFarmingStrategyBaseStorage();
@@ -459,10 +473,12 @@ contract AaveLeverageMerklFarmStrategy is
         // but StrategyBase expects it to be set in doHardWork in order to calculate aprCompound
         // so, we set it twice: here (old value) and in _compound (new value)
         $base.total = total();
+        console.log("************************* _claimRevenue.end");
     }
 
     /// @inheritdoc StrategyBase
     function _compound() internal override (LeverageLendingBase, StrategyBase) {
+        console.log("_compound.start");
         address[] memory _assets = assets();
         uint len = _assets.length;
         uint[] memory amounts = new uint[](len);
@@ -486,16 +502,17 @@ contract AaveLeverageMerklFarmStrategy is
         // but StrategyBase expects it to be set in doHardWork in order to calculate aprCompound
         // so, we set it twice: here (new value) and in _claimRevenue (old value)
         $base.total = total();
+        console.log("_compound.end");
     }
 
     /// @inheritdoc StrategyBase
     function _depositUnderlying(uint /*amount*/) internal pure override returns (uint[] memory /*amountsConsumed*/) {
-        revert("not supported");
+        revert("no underlying"); // todo do we need to support it?
     }
 
     /// @inheritdoc StrategyBase
     function _withdrawUnderlying(uint /*amount*/, address /*receiver*/) internal pure override {
-        revert("not supported");
+        revert("no underlying"); // todo do we need to support it?
     }
 
     /// @inheritdoc IStrategy
@@ -506,6 +523,7 @@ contract AaveLeverageMerklFarmStrategy is
     override(LeverageLendingBase, StrategyBase)
     returns (bool)
     {
+        console.log("autoCompoundingByUnderlyingProtocol");
         return true;
     }
 
@@ -516,6 +534,7 @@ contract AaveLeverageMerklFarmStrategy is
     override
     returns (uint[] memory amountsConsumed, uint value)
     {
+        console.log("_previewDepositAssets");
         amountsConsumed = new uint[](1);
         amountsConsumed[0] = amountsMax[0];
         value = amountsMax[0];
@@ -535,7 +554,9 @@ contract AaveLeverageMerklFarmStrategy is
         address[] memory rewardAssets_,
         uint[] memory rewardAmounts_
     ) internal override(FarmingStrategyBase, StrategyBase, LeverageLendingBase) returns (uint earnedExchangeAsset) {
+        console.log("************************ _liquidateRewards.start");
         earnedExchangeAsset = FarmingStrategyBase._liquidateRewards(exchangeAsset, rewardAssets_, rewardAmounts_);
+        console.log("************************* _liquidateRewards.end");
     }
 
     /// @inheritdoc IFarmingStrategy

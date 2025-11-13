@@ -741,7 +741,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
 
                 vm.prank(platform.multisig());
                 strategy.emergencyStopInvesting();
-                assertEq(strategy.total(), 0);
+                assertEq(strategy.total(), 0, "emergency total 0");
 
                 IVault(vars.vault)
                     .withdrawAssets(assets, IERC20(vars.vault).balanceOf(address(this)), new uint[](assets.length));

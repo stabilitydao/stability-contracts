@@ -382,7 +382,6 @@ library SonicFarmMakerLib {
         farm.rewardAssets = rewardAssets;
 
         farm.addresses = new address[](3);
-
         farm.addresses[0] = aTokenCollateral;
         farm.addresses[1] = aTokenBorrow;
         farm.addresses[2] = flashLoanVault;
