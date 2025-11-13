@@ -409,10 +409,11 @@ contract AaveLeverageMerklFarmStrategy is
 
     /// @inheritdoc StrategyBase
     function _assetsAmounts() internal view override returns (address[] memory assets_, uint[] memory amounts_) {
+        LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
         assets_ = $base._assets;
         amounts_ = new uint[](1);
-        amounts_[0] = StrategyLib.balance(_getAToken()); // todo
+        amounts_[0] = ALMFLib.totalCollateral($.lendingVault);
     }
 
     /// @inheritdoc StrategyBase

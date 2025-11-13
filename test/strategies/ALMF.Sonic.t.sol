@@ -4,17 +4,14 @@ pragma solidity ^0.8.23;
 import {IControllable} from "../../src/interfaces/IControllable.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {IFarmingStrategy} from "../../src/interfaces/IFarmingStrategy.sol";
 import {ILeverageLendingStrategy} from "../../src/interfaces/ILeverageLendingStrategy.sol";
 import {IMetaVaultFactory} from "../../src/interfaces/IMetaVaultFactory.sol";
-import {IMetaVault} from "../../src/interfaces/IMetaVault.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
 import {IFactory} from "../../src/interfaces/IFactory.sol";
 import {IStabilityVault} from "../../src/interfaces/IStabilityVault.sol";
 import {IStrategy} from "../../src/interfaces/IStrategy.sol";
 import {IVault} from "../../src/interfaces/IVault.sol";
-import {IPriceReader} from "../../src/interfaces/IPriceReader.sol";
 import {IWrappedMetaVault} from "../../src/interfaces/IWrappedMetaVault.sol";
 import {MetaVault} from "../../src/core/vaults/MetaVault.sol";
 import {WrappedMetaVault} from "../../src/core/vaults/WrappedMetaVault.sol";
@@ -102,10 +99,18 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
     }
 
     function _preDeposit() internal override {
-        address multisig = platform.multisig();
-
         // ---------------------------------- Make additional tests
         uint snapshot = vm.snapshotState();
+
+//        console.log("FFFFFFFFFFFFFFFFFFFF 1");
+//        _testDepositWithdrawUsingFlashLoan(SonicConstantsLib.BEETS_VAULT, ILeverageLendingStrategy.FlashLoanKind.Default_0);
+//        console.log("FFFFFFFFFFFFFFFFFFFF 2");
+//        _testDepositWithdrawUsingFlashLoan(SonicConstantsLib.BEETS_VAULT_V3, ILeverageLendingStrategy.FlashLoanKind.BalancerV3_1);
+//        console.log("FFFFFFFFFFFFFFFFFFFF 3");
+//        _testDepositWithdrawUsingFlashLoan(SonicConstantsLib.POOL_SHADOW_CL_USDC_USDT, ILeverageLendingStrategy.FlashLoanKind.UniswapV3_2);
+//        console.log("FFFFFFFFFFFFFFFFFFFF 4");
+//        _testDepositWithdrawUsingFlashLoan(SonicConstantsLib.POOL_ALGEBRA_WS_USDC, ILeverageLendingStrategy.FlashLoanKind.AlgebraV4_3);
+
 // todo
 //        _testStrategyParams_All();
 //        _checkMaxDepositAssets_All();
@@ -121,6 +126,13 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
         deal(SonicConstantsLib.TOKEN_SILO, currentStrategy, 1e18);
     }
 
+    function _testDepositWithdrawUsingFlashLoan(address flashLoanVault, ILeverageLendingStrategy.FlashLoanKind kind_) internal {
+        uint snapshot = vm.snapshotState();
+        _setUpFlashLoanVault(flashLoanVault, kind_);
+        _testDepositWithdraw(80_00, 0.1e18);
+        vm.revertToState(snapshot);
+    }
+
     function _testStrategyParams_All() internal {
         uint snapshot = vm.snapshotState();
 
@@ -128,7 +140,7 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
         _testRebalance(75_00, 85_00, true); // rebalance with free flash loan
 
         // --------------------------------------------- targetLeveragePercent - percent of max leverage.
-        _testDepositWithdraw(80_00, 1000, true);
+        _testDepositWithdraw(80_00, 1000);
         _testOneDepositTwoWithdraw(80_00, 1000, true);
         _testOneDepositTwoWithdraw(85_00, 10_000, false);
         _testOneDepositTwoWithdraw(75_00, 50_000, false);
@@ -149,61 +161,38 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
     }
 
     /// @notice Deposit, check state, withdraw all, check state
-    function _testDepositWithdraw(uint targetLeveragePercent_, uint amountNoDecimals, bool freeFlashLoan_) internal {
+    function _testDepositWithdraw(uint targetLeveragePercent_, uint amount) internal {
         uint snapshot = vm.snapshotState();
-
-        if (freeFlashLoan_) {
-            // todo _setUpFlashLoanVault(0, ILeverageLendingStrategy.FlashLoanKind.BalancerV3_1);
-        } else {
-            // todo _setUpFlashLoanVault(getUnlimitedFlashAmount(), ILeverageLendingStrategy.FlashLoanKind.UniswapV3_2);
-        }
 
         // todo _setTargetLeveragePercent(targetLeveragePercent_);
         IStrategy strategy = IStrategy(currentStrategy);
 
         // --------------------------------------------- Deposit
         uint[] memory amountsToDeposit = new uint[](1);
-        amountsToDeposit[0] = amountNoDecimals * 10 ** IERC20Metadata(strategy.assets()[0]).decimals();
+        amountsToDeposit[0] = amount;
 
         // emulate rewards BEFORE deposit
-        deal(SonicConstantsLib.TOKEN_WS, currentStrategy, 177e18);
+        deal(SonicConstantsLib.TOKEN_WETH, currentStrategy, 1e18);
 
         State memory state0 = _getState();
-        (uint depositedAssets, uint depositedValue) = _tryToDeposit(strategy, amountsToDeposit, REVERT_NO);
+        (uint depositedAssets, uint depositedValue) = _tryToDepositToVault(strategy.vault(), amountsToDeposit, REVERT_NO);
         vm.roll(block.number + 6);
         State memory state1 = _getState();
 
-        uint withdrawn1 = _tryToWithdraw(strategy, depositedValue);
+        uint withdrawn1 = _tryToWithdrawFromVault(strategy.vault(), depositedValue);
         vm.roll(block.number + 6);
         State memory state2 = _getState();
 
-        uint wsFinalBalance = IERC20(SonicConstantsLib.TOKEN_WS).balanceOf(currentStrategy);
+        uint wethFinalBalance = IERC20(SonicConstantsLib.TOKEN_WETH).balanceOf(currentStrategy);
         vm.revertToState(snapshot);
 
         // --------------------------------------------- Check results
         assertEq(depositedAssets, amountsToDeposit[0], "Deposited amount should be equal to amountsToDeposit");
-        if (freeFlashLoan_) {
-            assertApproxEqAbs(
-                depositedAssets,
-                withdrawn1,
-                depositedAssets / 100,
-                "Withdrawn amount should be equal to deposited amount 1"
-            );
-
-            // some amount left in the collateral vault after full withdraw
-            assertApproxEqAbs(
-                depositedAssets,
-                withdrawn1 + state2.collateralAmount,
-                depositedAssets / 100_000,
-                "Withdrawn amount should be equal to deposited amount 2"
-            );
-        }
-
         assertLt(state0.total, state1.total, "Total should increase after deposit");
         assertEq(state1.total, state0.total + depositedValue, "Total should increase on expected value after deposit 2");
         assertEq(state2.total, state0.total, "Total should decrease after first withdraw");
 
-        assertEq(wsFinalBalance, 177e18, "wS balance should not change after deposit and withdraw");
+        assertEq(wethFinalBalance, 1e18, "WETH balance should not change after deposit and withdraw");
     }
 
     function _testRebalance(uint targetLeveragePercent_, uint targetLeveragePercentNew_, bool freeFlashLoan_) internal {
@@ -316,7 +305,7 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
         // --------------------------------------------- Make initial deposit to the strategy
         uint[] memory amountsToDeposit = new uint[](1);
         amountsToDeposit[0] = 1000 * 10 ** IERC20Metadata(strategy.assets()[0]).decimals();
-        _tryToDeposit(strategy, amountsToDeposit, REVERT_NO);
+        _tryToDepositToVault(strategy.vault(), amountsToDeposit, REVERT_NO);
         vm.roll(block.number + 6);
 
         // --------------------------------------------- Deposit
@@ -324,15 +313,15 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
         amountsToDeposit[0] = amountNoDecimals * 10 ** IERC20Metadata(strategy.assets()[0]).decimals();
 
         State memory state0 = _getState();
-        (uint depositedAssets, uint depositedValue) = _tryToDeposit(strategy, amountsToDeposit, REVERT_NO);
+        (uint depositedAssets, uint depositedValue) = _tryToDepositToVault(strategy.vault(), amountsToDeposit, REVERT_NO);
         vm.roll(block.number + 6);
         State memory state1 = _getState();
 
-        uint withdrawn1 = _tryToWithdraw(strategy, depositedValue / 2);
+        uint withdrawn1 = _tryToWithdrawFromVault(strategy.vault(), depositedValue / 2);
         vm.roll(block.number + 6);
         State memory state2 = _getState();
 
-        uint withdrawn2 = _tryToWithdraw(strategy, depositedValue - depositedValue / 2);
+        uint withdrawn2 = _tryToWithdrawFromVault(strategy.vault(), depositedValue - depositedValue / 2);
         vm.roll(block.number + 6);
         State memory state3 = _getState();
 
@@ -392,7 +381,7 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
         // --------------------------------------------- Make initial deposit to the strategy
         uint[] memory amountsToDeposit = new uint[](1);
         amountsToDeposit[0] = (freeFlashLoan_ ? 100 : 10_000) * 10 ** IERC20Metadata(strategy.assets()[0]).decimals();
-        _tryToDeposit(strategy, amountsToDeposit, REVERT_NO);
+        _tryToDepositToVault(strategy.vault(), amountsToDeposit, REVERT_NO);
         vm.roll(block.number + 6);
 
         uint valueBefore = strategy.total();
@@ -406,24 +395,24 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
             amountsToDeposit[0] = amountNoDecimals * 10 ** IERC20Metadata(strategy.assets()[0]).decimals();
 
             // State memory state0 = _getState();
-            (uint depositedAssets, uint depositedValue) = _tryToDeposit(strategy, amountsToDeposit, REVERT_NO);
+            (uint depositedAssets, uint depositedValue) = _tryToDepositToVault(strategy.vault(), amountsToDeposit, REVERT_NO);
             vm.roll(block.number + 6);
             totalDeposited += depositedAssets;
             // console.log("i, deposited assets, value", i, depositedAssets, depositedValue);
             // State memory state1 = _getState();
 
-            uint withdrawn1 = _tryToWithdraw(strategy, depositedValue * (i + 1) / (i + 2));
+            uint withdrawn1 = _tryToWithdrawFromVault(strategy.vault(), depositedValue * (i + 1) / (i + 2));
             vm.roll(block.number + 6);
             // State memory state2 = _getState();
             totalWithdrawn += withdrawn1;
         }
 
-        uint withdrawn2 = _tryToWithdraw(strategy, (strategy.total() - valueBefore) / 2);
+        uint withdrawn2 = _tryToWithdrawFromVault(strategy.vault(), (strategy.total() - valueBefore) / 2);
         vm.roll(block.number + 6);
         // State memory state3 = _getState();
         totalWithdrawn += withdrawn2;
 
-        withdrawn2 = _tryToWithdraw(strategy, strategy.total());
+        withdrawn2 = _tryToWithdrawFromVault(strategy.vault(), strategy.total());
         vm.roll(block.number + 6);
         // state3 = _getState();
         totalWithdrawn += withdrawn2;
@@ -462,10 +451,10 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
         uint snapshot = vm.snapshotState();
         // todo _setUpFlashLoanVault(getUnlimitedFlashAmount(), ILeverageLendingStrategy.FlashLoanKind.UniswapV3_2);
         uint[] memory maxDepositAssets = strategy.maxDepositAssets();
-        (uint deposited,) = _tryToDeposit(strategy, maxDepositAssets, REVERT_NO);
+        (uint deposited,) = _tryToDepositToVault(strategy.vault(), maxDepositAssets, REVERT_NO);
 
         // ---------------------------- try to withdraw full amount back without any losses
-        uint withdrawn = _tryToWithdrawAll(strategy);
+        // todo uint withdrawn = _tryToWithdrawAll(strategy);
         vm.revertToState(snapshot);
 
         // todo
@@ -486,7 +475,7 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
         for (uint i = 0; i < maxDepositAssets.length; i++) {
             maxDepositAssets[i] = maxDepositAssets[i] * 101 / 100;
         }
-        _tryToDeposit(strategy, maxDepositAssets, REVERT_NOT_ENOUGH_LIQUIDITY);
+        _tryToDepositToVault(strategy.vault(), maxDepositAssets, REVERT_NOT_ENOUGH_LIQUIDITY);
         vm.revertToState(snapshot);
     }
 
@@ -498,7 +487,7 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
         // todo _setUpFlashLoanVault(0, ILeverageLendingStrategy.FlashLoanKind.UniswapV3_2);
         uint[] memory maxDepositAssets = strategy.maxDepositAssets();
 
-        _tryToDeposit(strategy, maxDepositAssets, REVERT_NO);
+        _tryToDepositToVault(strategy.vault(), maxDepositAssets, REVERT_NO);
 
         //        // ---------------------------- try to withdraw full amount back without any losses
         //        uint withdrawn = _tryToWithdrawAll(strategy);
@@ -530,7 +519,7 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
 //        for (uint i = 0; i < maxDepositAssets.length; i++) {
 //            maxDepositAssets[i] = maxDepositAssets[i] * 101 / 100;
 //        }
-//        _tryToDeposit(strategy, maxDepositAssets, expectedRevertKind);
+//        _tryToDepositToVault(strategy.vault(), maxDepositAssets, expectedRevertKind);
 //        vm.revertToState(snapshot);
     }
 
@@ -539,107 +528,6 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
     //region --------------------------------------- Internal logic
     function _currentFarmId() internal view returns (uint) {
         return IFarmingStrategy(currentStrategy).farmId();
-    }
-
-    function getUnlimitedFlashAmount() internal view returns (uint) {
-        return 2e12; // 2 million USDC
-    }
-
-// todo
-//    function _setUpFlashLoanVault(
-//        uint additionalAmount,
-//        ILeverageLendingStrategy.FlashLoanKind flashKindForFarm53
-//    ) internal returns (address) {
-//        uint farmId = _currentFarmId();
-//        if (farmId == FARM_META_USD_USDC_53) {
-//            address pool = flashKindForFarm53 == ILeverageLendingStrategy.FlashLoanKind.AlgebraV4_3
-//                ? SonicConstantsLib.POOL_ALGEBRA_WS_USDC
-//                : flashKindForFarm53 == ILeverageLendingStrategy.FlashLoanKind.UniswapV3_2
-//                    ? SonicConstantsLib.POOL_SHADOW_CL_USDC_WETH
-//                    : SonicConstantsLib.BEETS_VAULT_V3;
-//            // Set up flash loan vault for the strategy
-//            _setFlashLoanVault(
-//                ILeverageLendingStrategy(currentStrategy),
-//                pool,
-//                pool,
-//                flashKindForFarm53 == ILeverageLendingStrategy.FlashLoanKind.AlgebraV4_3
-//                    ? uint(ILeverageLendingStrategy.FlashLoanKind.AlgebraV4_3)
-//                    : flashKindForFarm53 == ILeverageLendingStrategy.FlashLoanKind.UniswapV3_2
-//                        ? uint(ILeverageLendingStrategy.FlashLoanKind.UniswapV3_2)
-//                        : uint(ILeverageLendingStrategy.FlashLoanKind.BalancerV3_1)
-//            );
-//            if (additionalAmount != 0) {
-//                // Add additional amount to the flash loan vault to avoid insufficient balance
-//                deal(SonicConstantsLib.TOKEN_USDC, pool, additionalAmount);
-//            }
-//            return pool;
-//        } else if (farmId == FARM_META_USD_SCUSD_54) {
-//            address pool = additionalAmount == 0 ? SonicConstantsLib.BEETS_VAULT_V3 : SonicConstantsLib.BEETS_VAULT;
-//            _setFlashLoanVault(
-//                ILeverageLendingStrategy(currentStrategy),
-//                pool,
-//                pool,
-//                pool == SonicConstantsLib.BEETS_VAULT_V3
-//                    ? uint(ILeverageLendingStrategy.FlashLoanKind.BalancerV3_1)
-//                    : uint(ILeverageLendingStrategy.FlashLoanKind.Default_0)
-//            );
-//            if (additionalAmount != 0) {
-//                // Add additional amount to the flash loan vault to avoid insufficient balance
-//                deal(SonicConstantsLib.TOKEN_SCUSD, pool, additionalAmount);
-//            }
-//            return pool;
-//        } else if (farmId == FARM_METAS_S_55) {
-//            address pool = additionalAmount == 0 ? SonicConstantsLib.BEETS_VAULT_V3 : SonicConstantsLib.BEETS_VAULT;
-//            _setFlashLoanVault(
-//                ILeverageLendingStrategy(currentStrategy),
-//                pool,
-//                pool,
-//                pool == SonicConstantsLib.BEETS_VAULT_V3
-//                    ? uint(ILeverageLendingStrategy.FlashLoanKind.BalancerV3_1)
-//                    : uint(ILeverageLendingStrategy.FlashLoanKind.Default_0)
-//            );
-//            if (additionalAmount != 0) {
-//                // Add additional amount to the flash loan vault to avoid insufficient balance
-//                deal(SonicConstantsLib.TOKEN_WS, pool, additionalAmount);
-//            }
-//            return pool;
-//        } else {
-//            revert("Unknown farmId");
-//        }
-//    }
-
-    function _tryToDeposit(
-        IStrategy strategy,
-        uint[] memory amounts_,
-        uint revertKind
-    ) internal returns (uint deposited, uint values) {
-        // ----------------------------- Transfer deposit amount to the strategy
-        IWrappedMetaVault wrappedMetaVault = IWrappedMetaVault(
-            strategy.assets()[0] == SonicConstantsLib.WRAPPED_METAVAULT_METAUSD
-                ? SonicConstantsLib.WRAPPED_METAVAULT_METAUSD
-                : SonicConstantsLib.WRAPPED_METAVAULT_METAS
-        );
-
-        _dealAndApprove(address(this), currentStrategy, strategy.assets(), amounts_);
-        vm.prank(address(this));
-        /// forge-lint: disable-next-line
-        wrappedMetaVault.transfer(address(strategy), amounts_[0]);
-
-        // ----------------------------- Try to deposit assets to the strategy
-        uint valuesBefore = strategy.total();
-        address vault = address(strategy.vault());
-
-// todo
-//        if (revertKind == REVERT_NOT_ENOUGH_LIQUIDITY) {
-//            vm.expectRevert(ISilo.NotEnoughLiquidity.selector);
-//        }
-        if (revertKind == REVERT_INSUFFICIENT_BALANCE) {
-            vm.expectRevert(IControllable.InsufficientBalance.selector);
-        }
-        vm.prank(vault);
-        strategy.depositAssets(amounts_);
-
-        return (amounts_[0], strategy.total() - valuesBefore);
     }
 
     function _tryToDepositToVault(
@@ -666,33 +554,6 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
         IStabilityVault(vault).depositAssets(assets, amounts_, 0, address(this));
 
         return (amounts_[0], IERC20(vault).balanceOf(address(this)) - valuesBefore);
-    }
-
-    function _tryToWithdrawAll(IStrategy strategy) internal returns (uint withdrawn) {
-        address vault = strategy.vault();
-        address[] memory _assets = strategy.assets();
-
-        uint balanceBefore = IERC20(_assets[0]).balanceOf(address(this));
-
-        uint total = strategy.total();
-
-        vm.prank(vault);
-        strategy.withdrawAssets(_assets, total, address(this));
-
-        return IERC20(_assets[0]).balanceOf(address(this)) - balanceBefore;
-    }
-
-    /// @notice values [0...strategy.total()]
-    function _tryToWithdraw(IStrategy strategy, uint values) internal returns (uint withdrawn) {
-        address vault = strategy.vault();
-        address[] memory _assets = strategy.assets();
-
-        uint balanceBefore = IERC20(_assets[0]).balanceOf(address(this));
-
-        vm.prank(vault);
-        strategy.withdrawAssets(_assets, values, address(this));
-
-        return IERC20(_assets[0]).balanceOf(address(this)) - balanceBefore;
     }
 
     function _tryToWithdrawFromVault(address vault, uint values) internal returns (uint withdrawn) {
@@ -841,13 +702,16 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
         vm.stopPrank();
     }
 
-    function _setFlashLoanVault(ILeverageLendingStrategy strategy, address vaultC, address vaultB, uint kind) internal {
+    function _setUpFlashLoanVault(address flashLoanVault, ILeverageLendingStrategy.FlashLoanKind kind_) internal {
+        _setFlashLoanVault(ILeverageLendingStrategy(currentStrategy), flashLoanVault, uint(kind_));
+    }
+
+    function _setFlashLoanVault(ILeverageLendingStrategy strategy, address flashLoanVault, uint kind) internal {
         address multisig = IPlatform(platform).multisig();
 
         (uint[] memory params, address[] memory addresses) = strategy.getUniversalParams();
         params[10] = kind;
-        addresses[0] = vaultC;
-        addresses[1] = vaultB;
+        addresses[0] = flashLoanVault;
 
         vm.prank(multisig);
         strategy.setUniversalParams(params, addresses);

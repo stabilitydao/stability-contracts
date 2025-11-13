@@ -96,13 +96,13 @@ library ALMFLib {
                 );
             }
 
-            console.log("withdraw.swap", ALMFCalcLib._estimateSwapAmount(platform, amount + feeAmount, collateralAsset, token, swapPriceImpactTolerance0, tokenBalance0));
+            console.log("withdraw.swap", ALMFCalcLib.estimateSwapAmount(platform, amount + feeAmount, collateralAsset, token, swapPriceImpactTolerance0, tokenBalance0));
             // swap
             _swap(
                 platform,
                 collateralAsset,
                 token,
-                ALMFCalcLib._estimateSwapAmount(
+                ALMFCalcLib.estimateSwapAmount(
                     platform, amount + feeAmount, collateralAsset, token, swapPriceImpactTolerance0, tokenBalance0
                 ),
                 // Math.min(tempCollateralAmount, StrategyLib.balance(collateralAsset)),
@@ -111,20 +111,20 @@ library ALMFLib {
 
             // explicit error for the case when _estimateSwapAmount gives incorrect amount
             require(
-                ALMFCalcLib._balanceWithoutRewards(token, tokenBalance0) >= amount + feeAmount, IControllable.InsufficientBalance()
+                ALMFCalcLib.balanceWithoutRewards(token, tokenBalance0) >= amount + feeAmount, IControllable.InsufficientBalance()
             );
 
             console.log("pay flash loan", amount, feeAmount);
             // pay flash loan
             IERC20(token).safeTransfer(flashLoanVault, amount + feeAmount);
 
-            console.log("swap back", ALMFCalcLib._balanceWithoutRewards(token, tokenBalance0));
+            console.log("swap back", ALMFCalcLib.balanceWithoutRewards(token, tokenBalance0));
             // swap unnecessary borrow asset back to collateral
             _swap(
                 platform,
                 token,
                 collateralAsset,
-                ALMFCalcLib._balanceWithoutRewards(token, tokenBalance0),
+                ALMFCalcLib.balanceWithoutRewards(token, tokenBalance0),
                 swapPriceImpactTolerance0
             );
 
@@ -138,7 +138,7 @@ library ALMFLib {
 
             console.log("repay");
             // repay
-            IPool(IAToken($.borrowingVault).POOL()).repay(token, ALMFCalcLib._balanceWithoutRewards(token, tokenBalance0), INTEREST_RATE_MODE_VARIABLE, address(this));
+            IPool(IAToken($.borrowingVault).POOL()).repay(token, ALMFCalcLib.balanceWithoutRewards(token, tokenBalance0), INTEREST_RATE_MODE_VARIABLE, address(this));
 
             console.log("withdraw");
             // withdraw amount
@@ -153,7 +153,7 @@ library ALMFLib {
             IERC20(token).safeTransfer(flashLoanVault, amount + feeAmount);
 
             // repay remaining balance
-            IPool(IAToken($.borrowingVault).POOL()).repay(token, ALMFCalcLib._balanceWithoutRewards(token, tokenBalance0), INTEREST_RATE_MODE_VARIABLE, address(this));
+            IPool(IAToken($.borrowingVault).POOL()).repay(token, ALMFCalcLib.balanceWithoutRewards(token, tokenBalance0), INTEREST_RATE_MODE_VARIABLE, address(this));
 
             $.tempCollateralAmount = 0;
         }
@@ -162,21 +162,21 @@ library ALMFLib {
             console.log("IncreaseLtv");
             uint tempCollateralAmount = $.tempCollateralAmount;
 
-            console.log("swap", ALMFCalcLib._balanceWithoutRewards(token, tokenBalance0) * $.increaseLtvParam1 / ALMFCalcLib.INTERNAL_PRECISION);
+            console.log("swap", ALMFCalcLib.balanceWithoutRewards(token, tokenBalance0) * $.increaseLtvParam1 / ALMFCalcLib.INTERNAL_PRECISION);
             // swap
             _swap(
                 platform,
                 token,
                 collateralAsset,
-                ALMFCalcLib._balanceWithoutRewards(token, tokenBalance0) * $.increaseLtvParam1 / ALMFCalcLib.INTERNAL_PRECISION,
+                ALMFCalcLib.balanceWithoutRewards(token, tokenBalance0) * $.increaseLtvParam1 / ALMFCalcLib.INTERNAL_PRECISION,
                 $.swapPriceImpactTolerance1
             );
 
-            console.log("supply", ALMFCalcLib._getLimitedAmount(IERC20(collateralAsset).balanceOf(address(this)), tempCollateralAmount));
+            console.log("supply", ALMFCalcLib.getLimitedAmount(IERC20(collateralAsset).balanceOf(address(this)), tempCollateralAmount));
             // supply
             IPool(IAToken($.lendingVault).POOL()).deposit(
                 collateralAsset,
-                ALMFCalcLib._getLimitedAmount(IERC20(collateralAsset).balanceOf(address(this)), tempCollateralAmount),
+                ALMFCalcLib.getLimitedAmount(IERC20(collateralAsset).balanceOf(address(this)), tempCollateralAmount),
                 address(this),
                 0
             );
@@ -190,7 +190,7 @@ library ALMFLib {
             IERC20(token).safeTransfer(flashLoanVault, amount + feeAmount);
 
             // repay not used borrow
-            uint tokenBalance = ALMFCalcLib._balanceWithoutRewards(token, tokenBalance0);
+            uint tokenBalance = ALMFCalcLib.balanceWithoutRewards(token, tokenBalance0);
             if (tokenBalance != 0) {
                 IPool(IAToken($.borrowingVault).POOL()).repay(token, tokenBalance, INTEREST_RATE_MODE_VARIABLE, address(this));
             }
@@ -274,7 +274,7 @@ library ALMFLib {
         ALMFCalcLib.StaticData memory data = _getStaticData(platform_, $, farm);
         ALMFCalcLib.State memory state = _getState(data);
 
-        uint valueWas = ALMFCalcLib.collateralToBase(StrategyLib.balance(data.collateralAsset), data) + calcTotal(data, state);
+        uint valueWas = ALMFCalcLib.collateralToBase(StrategyLib.balance(data.collateralAsset), data) + calcTotal(state);
         console.log("depositAssets.valueWas", valueWas);
 
         if (amount > 1e12) { // todo threshold for small deposits
@@ -284,7 +284,7 @@ library ALMFLib {
         }
 
         state = _getState(data); // refresh state after deposit
-        uint valueNow = ALMFCalcLib.collateralToBase(StrategyLib.balance(data.collateralAsset), data) + calcTotal(data, state);
+        uint valueNow = ALMFCalcLib.collateralToBase(StrategyLib.balance(data.collateralAsset), data) + calcTotal(state);
         console.log("depositAssets.valueNow", valueNow);
 
         if (valueNow > valueWas) {
@@ -297,7 +297,7 @@ library ALMFLib {
         }
         console.log("depositAssets.value", value);
 
-        _ensureLtvValid(data, state);
+        _ensureLtvValid(state);
         console.log("============================== depositAssets.done");
     }
 
@@ -416,7 +416,7 @@ library ALMFLib {
         ALMFCalcLib.State memory state = _getState(data);
 
         uint collateralBalanceBase = ALMFCalcLib.collateralToBase(StrategyLib.balance(data.collateralAsset), data);
-        uint valueWas = collateralBalanceBase + calcTotal(data, state);
+        uint valueWas = collateralBalanceBase + calcTotal(state);
         console.log("withdrawAssets.collateralBalanceBase", collateralBalanceBase);
         console.log("withdrawAssets.valueWas", valueWas);
 
@@ -431,7 +431,7 @@ library ALMFLib {
 
         // ---------------------- Transfer required amount to the user
         uint balBase = ALMFCalcLib.collateralToBase(StrategyLib.balance(data.collateralAsset), data);
-        uint valueNow = balBase + calcTotal(data, state);
+        uint valueNow = balBase + calcTotal(state);
         console.log("withdrawAssets.balBase", balBase);
         console.log("withdrawAssets.valueNow", valueNow);
 
@@ -450,7 +450,7 @@ library ALMFLib {
             IERC20(data.collateralAsset).safeTransfer(receiver, amountsOut[0]);
         }
 
-        _ensureLtvValid(data, state);
+        _ensureLtvValid(state);
         console.log("---------------------------------------- withdrawAssets.done");
         _getState(data); // todo remove
     }
@@ -535,10 +535,7 @@ library ALMFLib {
 //region ------------------------------------- View
     /// @notice Calculate total value: collateral - debt in base asset (USD, 18 decimals)
     /// Balance on the strategy is NOT included.
-    function calcTotal(
-        ALMFCalcLib.StaticData memory data,
-        ALMFCalcLib.State memory state
-    ) internal pure returns (uint totalValue) {
+    function calcTotal(ALMFCalcLib.State memory state) internal pure returns (uint totalValue) {
         totalValue = state.collateralBase - state.debtBase;
         console.log("calcTotal", totalValue);
     }
@@ -694,7 +691,7 @@ library ALMFLib {
     ) external view returns (uint totalValue) {
         ALMFCalcLib.StaticData memory data = _getStaticData(platform, $, farm);
         ALMFCalcLib.State memory state = _getState(data);
-        totalValue = calcTotal(data, state);
+        totalValue = calcTotal(state);
     }
 //endregion ------------------------------------- View
 
@@ -729,7 +726,7 @@ library ALMFLib {
         // new_debt_value = new_collateral_value * LTV / PRECISION
         // real_TVL is not changed if current strategy balance of collateral is zero
 
-        uint tvlBase = ALMFCalcLib.collateralToBase(StrategyLib.balance(data.collateralAsset), data) + calcTotal(data, state);
+        uint tvlBase = ALMFCalcLib.collateralToBase(StrategyLib.balance(data.collateralAsset), data) + calcTotal(state);
         console.log("rebalanceDebt.tvlPricedInCollateralAsset", tvlBase);
         console.log("rebalanceDebt.newLtv", newLtv);
 
@@ -825,10 +822,7 @@ library ALMFLib {
         });
     }
 
-    function _ensureLtvValid(
-        ALMFCalcLib.StaticData memory data,
-        ALMFCalcLib.State memory state
-    ) internal view {
+    function _ensureLtvValid(ALMFCalcLib.State memory state) internal pure {
         if (state.debtBase != 0) {
             uint ltv = ALMFCalcLib.getLtv(state.collateralBase, state.debtBase);
             require(state.healthFactor > 1e18 && ltv < state.maxLtv, IControllable.IncorrectLtv(ltv));

@@ -10,7 +10,6 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 import {IVaultMainV3} from "../../integrations/balancerv3/IVaultMainV3.sol";
 import {IUniswapV3PoolActions} from "../../integrations/uniswapv3/pool/IUniswapV3PoolActions.sol";
 import {IUniswapV3PoolImmutables} from "../../integrations/uniswapv3/pool/IUniswapV3PoolImmutables.sol";
-import {IVaultExtension} from "../../integrations/balancerv3/IVaultExtension.sol";
 
 /// @notice Shared functions for Leverage Lending strategies
 library LeverageLendingLib {

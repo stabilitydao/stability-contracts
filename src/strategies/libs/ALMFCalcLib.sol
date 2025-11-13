@@ -75,7 +75,7 @@ library ALMFCalcLib {
     function splitDepositAmount(uint amount, uint targetLeverage, uint collateralBase, uint debtBase, uint swapFee18) internal pure returns (uint aD, uint aR) {
         int arInt = (int(targetLeverage * debtBase) - int(targetLeverage - INTERNAL_PRECISION) * int(collateralBase + amount))
             / (int(INTERNAL_PRECISION) - int(targetLeverage * swapFee18 / 1e18));
-        aR = arInt > 0 ? uint(arInt) : 0;
+        aR = arInt > 0 ? Math.min(uint(arInt), amount) : 0;
         aD = amount > aR ? amount - aR : 0;
     }
 
@@ -131,7 +131,7 @@ library ALMFCalcLib {
 
     /// @notice Estimate amount of collateral to swap to receive {amountToRepay} on balance
     /// @param priceImpactTolerance Price impact tolerance. Must include fees at least. Denominator is 100_000.
-    function _estimateSwapAmount(
+    function estimateSwapAmount(
         address platform,
         uint amountToRepay,
         address collateralAsset,
@@ -143,7 +143,7 @@ library ALMFCalcLib {
         // We don't need to swap whole C, we can swap only C2 with same addon (i.e. 10%) for safety
 
         ISwapper swapper = ISwapper(IPlatform(platform).swapper());
-        uint requiredAmount = amountToRepay - _balanceWithoutRewards(token, rewardsBalance);
+        uint requiredAmount = amountToRepay - balanceWithoutRewards(token, rewardsBalance);
 
         // we use higher (x2) price impact then required for safety
         uint minCollateralToSwap = swapper.getPrice(
@@ -155,12 +155,12 @@ library ALMFCalcLib {
         return Math.min(minCollateralToSwap, StrategyLib.balance(collateralAsset));
     }
 
-    function _balanceWithoutRewards(address borrowAsset, uint rewardsAmount) internal view returns (uint) {
+    function balanceWithoutRewards(address borrowAsset, uint rewardsAmount) internal view returns (uint) {
         uint balance = StrategyLib.balance(borrowAsset);
         return balance > rewardsAmount ? balance - rewardsAmount : 0;
     }
 
-    function _getLimitedAmount(uint amount, uint optionalLimit) internal pure returns (uint) {
+    function getLimitedAmount(uint amount, uint optionalLimit) internal pure returns (uint) {
         if (optionalLimit == 0) return amount;
         return Math.min(amount, optionalLimit);
     }
@@ -193,13 +193,12 @@ library ALMFCalcLib {
     /// @param leverage Leverage, INTERNAL_PRECISION
     /// @return LTV, INTERNAL_PRECISION
     function leverageToLtv(uint leverage) internal pure returns (uint) {
-        if (leverage <= INTERNAL_PRECISION) {
-            return 0;
-        }
+        // assume here that leverage always greater than INTERNAL_PRECISION
         return INTERNAL_PRECISION - INTERNAL_PRECISION * INTERNAL_PRECISION / leverage;
     }
 
     function ltvToLeverage(uint ltv) internal pure returns (uint) {
+        // assume here that ltv always less than INTERNAL_PRECISION
         return INTERNAL_PRECISION * INTERNAL_PRECISION / (INTERNAL_PRECISION - ltv);
     }
 
