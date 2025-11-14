@@ -9,6 +9,7 @@ import {FarmMechanicsLib} from "./libs/FarmMechanicsLib.sol";
 import {FarmingStrategyBase} from "./base/FarmingStrategyBase.sol";
 import {IAToken} from "../integrations/aave/IAToken.sol";
 import {IAaveAddressProvider} from "../integrations/aave/IAaveAddressProvider.sol";
+import {IAavePriceOracle} from "../integrations/aave/IAavePriceOracle.sol";
 import {IAaveDataProvider} from "../integrations/aave/IAaveDataProvider.sol";
 import {IAlgebraFlashCallback} from "../integrations/algebrav4/callback/IAlgebraFlashCallback.sol";
 import {IBalancerV3FlashCallback} from "../integrations/balancerv3/IBalancerV3FlashCallback.sol";
@@ -21,6 +22,7 @@ import {IFarmingStrategy} from "../interfaces/IFarmingStrategy.sol";
 import {IFlashLoanRecipient} from "../integrations/balancer/IFlashLoanRecipient.sol";
 import {IMerklStrategy} from "../interfaces/IMerklStrategy.sol";
 import {IPlatform} from "../interfaces/IPlatform.sol";
+import {IVault} from "../interfaces/IVault.sol";
 import {ILeverageLendingStrategy} from "../interfaces/ILeverageLendingStrategy.sol";
 import {IPool} from "../integrations/aave/IPool.sol";
 import {IPriceReader} from "../interfaces/IPriceReader.sol";
@@ -273,7 +275,7 @@ contract AaveLeverageMerklFarmStrategy is
     /// @inheritdoc IStrategy
     function getRevenue() public view override(IStrategy, LeverageLendingBase) returns (address[] memory assets_, uint[] memory amounts) {
         address aToken = _getAToken();
-        uint newPrice = _getSharePrice(aToken);
+        (uint newPrice,) = _realSharePrice();
         (assets_, amounts) = _getRevenue(newPrice, aToken);
     }
 
@@ -423,9 +425,6 @@ contract AaveLeverageMerklFarmStrategy is
         AlmfStrategyStorage storage $a = _getStorage();
 
         value = ALMFLib.depositAssets(platform(), $, _getFarm(), amounts[0]);
-        if ($a.lastSharePrice == 0) {
-            $a.lastSharePrice = _getSharePrice(address($.lendingVault));
-        }
         console.log("_depositAssets.end.total", total());
     }
 
@@ -455,7 +454,12 @@ contract AaveLeverageMerklFarmStrategy is
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
 
         address aToken = $.lendingVault;
-        uint newPrice = _getSharePrice(aToken);
+        (uint newPrice,) = _realSharePrice();
+        if ($a.lastSharePrice == 0) {
+            // first initialization of share price
+            // we cannot do it in deposit() because total supply is used for calculation
+            $a.lastSharePrice = newPrice;
+        }
         (__assets, __amounts) = _getRevenue(newPrice, aToken);
         $a.lastSharePrice = newPrice;
 
@@ -584,26 +588,28 @@ contract AaveLeverageMerklFarmStrategy is
         }
     }
 
-    function _getSharePrice(address u) internal view returns (uint) {
-        IAToken aToken = IAToken(u);
-        uint scaledBalance = aToken.scaledTotalSupply();
-        return scaledBalance == 0 ? 0 : aToken.totalSupply() * 1e18 / scaledBalance;
-    }
-
-    function _getRevenue(
-        uint newPrice,
-        address u
-    ) internal view returns (address[] memory __assets, uint[] memory amounts) {
+    function _getRevenue(uint newPrice, address u) internal view returns (address[] memory __assets, uint[] memory amounts) {
         AlmfStrategyStorage storage $ = _getStorage();
         __assets = assets();
+
+        // assume below that there is only 1 asset - collateral asset
+
         amounts = new uint[](1);
         uint oldPrice = $.lastSharePrice;
+        console.log("_getRevenue.oldPrice", oldPrice);
+        console.log("_getRevenue.newPrice", newPrice);
+
         if (newPrice > oldPrice && oldPrice != 0) {
-            // deposited asset balance
-            uint scaledBalance = IAToken(u).scaledBalanceOf(address(this));
+            uint _totalSupply = IVault(vault()).totalSupply();
+            uint price = IAavePriceOracle(
+                IAaveAddressProvider(
+                    IPool(IAToken(u).POOL()).ADDRESSES_PROVIDER()
+                ).getPriceOracle()
+            ).getAssetPrice(__assets[0]);
 
             // share price already takes into account accumulated interest
-            amounts[0] = scaledBalance * (newPrice - oldPrice) / 1e18;
+            uint amountUSD = _totalSupply * (newPrice - oldPrice) / 1e18;
+            amounts[0] = amountUSD * price / 1e18;
         }
     }
 

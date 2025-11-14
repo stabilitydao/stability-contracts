@@ -502,10 +502,11 @@ library ALMFLib {
         {
             // use leverage correction (coefficient k = withdrawParam0) if necessary: L_adj = L + k (TL - L)
             uint targetLeverage = (data.minTargetLeverage + data.maxTargetLeverage) / 2;
+            console.log("targetLeverage", targetLeverage);
             if (leverage < data.minTargetLeverage) {
-                leverage = leverage + $.withdrawParam0 * (targetLeverage - leverage);
+                leverage = leverage + $.withdrawParam0 * (targetLeverage - leverage) / ALMFCalcLib.INTERNAL_PRECISION;
             } else if (leverage > data.maxTargetLeverage) {
-                leverage = leverage - $.withdrawParam0 * (leverage - targetLeverage);
+                leverage = leverage - $.withdrawParam0 * (leverage - targetLeverage) / ALMFCalcLib.INTERNAL_PRECISION;
             }
         }
         console.log("_withdrawUsingFlash.leverage.adj", leverage);
