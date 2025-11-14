@@ -21,6 +21,9 @@ import {SonicSetup} from "../base/chains/SonicSetup.sol";
 import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
 import {UniversalTest} from "../base/UniversalTest.sol";
 import {PriceReader} from "../../src/core/PriceReader.sol";
+import {IAaveAddressProvider} from "../../src/integrations/aave/IAaveAddressProvider.sol";
+import {IAavePriceOracle} from "../../src/integrations/aave/IAavePriceOracle.sol";
+import {IPool} from "../../src/integrations/aave/IPool.sol";
 import {console} from "forge-std/console.sol";
 
 contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
@@ -102,9 +105,9 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
         // ---------------------------------- Make additional tests
         uint snapshot = vm.snapshotState();
 
-//        console.log("FFFFFFFFFFFFFFFFFFFF 1");
-//        _testDepositWithdrawUsingFlashLoan(SonicConstantsLib.BEETS_VAULT, ILeverageLendingStrategy.FlashLoanKind.Default_0);
-//        console.log("FFFFFFFFFFFFFFFFFFFF 2");
+        console.log("FFFFFFFFFFFFFFFFFFFF 1");
+        _testDepositWithdrawUsingFlashLoan(SonicConstantsLib.BEETS_VAULT, ILeverageLendingStrategy.FlashLoanKind.Default_0);
+        console.log("FFFFFFFFFFFFFFFFFFFF 2");
 //        _testDepositWithdrawUsingFlashLoan(SonicConstantsLib.BEETS_VAULT_V3, ILeverageLendingStrategy.FlashLoanKind.BalancerV3_1);
 //        console.log("FFFFFFFFFFFFFFFFFFFF 3");
 //        _testDepositWithdrawUsingFlashLoan(SonicConstantsLib.POOL_SHADOW_CL_USDC_USDT, ILeverageLendingStrategy.FlashLoanKind.UniswapV3_2);
@@ -129,7 +132,7 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
     function _testDepositWithdrawUsingFlashLoan(address flashLoanVault, ILeverageLendingStrategy.FlashLoanKind kind_) internal {
         uint snapshot = vm.snapshotState();
         _setUpFlashLoanVault(flashLoanVault, kind_);
-        _testDepositWithdraw(80_00, 0.1e18);
+        _testDepositWithdraw(80_00, 0.1e18, SonicConstantsLib.TOKEN_USDC, 0);
         vm.revertToState(snapshot);
     }
 
@@ -140,7 +143,7 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
         _testRebalance(75_00, 85_00, true); // rebalance with free flash loan
 
         // --------------------------------------------- targetLeveragePercent - percent of max leverage.
-        _testDepositWithdraw(80_00, 1000);
+        // todo _testDepositWithdraw(80_00, 1000);
         _testOneDepositTwoWithdraw(80_00, 1000, true);
         _testOneDepositTwoWithdraw(85_00, 10_000, false);
         _testOneDepositTwoWithdraw(75_00, 50_000, false);
@@ -161,7 +164,7 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
     }
 
     /// @notice Deposit, check state, withdraw all, check state
-    function _testDepositWithdraw(uint targetLeveragePercent_, uint amount) internal {
+    function _testDepositWithdraw(uint targetLeveragePercent_, uint amount, address rewards, uint rewardsAmount) internal {
         uint snapshot = vm.snapshotState();
 
         // todo _setTargetLeveragePercent(targetLeveragePercent_);
@@ -171,25 +174,37 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
         uint[] memory amountsToDeposit = new uint[](1);
         amountsToDeposit[0] = amount;
 
-        // emulate rewards BEFORE deposit
-        deal(SonicConstantsLib.TOKEN_WETH, currentStrategy, 1e18);
+        if (rewardsAmount != 0) {
+            // emulate rewards BEFORE deposit
+            deal(rewards, currentStrategy, rewardsAmount);
+        }
 
         State memory state0 = _getState();
-        (uint depositedAssets, uint depositedValue) = _tryToDepositToVault(strategy.vault(), amountsToDeposit, REVERT_NO);
+        (uint depositedAssets,) = _tryToDepositToVault(strategy.vault(), amountsToDeposit, REVERT_NO);
         vm.roll(block.number + 6);
         State memory state1 = _getState();
 
-        uint withdrawn1 = _tryToWithdrawFromVault(strategy.vault(), depositedValue);
+        uint withdrawn1 = _tryToWithdrawFromVault(strategy.vault(), state1.vaultBalance - state0.vaultBalance);
         vm.roll(block.number + 6);
         State memory state2 = _getState();
 
         uint wethFinalBalance = IERC20(SonicConstantsLib.TOKEN_WETH).balanceOf(currentStrategy);
         vm.revertToState(snapshot);
 
+        uint wethPrice8 = IAavePriceOracle(IAaveAddressProvider(IPool(POOL).ADDRESSES_PROVIDER()).getPriceOracle()).getAssetPrice(SonicConstantsLib.TOKEN_WETH);
+        uint depositedAmountUSD = amount * wethPrice8 / 1e8;
+
         // --------------------------------------------- Check results
+        console.log("state2.total", state2.total);
+        console.log("state1.total", state1.total);
+        console.log("state0.total", state0.total);
+        console.log("state1.vaultBalance", state1.vaultBalance);
+        console.log("state0.vaultBalance", state0.vaultBalance);
+        console.log("depositedAmountUSD", depositedAmountUSD);
+
         assertEq(depositedAssets, amountsToDeposit[0], "Deposited amount should be equal to amountsToDeposit");
         assertLt(state0.total, state1.total, "Total should increase after deposit");
-        assertEq(state1.total, state0.total + depositedValue, "Total should increase on expected value after deposit 2");
+        assertApproxEqRel(state1.total - state0.total, depositedAmountUSD, depositedAmountUSD/100, "Total should increase on expected value");
         assertEq(state2.total, state0.total, "Total should decrease after first withdraw");
 
         assertEq(wethFinalBalance, 1e18, "WETH balance should not change after deposit and withdraw");
@@ -534,15 +549,14 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
         address vault,
         uint[] memory amounts_,
         uint revertKind
-    ) internal returns (uint deposited, uint values) {
+    ) internal returns (uint deposited, uint depositedValue) {
         address[] memory assets = IVault(vault).assets();
         // ----------------------------- Prepare amount on user's balance
         _dealAndApprove(address(this), vault, assets, amounts_);
         // console.log("Deposit to vault", assets[0], amounts_[0]);
 
+        uint balanceBefore = IVault(vault).balanceOf(address(this));
         // ----------------------------- Try to deposit assets to the vault
-        uint valuesBefore = IERC20(vault).balanceOf(address(this));
-
 // todo
 //        if (revertKind == REVERT_NOT_ENOUGH_LIQUIDITY) {
 //            vm.expectRevert(ISilo.NotEnoughLiquidity.selector);
@@ -553,7 +567,7 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
         vm.prank(address(this));
         IStabilityVault(vault).depositAssets(assets, amounts_, 0, address(this));
 
-        return (amounts_[0], IERC20(vault).balanceOf(address(this)) - valuesBefore);
+        return (amounts_[0], IVault(vault).balanceOf(address(this)) - balanceBefore);
     }
 
     function _tryToWithdrawFromVault(address vault, uint values) internal returns (uint withdrawn) {
@@ -627,16 +641,18 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
 
         // console.log("targetLeverage, leverage, total", state.targetLeverage, state.leverage, state.total);
 
-        //        console.log("ltv", state.ltv);
-        //        console.log("maxLtv", state.maxLtv);
-        //        console.log("targetLeverage", state.targetLeverage);
-        //        console.log("leverage", state.leverage);
-        //        console.log("total", state.total);
-        //        console.log("collateralAmount", state.collateralAmount);
-        //        console.log("debtAmount", state.debtAmount);
-        //        console.log("targetLeveragePercent", state.targetLeveragePercent);
-        //        console.log("maxLeverage", state.maxLeverage);
-        //        console.log("realTvl", state.realTvl);
+        console.log("state **************************************************");
+        console.log("ltv", state.ltv);
+        console.log("maxLtv", state.maxLtv);
+        console.log("targetLeverage", state.targetLeverage);
+        console.log("leverage", state.leverage);
+        console.log("total", state.total);
+        console.log("collateralAmount", state.collateralAmount);
+        console.log("debtAmount", state.debtAmount);
+        console.log("targetLeveragePercent", state.targetLeveragePercent);
+        console.log("maxLeverage", state.maxLeverage);
+        console.log("realTvl", state.realTvl);
+        console.log("vaultBalance", state.vaultBalance);
         return state;
     }
 

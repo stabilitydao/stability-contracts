@@ -289,11 +289,13 @@ library ALMFLib {
 
         if (valueNow > valueWas) {
             value = ALMFCalcLib.collateralToBase(amount, data) + (valueNow - valueWas);
+            console.log("new value 1", value);
         } else {
             console.log("ALMFCalcLib.collateralToBase(amount, data)", ALMFCalcLib.collateralToBase(amount, data));
             console.log("valueWas - valueNow", valueWas - valueNow);
             // todo deposit 1 decimal, amount base is 3431, valueWas - valueNow 5912220594977
             value = ALMFCalcLib.collateralToBase(amount, data) - (valueWas - valueNow);
+            console.log("new value 2", value);
         }
         console.log("depositAssets.value", value);
 

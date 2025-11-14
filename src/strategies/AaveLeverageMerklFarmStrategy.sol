@@ -538,7 +538,7 @@ contract AaveLeverageMerklFarmStrategy is
         console.log("_previewDepositAssets");
         amountsConsumed = new uint[](1);
         amountsConsumed[0] = amountsMax[0];
-        value = amountsMax[0];
+        value = amountsMax[0]; // todo this value is incorrect
     }
 
 
