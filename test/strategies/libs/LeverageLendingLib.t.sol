@@ -19,28 +19,36 @@ contract LeverageLendingLibTests is Test {
     function testGetFlashFee18() public view {
         // ------------------------------------- BalancerV2
         assertEq(
-            LeverageLendingLib.getFlashFee18(SonicConstantsLib.BEETS_VAULT, uint(ILeverageLendingStrategy.FlashLoanKind.Default_0)),
+            LeverageLendingLib.getFlashFee18(
+                SonicConstantsLib.BEETS_VAULT, uint(ILeverageLendingStrategy.FlashLoanKind.Default_0)
+            ),
             300000000000000, // 0.0003 = 0.03%
             "beets v2"
         );
 
         // ------------------------------------- BalancerV3_1
         assertEq(
-            LeverageLendingLib.getFlashFee18(SonicConstantsLib.BEETS_VAULT_V3, uint(ILeverageLendingStrategy.FlashLoanKind.BalancerV3_1)),
+            LeverageLendingLib.getFlashFee18(
+                SonicConstantsLib.BEETS_VAULT_V3, uint(ILeverageLendingStrategy.FlashLoanKind.BalancerV3_1)
+            ),
             0,
             "beets v3 flash fee"
         );
 
         // ------------------------------------- UniswapV3_2
         assertEq(
-            LeverageLendingLib.getFlashFee18(SonicConstantsLib.POOL_SHADOW_CL_USDC_WETH, uint(ILeverageLendingStrategy.FlashLoanKind.UniswapV3_2)),
+            LeverageLendingLib.getFlashFee18(
+                SonicConstantsLib.POOL_SHADOW_CL_USDC_WETH, uint(ILeverageLendingStrategy.FlashLoanKind.UniswapV3_2)
+            ),
             1658 * 1e12, // 0.0001658 = 0.01658%
             "uniswap-v3 flash fee"
         );
 
         // ------------------------------------- AlgebraV4_3
         assertEq(
-            LeverageLendingLib.getFlashFee18(SonicConstantsLib.POOL_ALGEBRA_WS_USDC, uint(ILeverageLendingStrategy.FlashLoanKind.AlgebraV4_3)),
+            LeverageLendingLib.getFlashFee18(
+                SonicConstantsLib.POOL_ALGEBRA_WS_USDC, uint(ILeverageLendingStrategy.FlashLoanKind.AlgebraV4_3)
+            ),
             5000 * 1e12, // 0.0005 = 0.05%
             "algebra-v4 flash fee"
         );

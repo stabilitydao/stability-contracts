@@ -75,18 +75,18 @@ library LeverageLendingLib {
     /// @notice Get flash loan fee, decimals 18
     function getFlashFee18(address flashLoanVault, uint flashLoanKind) internal view returns (uint) {
         if (flashLoanKind == uint(ILeverageLendingStrategy.FlashLoanKind.Default_0)) {
-            return IBComposableStablePoolMinimal(IBVault(flashLoanVault).getProtocolFeesCollector()).getFlashLoanFeePercentage(); // decimals 18
+            return IBComposableStablePoolMinimal(IBVault(flashLoanVault).getProtocolFeesCollector())
+                .getFlashLoanFeePercentage(); // decimals 18
         } else if (flashLoanKind == uint(ILeverageLendingStrategy.FlashLoanKind.BalancerV3_1)) {
             // flash loan in balancer v3 is free
             return 0;
         } else if (
             flashLoanKind == uint(ILeverageLendingStrategy.FlashLoanKind.UniswapV3_2)
-            || flashLoanKind == uint(ILeverageLendingStrategy.FlashLoanKind.AlgebraV4_3)
+                || flashLoanKind == uint(ILeverageLendingStrategy.FlashLoanKind.AlgebraV4_3)
         ) {
             // fee is in hundredths of a bip, i.e. 100_00 = 1%
             return uint(IUniswapV3PoolImmutables(flashLoanVault).fee()) * 1e12;
         }
         return 0; // unknown
     }
-
 }

@@ -39,25 +39,30 @@ contract ALMFCalcLibTest is Test {
         data.priceC18 = 1e18;
         data.priceB18 = 1e18;
 
-        (uint flashAmount, uint collateralToWithdraw) = ALMFCalcLib.calcWithdrawAmounts(200e18, 32700, data, state(1000e18, 700e18));
-        assertApproxEqRel(flashAmount, 473.33e6, 1e18/100, "1.F");
-        assertApproxEqRel(collateralToWithdraw, 673.33e18, 1e18/100, "1.C1");
+        (uint flashAmount, uint collateralToWithdraw) =
+            ALMFCalcLib.calcWithdrawAmounts(200e18, 32700, data, state(1000e18, 700e18));
+        assertApproxEqRel(flashAmount, 473.33e6, 1e18 / 100, "1.F");
+        assertApproxEqRel(collateralToWithdraw, 673.33e18, 1e18 / 100, "1.C1");
 
-        (flashAmount, collateralToWithdraw) = ALMFCalcLib.calcWithdrawAmounts(200e18, 14571, data, state(1000e18, 300e18));
-        assertApproxEqRel(flashAmount, 71.43e6, 1e18/100, "2.F");
-        assertApproxEqRel(collateralToWithdraw, 271.43e18, 1e18/100, "2.C1");
+        (flashAmount, collateralToWithdraw) =
+            ALMFCalcLib.calcWithdrawAmounts(200e18, 14571, data, state(1000e18, 300e18));
+        assertApproxEqRel(flashAmount, 71.43e6, 1e18 / 100, "2.F");
+        assertApproxEqRel(collateralToWithdraw, 271.43e18, 1e18 / 100, "2.C1");
 
-        (flashAmount, collateralToWithdraw) = ALMFCalcLib.calcWithdrawAmounts(0.0001e18, 14571, data, state(1000e18, 300e18));
+        (flashAmount, collateralToWithdraw) =
+            ALMFCalcLib.calcWithdrawAmounts(0.0001e18, 14571, data, state(1000e18, 300e18));
         assertEq(flashAmount, 0, "3.F");
         assertEq(collateralToWithdraw, 0.0001e18, "3.C1");
 
-        (flashAmount, collateralToWithdraw) = ALMFCalcLib.calcWithdrawAmounts(700e18, 14571, data, state(1000e18, 300e18));
-        assertApproxEqRel(flashAmount, 300.00e6, 1e18/100, "4.F");
-        assertApproxEqRel(collateralToWithdraw, 1000e18, 1e18/100, "4.C1");
+        (flashAmount, collateralToWithdraw) =
+            ALMFCalcLib.calcWithdrawAmounts(700e18, 14571, data, state(1000e18, 300e18));
+        assertApproxEqRel(flashAmount, 300.0e6, 1e18 / 100, "4.F");
+        assertApproxEqRel(collateralToWithdraw, 1000e18, 1e18 / 100, "4.C1");
 
-        (flashAmount, collateralToWithdraw) = ALMFCalcLib.calcWithdrawAmounts(99.99e18, 96000, data, state(1000e18, 900e18));
-        assertApproxEqRel(flashAmount, 899.91e6, 1e18/100, "5.F");
-        assertApproxEqRel(collateralToWithdraw, 999.90e18, 1e18/100, "5.C1");
+        (flashAmount, collateralToWithdraw) =
+            ALMFCalcLib.calcWithdrawAmounts(99.99e18, 96000, data, state(1000e18, 900e18));
+        assertApproxEqRel(flashAmount, 899.91e6, 1e18 / 100, "5.F");
+        assertApproxEqRel(collateralToWithdraw, 999.9e18, 1e18 / 100, "5.C1");
     }
 
     function testGetLimitedAmount() public pure {

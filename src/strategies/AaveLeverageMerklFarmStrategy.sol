@@ -64,7 +64,6 @@ contract AaveLeverageMerklFarmStrategy is
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.AaveLeverageMerklFarmStrategy")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant AAVE_MERKL_FARM_STRATEGY_STORAGE_LOCATION = 0; // todo
 
-
     string private constant STRATEGY_LOGIC_ID = StrategyIdLib.AAVE_LEVERAGE_MERKL_FARM;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -76,7 +75,7 @@ contract AaveLeverageMerklFarmStrategy is
         uint lastSharePrice;
     }
 
-//region ----------------------------------- Initialization and restricted actions
+    //region ----------------------------------- Initialization and restricted actions
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INITIALIZATION                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -97,8 +96,10 @@ contract AaveLeverageMerklFarmStrategy is
         params.platform = addresses[0];
         params.strategyId = STRATEGY_LOGIC_ID;
         params.vault = addresses[1];
-        params.collateralAsset = IAToken(farm.addresses[ALMFLib.FARM_ADDRESS_LENDING_VAULT_INDEX]).UNDERLYING_ASSET_ADDRESS();
-        params.borrowAsset = IAToken(farm.addresses[ALMFLib.FARM_ADDRESS_BORROWING_VAULT_INDEX]).UNDERLYING_ASSET_ADDRESS();
+        params.collateralAsset =
+            IAToken(farm.addresses[ALMFLib.FARM_ADDRESS_LENDING_VAULT_INDEX]).UNDERLYING_ASSET_ADDRESS();
+        params.borrowAsset =
+            IAToken(farm.addresses[ALMFLib.FARM_ADDRESS_BORROWING_VAULT_INDEX]).UNDERLYING_ASSET_ADDRESS();
         params.lendingVault = farm.addresses[ALMFLib.FARM_ADDRESS_LENDING_VAULT_INDEX];
         params.borrowingVault = farm.addresses[ALMFLib.FARM_ADDRESS_BORROWING_VAULT_INDEX];
         params.flashLoanVault = farm.addresses[ALMFLib.FARM_ADDRESS_FLASH_LOAN_VAULT_INDEX];
@@ -119,10 +120,10 @@ contract AaveLeverageMerklFarmStrategy is
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
 
         // ------------------------------ Set up all params in use
-//        // Multiplier of flash amount for borrow on deposit. Default is 100_00 = 100%
-//        $.depositParam0 = 100_00;
-//        // Multiplier of borrow amount to take into account max flash loan fee in maxDeposit. Default is 99_80 = 99.8%
-//        $.depositParam1 = 99_80;
+        //        // Multiplier of flash amount for borrow on deposit. Default is 100_00 = 100%
+        //        $.depositParam0 = 100_00;
+        //        // Multiplier of borrow amount to take into account max flash loan fee in maxDeposit. Default is 99_80 = 99.8%
+        //        $.depositParam1 = 99_80;
 
         // Multiplier of debt diff
         $.increaseLtvParam0 = 100_80;
@@ -130,7 +131,7 @@ contract AaveLeverageMerklFarmStrategy is
         $.increaseLtvParam1 = 99_00;
         // Multiplier of collateral diff
         $.decreaseLtvParam0 = 101_00;
-//
+        //
         // Swap price impact tolerance, ConstantsLib.DENOMINATOR
         $.swapPriceImpactTolerance0 = 1_000;
         $.swapPriceImpactTolerance1 = 1_000;
@@ -138,17 +139,17 @@ contract AaveLeverageMerklFarmStrategy is
         // Leverage correction coefficient, INTERNAL_PRECISION. Default is 300 = 0.03
         $.withdrawParam0 = 300;
 
-//        // Multiplier of amount allowed to be deposited after withdraw. Default is 100_00 == 100% (deposit forbidden)
-//        $.withdrawParam1 = 100_00;
-//        // withdrawParam2 allows to disable withdraw through increasing ltv if leverage is near to target
-//        $.withdrawParam2 = 100_00;
+        //        // Multiplier of amount allowed to be deposited after withdraw. Default is 100_00 == 100% (deposit forbidden)
+        //        $.withdrawParam1 = 100_00;
+        //        // withdrawParam2 allows to disable withdraw through increasing ltv if leverage is near to target
+        //        $.withdrawParam2 = 100_00;
 
         $.flashLoanKind = farm.nums[2];
     }
 
-//endregion ----------------------------------- Initialization and restricted actions
+    //endregion ----------------------------------- Initialization and restricted actions
 
-//region ----------------------------------- Flash loan
+    //region ----------------------------------- Flash loan
 
     /// @inheritdoc IFlashLoanRecipient
     /// @dev Support of FLASH_LOAN_KIND_BALANCER_V2
@@ -185,9 +186,9 @@ contract AaveLeverageMerklFarmStrategy is
         ALMFLib.uniswapV3FlashCallback(platform(), $, fee0, fee1, userData);
     }
 
-//endregion ----------------------------------- Flash loan
+    //endregion ----------------------------------- Flash loan
 
-//region ----------------------------------- View functions
+    //region ----------------------------------- View functions
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       VIEW FUNCTIONS                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -199,11 +200,11 @@ contract AaveLeverageMerklFarmStrategy is
 
     /// @inheritdoc IERC165
     function supportsInterface(bytes4 interfaceId)
-    public
-    view
-    virtual
-    override(FarmingStrategyBase, LeverageLendingBase, MerklStrategyBase)
-    returns (bool)
+        public
+        view
+        virtual
+        override(FarmingStrategyBase, LeverageLendingBase, MerklStrategyBase)
+        returns (bool)
     {
         return interfaceId == type(IFarmingStrategy).interfaceId || interfaceId == type(IMerklStrategy).interfaceId
             || interfaceId == type(ILeverageLendingStrategy).interfaceId || super.supportsInterface(interfaceId);
@@ -225,20 +226,34 @@ contract AaveLeverageMerklFarmStrategy is
         IFactory.Farm memory farm = _getFarm();
         (uint targetMinLtv, uint targetMaxLtv) = ALMFLib._getFarmLtvConfig(farm);
 
-        return (string.concat(IERC20Metadata($.borrowAsset).symbol(), " ", Strings.toString(targetMinLtv/100), "-", Strings.toString(targetMaxLtv/100)), true);
+        return (
+            string.concat(
+                IERC20Metadata($.borrowAsset).symbol(),
+                " ",
+                Strings.toString(targetMinLtv / 100),
+                "-",
+                Strings.toString(targetMaxLtv / 100)
+            ),
+            true
+        );
     }
 
     /// @inheritdoc IStrategy
-    function supportedVaultTypes() external pure override(LeverageLendingBase, StrategyBase) returns (string[] memory types) {
+    function supportedVaultTypes()
+        external
+        pure
+        override(LeverageLendingBase, StrategyBase)
+        returns (string[] memory types)
+    {
         types = new string[](1);
         types[0] = VaultTypeLib.COMPOUNDING;
     }
 
     /// @inheritdoc IStrategy
     function initVariants(address platform_)
-    external
-    view
-    returns (string[] memory variants, address[] memory addresses, uint[] memory nums, int24[] memory ticks)
+        external
+        view
+        returns (string[] memory variants, address[] memory addresses, uint[] memory nums, int24[] memory ticks)
     {
         addresses = new address[](0);
         ticks = new int24[](0);
@@ -273,7 +288,12 @@ contract AaveLeverageMerklFarmStrategy is
     }
 
     /// @inheritdoc IStrategy
-    function getRevenue() public view override(IStrategy, LeverageLendingBase) returns (address[] memory assets_, uint[] memory amounts) {
+    function getRevenue()
+        public
+        view
+        override(IStrategy, LeverageLendingBase)
+        returns (address[] memory assets_, uint[] memory amounts)
+    {
         address aToken = _getAToken();
         (uint newPrice,) = _realSharePrice();
         (assets_, amounts) = _getRevenue(newPrice, aToken);
@@ -301,7 +321,7 @@ contract AaveLeverageMerklFarmStrategy is
 
     /// @inheritdoc IStrategy
     /// @dev Assume that all amount can be withdrawn always for simplicity. Implement later.
-    function maxWithdrawAssets(uint mode) public view override returns (uint[] memory amounts) {
+    function maxWithdrawAssets(uint mode) public pure override returns (uint[] memory amounts) {
         mode; // hide warning
 
         // for simplicity of v.1.0: any amount can be withdrawn
@@ -315,8 +335,8 @@ contract AaveLeverageMerklFarmStrategy is
     }
 
     /// @inheritdoc IStrategy
-    /// @dev Assume that any amount can be deposite always for simplicity. Implement later.
-    function maxDepositAssets() public view override returns (uint[] memory amounts) {
+    /// @dev Assume that any amount can be deposit always for simplicity. Implement later.
+    function maxDepositAssets() public pure override returns (uint[] memory amounts) {
         // in real implementation we should take into account both borrow and supply cap
         // result amount should take leverage into account
         // max deposit is limited by amount available to borrow from the borrow pool
@@ -325,9 +345,9 @@ contract AaveLeverageMerklFarmStrategy is
         return amounts;
     }
 
-//endregion ----------------------------------- View functions
+    //endregion ----------------------------------- View functions
 
-//region ----------------------------------- ILeverageLendingStrategy
+    //region ----------------------------------- ILeverageLendingStrategy
     /// @inheritdoc ILeverageLendingStrategy
     function realTvl() public view returns (uint tvl, bool trusted) {
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
@@ -347,16 +367,17 @@ contract AaveLeverageMerklFarmStrategy is
 
     /// @inheritdoc ILeverageLendingStrategy
     function health()
-    public
-    view
-    returns (
-        uint ltv,
-        uint maxLtv,
-        uint leverage,
-        uint collateralAmount,
-        uint debtAmount,
-        uint targetLeveragePercent
-    ) {
+        public
+        view
+        returns (
+            uint ltv,
+            uint maxLtv,
+            uint leverage,
+            uint collateralAmount,
+            uint debtAmount,
+            uint targetLeveragePercent
+        )
+    {
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
         return ALMFLib.health(platform(), $, _getFarm());
     }
@@ -368,16 +389,14 @@ contract AaveLeverageMerklFarmStrategy is
     }
 
     function _rebalanceDebt(uint newLtv) internal override returns (uint resultLtv) {
-        console.log("++++++++++++++++++++++++++++ _rebalanceDebt.start");
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
 
         resultLtv = ALMFLib.rebalanceDebt(platform(), newLtv, $, _getFarm());
-        console.log("++++++++++++++++++++++++++++ _rebalanceDebt.end");
     }
 
-//endregion ----------------------------------- ILeverageLendingStrategy
+    //endregion ----------------------------------- ILeverageLendingStrategy
 
-//region ----------------------------------- Strategy base
+    //region ----------------------------------- Strategy base
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       STRATEGY BASE                        */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -395,10 +414,7 @@ contract AaveLeverageMerklFarmStrategy is
     //slither-disable-next-line unused-return
     function _depositAssets(uint[] memory amounts, bool) internal override returns (uint value) {
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
-        AlmfStrategyStorage storage $a = _getStorage();
-
         value = ALMFLib.depositAssets(platform(), $, _getFarm(), amounts[0]);
-        console.log("_depositAssets.end.total", total());
     }
 
     /// @inheritdoc StrategyBase
@@ -406,21 +422,19 @@ contract AaveLeverageMerklFarmStrategy is
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
 
         amountsOut = ALMFLib.withdrawAssets(platform(), $, _getFarm(), value, receiver);
-        console.log("_withdrawAssets.end.total", total());
     }
 
     /// @inheritdoc StrategyBase
     function _claimRevenue()
-    internal
-    override
-    returns (
-        address[] memory __assets,
-        uint[] memory __amounts,
-        address[] memory __rewardAssets,
-        uint[] memory __rewardAmounts
-    )
+        internal
+        override
+        returns (
+            address[] memory __assets,
+            uint[] memory __amounts,
+            address[] memory __rewardAssets,
+            uint[] memory __rewardAmounts
+        )
     {
-        console.log("************************* _claimRevenue.start");
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
         AlmfStrategyStorage storage $a = _getStorage();
         FarmingStrategyBaseStorage storage $f = _getFarmingStrategyBaseStorage();
@@ -451,12 +465,10 @@ contract AaveLeverageMerklFarmStrategy is
         // but StrategyBase expects it to be set in doHardWork in order to calculate aprCompound
         // so, we set it twice: here (old value) and in _compound (new value)
         $base.total = total();
-        console.log("************************* _claimRevenue.end");
     }
 
     /// @inheritdoc StrategyBase
-    function _compound() internal override (LeverageLendingBase, StrategyBase) {
-        console.log("_compound.start");
+    function _compound() internal override(LeverageLendingBase, StrategyBase) {
         address[] memory _assets = assets();
         uint len = _assets.length;
         uint[] memory amounts = new uint[](len);
@@ -480,48 +492,57 @@ contract AaveLeverageMerklFarmStrategy is
         // but StrategyBase expects it to be set in doHardWork in order to calculate aprCompound
         // so, we set it twice: here (new value) and in _claimRevenue (old value)
         $base.total = total();
-        console.log("_compound.end");
     }
 
     /// @inheritdoc StrategyBase
-    function _depositUnderlying(uint /*amount*/) internal pure override returns (uint[] memory /*amountsConsumed*/) {
+    function _depositUnderlying(
+        uint /*amount*/
+    )
+        internal
+        pure
+        override
+        returns (
+            uint[] memory /*amountsConsumed*/
+        )
+    {
         revert("no underlying"); // todo do we need to support it?
     }
 
     /// @inheritdoc StrategyBase
-    function _withdrawUnderlying(uint /*amount*/, address /*receiver*/) internal pure override {
+    function _withdrawUnderlying(
+        uint,
+        /*amount*/
+        address /*receiver*/
+    ) internal pure override {
         revert("no underlying"); // todo do we need to support it?
     }
 
     /// @inheritdoc IStrategy
     function autoCompoundingByUnderlyingProtocol()
-    public
-    view
-    virtual
-    override(LeverageLendingBase, StrategyBase)
-    returns (bool)
+        public
+        view
+        virtual
+        override(LeverageLendingBase, StrategyBase)
+        returns (bool)
     {
-        console.log("autoCompoundingByUnderlyingProtocol");
         return true;
     }
 
     /// @inheritdoc StrategyBase
     function _previewDepositAssets(uint[] memory amountsMax)
-    internal
-    pure
-    override
-    returns (uint[] memory amountsConsumed, uint value)
+        internal
+        pure
+        override
+        returns (uint[] memory amountsConsumed, uint value)
     {
-        console.log("_previewDepositAssets");
         amountsConsumed = new uint[](1);
         amountsConsumed[0] = amountsMax[0];
         value = amountsMax[0]; // todo this value is incorrect
     }
 
+    //endregion ----------------------------------- Strategy base
 
-//endregion ----------------------------------- Strategy base
-
-//region ----------------------------------- FarmingStrategy
+    //region ----------------------------------- FarmingStrategy
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                     FARMING STRATEGY                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -532,9 +553,7 @@ contract AaveLeverageMerklFarmStrategy is
         address[] memory rewardAssets_,
         uint[] memory rewardAmounts_
     ) internal override(FarmingStrategyBase, StrategyBase, LeverageLendingBase) returns (uint earnedExchangeAsset) {
-        console.log("************************ _liquidateRewards.start");
         earnedExchangeAsset = FarmingStrategyBase._liquidateRewards(exchangeAsset, rewardAssets_, rewardAmounts_);
-        console.log("************************* _liquidateRewards.end");
     }
 
     /// @inheritdoc IFarmingStrategy
@@ -548,9 +567,9 @@ contract AaveLeverageMerklFarmStrategy is
         return FarmMechanicsLib.MERKL;
     }
 
-//endregion ----------------------------------- FarmingStrategy
+    //endregion ----------------------------------- FarmingStrategy
 
-//region ----------------------------------- Internal logic
+    //region ----------------------------------- Internal logic
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INTERNAL LOGIC                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -561,7 +580,10 @@ contract AaveLeverageMerklFarmStrategy is
         }
     }
 
-    function _getRevenue(uint newPrice, address u) internal view returns (address[] memory __assets, uint[] memory amounts) {
+    function _getRevenue(
+        uint newPrice,
+        address u
+    ) internal view returns (address[] memory __assets, uint[] memory amounts) {
         AlmfStrategyStorage storage $ = _getStorage();
         __assets = assets();
 
@@ -569,20 +591,16 @@ contract AaveLeverageMerklFarmStrategy is
 
         amounts = new uint[](1);
         uint oldPrice = $.lastSharePrice;
-        console.log("_getRevenue.oldPrice", oldPrice);
-        console.log("_getRevenue.newPrice", newPrice);
 
         if (newPrice > oldPrice && oldPrice != 0) {
             uint _totalSupply = IVault(vault()).totalSupply();
             uint price8 = IAavePriceOracle(
-                IAaveAddressProvider(
-                    IPool(IAToken(u).POOL()).ADDRESSES_PROVIDER()
-                ).getPriceOracle()
-            ).getAssetPrice(__assets[0]);
+                    IAaveAddressProvider(IPool(IAToken(u).POOL()).ADDRESSES_PROVIDER()).getPriceOracle()
+                ).getAssetPrice(__assets[0]);
 
             // share price already takes into account accumulated interest
             uint amountUSD18 = _totalSupply * (newPrice - oldPrice) / 1e18;
-            amounts[0] = amountUSD18 * 1e8 * 10**IERC20Metadata(__assets[0]).decimals() / price8 / 1e18;
+            amounts[0] = amountUSD18 * 1e8 * 10 ** IERC20Metadata(__assets[0]).decimals() / price8 / 1e18;
         }
     }
 
@@ -602,5 +620,5 @@ contract AaveLeverageMerklFarmStrategy is
         return _getFarm(platform(), $f.farmId).addresses[0];
     }
 
-//endregion ----------------------------------- Internal logic
+    //endregion ----------------------------------- Internal logic
 }

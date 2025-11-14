@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {console} from "forge-std/console.sol"; // todo
 import {IFactory} from "../../interfaces/IFactory.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {ALMFCalcLib} from "./ALMFCalcLib.sol";
@@ -22,7 +21,6 @@ import {IAaveDataProvider} from "../../integrations/aave/IAaveDataProvider.sol";
 import {ConstantsLib} from "../../core/libs/ConstantsLib.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-
 library ALMFLib {
     using SafeERC20 for IERC20;
 
@@ -32,7 +30,7 @@ library ALMFLib {
 
     uint public constant INTEREST_RATE_MODE_VARIABLE = 2;
 
-//region ------------------------------------- Flash loan
+    //region ------------------------------------- Flash loan
     /// @notice token Borrow asset
     /// @notice amount Flash loan amount in borrow asset
     function _receiveFlashLoan(
@@ -42,7 +40,6 @@ library ALMFLib {
         uint amount,
         uint feeAmount
     ) internal {
-        console.log("_receiveFlashLoan", amount, feeAmount);
         address collateralAsset = $.collateralAsset;
         address flashLoanVault = $.flashLoanVault;
         require(msg.sender == flashLoanVault, IControllable.IncorrectMsgSender());
@@ -55,19 +52,17 @@ library ALMFLib {
         tokenBalance0 = tokenBalance0 > amount ? tokenBalance0 - amount : 0;
 
         if ($.tempAction == ILeverageLendingStrategy.CurrentAction.Deposit) {
-            console.log("swap.borrow", amount);
             // swap
             _swap(platform, token, collateralAsset, amount, $.swapPriceImpactTolerance0);
 
-            console.log("supply.collateral", IERC20(collateralAsset).balanceOf(address(this)));
             // supply: assume here that rewards in collateral are not possible
-            IPool(IAToken($.lendingVault).POOL()).supply(collateralAsset, IERC20(collateralAsset).balanceOf(address(this)), address(this), 0);
+            IPool(IAToken($.lendingVault).POOL())
+                .supply(collateralAsset, IERC20(collateralAsset).balanceOf(address(this)), address(this), 0);
 
-            console.log("borrow", amount + feeAmount);
             // borrow
-            IPool(IAToken($.borrowingVault).POOL()).borrow(token, amount + feeAmount, INTEREST_RATE_MODE_VARIABLE, 0, address(this));
+            IPool(IAToken($.borrowingVault).POOL())
+                .borrow(token, amount + feeAmount, INTEREST_RATE_MODE_VARIABLE, 0, address(this));
 
-            console.log("pay flash loan");
             // pay flash loan
             IERC20(token).safeTransfer(flashLoanVault, amount + feeAmount);
         }
@@ -75,9 +70,7 @@ library ALMFLib {
         if ($.tempAction == ILeverageLendingStrategy.CurrentAction.Withdraw) {
             uint tempCollateralAmount = $.tempCollateralAmount;
             uint swapPriceImpactTolerance0 = $.swapPriceImpactTolerance0;
-            console.log("withdraw using flash.tempCollateralAmount", tempCollateralAmount);
 
-            console.log("repay.amount", amount);
             // repay debt
             IPool(IAToken($.borrowingVault).POOL()).repay(token, amount, INTEREST_RATE_MODE_VARIABLE, address(this));
 
@@ -85,18 +78,12 @@ library ALMFLib {
             {
                 address lendingVault = $.lendingVault;
                 uint collateralAmountTotal = totalCollateral(lendingVault);
-                console.log("withdraw.collateralAmountTotal", collateralAmountTotal);
                 // todo emergency? collateralAmountTotal -= collateralAmountTotal / 1000; // todo do we need it?
 
-                console.log("withdraw.collateralAmountTotal.final", collateralAmountTotal);
-                IPool(IAToken(lendingVault).POOL()).withdraw(
-                    collateralAsset,
-                    Math.min(tempCollateralAmount, collateralAmountTotal),
-                    address(this)
-                );
+                IPool(IAToken(lendingVault).POOL())
+                    .withdraw(collateralAsset, Math.min(tempCollateralAmount, collateralAmountTotal), address(this));
             }
 
-            console.log("withdraw.swap", ALMFCalcLib.estimateSwapAmount(platform, amount + feeAmount, collateralAsset, token, swapPriceImpactTolerance0, tokenBalance0));
             // swap
             _swap(
                 platform,
@@ -111,14 +98,13 @@ library ALMFLib {
 
             // explicit error for the case when _estimateSwapAmount gives incorrect amount
             require(
-                ALMFCalcLib.balanceWithoutRewards(token, tokenBalance0) >= amount + feeAmount, IControllable.InsufficientBalance()
+                ALMFCalcLib.balanceWithoutRewards(token, tokenBalance0) >= amount + feeAmount,
+                IControllable.InsufficientBalance()
             );
 
-            console.log("pay flash loan", amount, feeAmount);
             // pay flash loan
             IERC20(token).safeTransfer(flashLoanVault, amount + feeAmount);
 
-            console.log("swap back", ALMFCalcLib.balanceWithoutRewards(token, tokenBalance0));
             // swap unnecessary borrow asset back to collateral
             _swap(
                 platform,
@@ -133,66 +119,74 @@ library ALMFLib {
         }
 
         if ($.tempAction == ILeverageLendingStrategy.CurrentAction.DecreaseLtv) {
-            console.log("decreaseLtv");
             address lendingVault = $.lendingVault;
 
-            console.log("repay");
             // repay
-            IPool(IAToken($.borrowingVault).POOL()).repay(token, ALMFCalcLib.balanceWithoutRewards(token, tokenBalance0), INTEREST_RATE_MODE_VARIABLE, address(this));
+            IPool(IAToken($.borrowingVault).POOL())
+                .repay(
+                    token,
+                    ALMFCalcLib.balanceWithoutRewards(token, tokenBalance0),
+                    INTEREST_RATE_MODE_VARIABLE,
+                    address(this)
+                );
 
-            console.log("withdraw");
             // withdraw amount
             IPool(IAToken(lendingVault).POOL()).withdraw(collateralAsset, $.tempCollateralAmount, address(this));
 
-            console.log("swap");
             // swap
             _swap(platform, collateralAsset, token, $.tempCollateralAmount, $.swapPriceImpactTolerance1);
 
-            console.log("pay flash loan");
             // pay flash loan
             IERC20(token).safeTransfer(flashLoanVault, amount + feeAmount);
 
             // repay remaining balance
-            IPool(IAToken($.borrowingVault).POOL()).repay(token, ALMFCalcLib.balanceWithoutRewards(token, tokenBalance0), INTEREST_RATE_MODE_VARIABLE, address(this));
+            IPool(IAToken($.borrowingVault).POOL())
+                .repay(
+                    token,
+                    ALMFCalcLib.balanceWithoutRewards(token, tokenBalance0),
+                    INTEREST_RATE_MODE_VARIABLE,
+                    address(this)
+                );
 
             $.tempCollateralAmount = 0;
         }
 
         if ($.tempAction == ILeverageLendingStrategy.CurrentAction.IncreaseLtv) {
-            console.log("IncreaseLtv");
             uint tempCollateralAmount = $.tempCollateralAmount;
 
-            console.log("swap", ALMFCalcLib.balanceWithoutRewards(token, tokenBalance0) * $.increaseLtvParam1 / ALMFCalcLib.INTERNAL_PRECISION);
             // swap
             _swap(
                 platform,
                 token,
                 collateralAsset,
-                ALMFCalcLib.balanceWithoutRewards(token, tokenBalance0) * $.increaseLtvParam1 / ALMFCalcLib.INTERNAL_PRECISION,
+                ALMFCalcLib.balanceWithoutRewards(token, tokenBalance0) * $.increaseLtvParam1
+                    / ALMFCalcLib.INTERNAL_PRECISION,
                 $.swapPriceImpactTolerance1
             );
 
-            console.log("supply", ALMFCalcLib.getLimitedAmount(IERC20(collateralAsset).balanceOf(address(this)), tempCollateralAmount));
             // supply
-            IPool(IAToken($.lendingVault).POOL()).deposit(
-                collateralAsset,
-                ALMFCalcLib.getLimitedAmount(IERC20(collateralAsset).balanceOf(address(this)), tempCollateralAmount),
-                address(this),
-                0
-            );
+            IPool(IAToken($.lendingVault).POOL())
+                .deposit(
+                    collateralAsset,
+                    ALMFCalcLib.getLimitedAmount(
+                        IERC20(collateralAsset).balanceOf(address(this)), tempCollateralAmount
+                    ),
+                    address(this),
+                    0
+                );
 
-            console.log("borrow", amount + feeAmount);
             // borrow
-            IPool(IAToken($.borrowingVault).POOL()).borrow(token, amount + feeAmount, INTEREST_RATE_MODE_VARIABLE, 0, address(this));
+            IPool(IAToken($.borrowingVault).POOL())
+                .borrow(token, amount + feeAmount, INTEREST_RATE_MODE_VARIABLE, 0, address(this));
 
-            console.log("pay flash loan");
             // pay flash loan
             IERC20(token).safeTransfer(flashLoanVault, amount + feeAmount);
 
             // repay not used borrow
             uint tokenBalance = ALMFCalcLib.balanceWithoutRewards(token, tokenBalance0);
             if (tokenBalance != 0) {
-                IPool(IAToken($.borrowingVault).POOL()).repay(token, tokenBalance, INTEREST_RATE_MODE_VARIABLE, address(this));
+                IPool(IAToken($.borrowingVault).POOL())
+                    .repay(token, tokenBalance, INTEREST_RATE_MODE_VARIABLE, address(this));
             }
 
             // reset temp vars
@@ -204,7 +198,7 @@ library ALMFLib {
         // ensure that all rewards are still exist on the balance
         require(tokenBalance0 == IERC20(token).balanceOf(address(this)), IControllable.IncorrectBalance());
 
-        (, , , , uint ltv, ) = IPool(IAToken($.lendingVault).POOL()).getUserAccountData(address(this));
+        (,,,, uint ltv,) = IPool(IAToken($.lendingVault).POOL()).getUserAccountData(address(this));
         emit ILeverageLendingStrategy.LeverageLendingHealth(ltv, ALMFCalcLib.ltvToLeverage(ltv));
 
         $.tempAction = ILeverageLendingStrategy.CurrentAction.None;
@@ -258,9 +252,9 @@ library ALMFLib {
         ALMFLib._receiveFlashLoan(platform, $, token, amount, isToken0 ? fee0 : fee1);
     }
 
-//endregion ------------------------------------- Flash loan
+    //endregion ------------------------------------- Flash loan
 
-//region ------------------------------------- Deposit
+    //region ------------------------------------- Deposit
     /// @notice Deposit {amount} of the collateral asset
     /// @param amount Amount of collateral asset to deposit
     /// @return value Value is calculated as a delta of (total collateral - total debt) in base assets (USDC, 18 decimals)
@@ -270,14 +264,13 @@ library ALMFLib {
         IFactory.Farm memory farm,
         uint amount
     ) external returns (uint value) {
-        console.log("============================= depositAssets.amount", amount);
         ALMFCalcLib.StaticData memory data = _getStaticData(platform_, $, farm);
         ALMFCalcLib.State memory state = _getState(data);
 
         uint valueWas = ALMFCalcLib.collateralToBase(StrategyLib.balance(data.collateralAsset), data) + calcTotal(state);
-        console.log("depositAssets.valueWas", valueWas);
 
-        if (amount > 1e12) { // todo threshold for small deposits
+        if (amount > 1e12) {
+            // todo threshold for small deposits
             _deposit(platform_, $, data, amount, state);
         } else {
             // todo supply without leverage, don't leave amount on balance
@@ -285,22 +278,15 @@ library ALMFLib {
 
         state = _getState(data); // refresh state after deposit
         uint valueNow = ALMFCalcLib.collateralToBase(StrategyLib.balance(data.collateralAsset), data) + calcTotal(state);
-        console.log("depositAssets.valueNow", valueNow);
 
         if (valueNow > valueWas) {
             value = ALMFCalcLib.collateralToBase(amount, data) + (valueNow - valueWas);
-            console.log("new value 1", value);
         } else {
-            console.log("ALMFCalcLib.collateralToBase(amount, data)", ALMFCalcLib.collateralToBase(amount, data));
-            console.log("valueWas - valueNow", valueWas - valueNow);
             // todo deposit 1 decimal, amount base is 3431, valueWas - valueNow 5912220594977
             value = ALMFCalcLib.collateralToBase(amount, data) - (valueWas - valueNow);
-            console.log("new value 2", value);
         }
-        console.log("depositAssets.value", value);
 
         _ensureLtvValid(state);
-        console.log("============================== depositAssets.done");
     }
 
     /// @notice Deposit with leverage: if current leverage is above target, first repay debt directly, then deposit with flash loan;
@@ -312,7 +298,6 @@ library ALMFLib {
         ALMFCalcLib.State memory state
     ) internal {
         uint leverage = ALMFCalcLib.getLeverage(state.collateralBase, state.debtBase);
-        console.log("leverage, maxTargetLeverage", leverage, data.maxTargetLeverage);
         if (leverage > data.maxTargetLeverage) {
             (uint ar, uint ad) = ALMFCalcLib.splitDepositAmount(
                 amountToDeposit,
@@ -321,10 +306,9 @@ library ALMFLib {
                 state.debtBase,
                 data.swapFee18
             );
-            console.log("ar, ad", ar, ad);
             bool repayRequired = ar != 0; // todo  > threshold;
-            if (repayRequired) { // todo  > threshold
-                console.log("direct repay", ar);
+            if (repayRequired) {
+                // todo  > threshold
                 // restore leverage using direct repay
                 _directRepay(platform_, data, ar);
             }
@@ -332,27 +316,27 @@ library ALMFLib {
                 if (repayRequired) {
                     state = _getState(data); // refresh state after direct repay
                 }
-                console.log("deposit ad", ad);
                 // deposit remain amount with leverage
                 _depositWithFlash($, data, ad, state);
             }
         } else {
-            console.log("normal deposit");
             _depositWithFlash($, data, amountToDeposit, state);
         }
     }
 
     /// @notice Directly repay debt by swapping a given part of collateral to borrow asset
-    function _directRepay(
-        address platform_,
-        ALMFCalcLib.StaticData memory data,
-        uint amountToDeposit
-    ) internal {
+    function _directRepay(address platform_, ALMFCalcLib.StaticData memory data, uint amountToDeposit) internal {
         // we need to remember balance to exclude possible rewards (provided in borrow asset) from the amount to repay
         uint borrowBalanceBefore = StrategyLib.balance(data.borrowAsset);
 
         // swap amount to borrow asset
-        _swap(platform_, data.collateralAsset, data.borrowAsset, amountToDeposit, data.swapFee18 * ConstantsLib.DENOMINATOR / 1e18);
+        _swap(
+            platform_,
+            data.collateralAsset,
+            data.borrowAsset,
+            amountToDeposit,
+            data.swapFee18 * ConstantsLib.DENOMINATOR / 1e18
+        );
 
         // use all balance of borrow asset to repay debt
         address pool = IAToken(data.borrowingVault).POOL();
@@ -371,8 +355,8 @@ library ALMFLib {
         ALMFCalcLib.State memory state
     ) internal {
         uint borrowAmount = _getDepositFlashAmount(amountToDeposit, data, state);
-        (address[] memory flashAssets, uint[] memory flashAmounts) = _getFlashLoanAmounts(borrowAmount, data.borrowAsset);
-        console.log("flash borrowAmount", borrowAmount);
+        (address[] memory flashAssets, uint[] memory flashAmounts) =
+            _getFlashLoanAmounts(borrowAmount, data.borrowAsset);
 
         $.tempAction = ILeverageLendingStrategy.CurrentAction.Deposit;
         LeverageLendingLib.requestFlashLoan($, flashAssets, flashAmounts);
@@ -380,30 +364,39 @@ library ALMFLib {
 
     /// @notice Calculate amount to borrow in flash loan for deposit
     /// @param amountToDeposit Amount of collateral asset to deposit
-    function _getDepositFlashAmount(uint amountToDeposit, ALMFCalcLib.StaticData memory data, ALMFCalcLib.State memory state) internal pure returns (uint flashAmount) {
-        console.log("_getDepositFlashAmount.amountToDeposit", amountToDeposit);
+    function _getDepositFlashAmount(
+        uint amountToDeposit,
+        ALMFCalcLib.StaticData memory data,
+        ALMFCalcLib.State memory state
+    ) internal pure returns (uint flashAmount) {
         uint targetLeverage = (data.minTargetLeverage + data.maxTargetLeverage) / 2;
         uint amountBase = ALMFCalcLib._collateralToBase(amountToDeposit, data.priceC18, data.decimalsC);
-        uint den = (targetLeverage * (data.swapFee18 + data.flashFee18) + (1e18 - data.swapFee18) * ALMFCalcLib.INTERNAL_PRECISION) / 1e18;
-        uint num = targetLeverage * (state.collateralBase + amountBase - state.debtBase) - (state.collateralBase + amountBase) * ALMFCalcLib.INTERNAL_PRECISION;
+        uint den =
+            (targetLeverage
+                    * (data.swapFee18 + data.flashFee18)
+                    + (1e18 - data.swapFee18)
+                    * ALMFCalcLib.INTERNAL_PRECISION) / 1e18;
+        uint num = targetLeverage * (state.collateralBase + amountBase - state.debtBase)
+            - (state.collateralBase + amountBase) * ALMFCalcLib.INTERNAL_PRECISION;
 
         flashAmount = ALMFCalcLib._baseToBorrow(num / den, data.priceB18, data.decimalsB);
 
-        console.log("_getDepositFlashAmount.targetLeverage", targetLeverage);
-        console.log("_getDepositFlashAmount.amountBase", amountBase);
-        console.log("_getDepositFlashAmount.den", den);
-        console.log("_getDepositFlashAmount.num", num);
-        console.log("_getDepositFlashAmount.flashAmount", flashAmount);
-        console.log("targetLeverage * (state.collateralBase + amountBase + state.debtBase)", targetLeverage * (state.collateralBase + amountBase - state.debtBase));
-        console.log("targetLeverage", targetLeverage);
-        console.log("state.collateralBase", state.collateralBase);
-        console.log("amountBase", amountBase);
-        console.log("state.debtBase", state.debtBase);
-        console.log("(state.collateralBase + amountBase) * ALMFCalcLib.INTERNAL_PRECISION", (state.collateralBase + amountBase) * ALMFCalcLib.INTERNAL_PRECISION);
+        //        console.log("_getDepositFlashAmount.targetLeverage", targetLeverage);
+        //        console.log("_getDepositFlashAmount.amountBase", amountBase);
+        //        console.log("_getDepositFlashAmount.den", den);
+        //        console.log("_getDepositFlashAmount.num", num);
+        //        console.log("_getDepositFlashAmount.flashAmount", flashAmount);
+        //        console.log("targetLeverage * (state.collateralBase + amountBase + state.debtBase)", targetLeverage * (state.collateralBase + amountBase - state.debtBase));
+        //        console.log("targetLeverage", targetLeverage);
+        //        console.log("state.collateralBase", state.collateralBase);
+        //        console.log("amountBase", amountBase);
+        //        console.log("state.debtBase", state.debtBase);
+        //        console.log("(state.collateralBase + amountBase) * ALMFCalcLib.INTERNAL_PRECISION", (state.collateralBase + amountBase) * ALMFCalcLib.INTERNAL_PRECISION);
     }
-//endregion ------------------------------------- Deposit
 
-//region ------------------------------------- Withdraw
+    //endregion ------------------------------------- Deposit
+
+    //region ------------------------------------- Withdraw
     /// @notice Withdraw {value} from the strategy to {receiver}
     /// @param value Value to withdraw in base asset (USD, 18 decimals)
     function withdrawAssets(
@@ -413,14 +406,11 @@ library ALMFLib {
         uint value,
         address receiver
     ) external returns (uint[] memory amountsOut) {
-        console.log("--------------------------------------- withdrawAssets.value", value);
         ALMFCalcLib.StaticData memory data = _getStaticData(platform, $, farm);
         ALMFCalcLib.State memory state = _getState(data);
 
         uint collateralBalanceBase = ALMFCalcLib.collateralToBase(StrategyLib.balance(data.collateralAsset), data);
         uint valueWas = collateralBalanceBase + calcTotal(state);
-        console.log("withdrawAssets.collateralBalanceBase", collateralBalanceBase);
-        console.log("withdrawAssets.valueWas", valueWas);
 
         // ---------------------- withdraw from the lending vault - only if amount on the balance is not enough
         if (value > collateralBalanceBase) {
@@ -434,8 +424,6 @@ library ALMFLib {
         // ---------------------- Transfer required amount to the user
         uint balBase = ALMFCalcLib.collateralToBase(StrategyLib.balance(data.collateralAsset), data);
         uint valueNow = balBase + calcTotal(state);
-        console.log("withdrawAssets.balBase", balBase);
-        console.log("withdrawAssets.valueNow", valueNow);
 
         amountsOut = new uint[](1);
         if (valueWas > valueNow) {
@@ -443,17 +431,14 @@ library ALMFLib {
         } else {
             amountsOut[0] = ALMFCalcLib.baseToCollateral(Math.min(value + (valueNow - valueWas), balBase), data);
         }
-        console.log("withdrawAssets.amountsOut[0]", amountsOut[0]);
 
         // todo check amountsOut >= actual balance
 
         if (receiver != address(this)) {
-            console.log("withdrawAssets.transfer to receiver", receiver);
             IERC20(data.collateralAsset).safeTransfer(receiver, amountsOut[0]);
         }
 
         _ensureLtvValid(state);
-        console.log("---------------------------------------- withdrawAssets.done");
         _getState(data); // todo remove
     }
 
@@ -465,25 +450,20 @@ library ALMFLib {
         ALMFCalcLib.State memory state,
         uint value
     ) internal {
-        console.log("_withdrawRequiredAmountOnBalance");
         if (0 == state.debtBase) {
-            console.log("_withdrawRequiredAmountOnBalance.1");
             // zero debt, positive supply - we can just withdraw missed amount from the lending pool
 
             // collateral amount on balance
             uint collateralBalanceBase = ALMFCalcLib.collateralToBase(StrategyLib.balance(data.collateralAsset), data);
 
             // collateral amount required to withdraw from lending pool
-            uint amountToWithdraw = Math.min(
-                value > collateralBalanceBase ? value - collateralBalanceBase : 0,
-                state.collateralBase
-            );
+            uint amountToWithdraw =
+                Math.min(value > collateralBalanceBase ? value - collateralBalanceBase : 0, state.collateralBase);
 
             if (amountToWithdraw != 0) {
                 IPool(IAToken(data.lendingVault).POOL()).withdraw(data.collateralAsset, amountToWithdraw, address(this));
             }
         } else {
-            console.log("_withdrawRequiredAmountOnBalance.2");
             _withdrawUsingFlash($, data, state, value);
         }
     }
@@ -495,28 +475,21 @@ library ALMFLib {
         ALMFCalcLib.State memory state,
         uint value
     ) internal {
-        console.log("_withdrawUsingFlash");
         uint leverage = ALMFCalcLib.getLeverage(state.collateralBase, state.debtBase);
-        console.log("_withdrawUsingFlash.leverage", leverage);
 
         {
             // use leverage correction (coefficient k = withdrawParam0) if necessary: L_adj = L + k (TL - L)
             uint targetLeverage = (data.minTargetLeverage + data.maxTargetLeverage) / 2;
-            console.log("targetLeverage", targetLeverage);
             if (leverage < data.minTargetLeverage) {
                 leverage = leverage + $.withdrawParam0 * (targetLeverage - leverage) / ALMFCalcLib.INTERNAL_PRECISION;
             } else if (leverage > data.maxTargetLeverage) {
                 leverage = leverage - $.withdrawParam0 * (leverage - targetLeverage) / ALMFCalcLib.INTERNAL_PRECISION;
             }
         }
-        console.log("_withdrawUsingFlash.leverage.adj", leverage);
 
         (uint flashAmount, uint collateralToWithdraw) = ALMFCalcLib.calcWithdrawAmounts(value, leverage, data, state);
-        console.log("_withdrawUsingFlash.flashAmount", flashAmount);
-        console.log("_withdrawUsingFlash.collateralToWithdraw", collateralToWithdraw);
 
         if (flashAmount == 0) {
-            console.log("direct withdraw");
             // special case: don't use flash, just withdraw required amount from aave and send it to the user
             IPool(IAToken(data.lendingVault).POOL()).withdraw(data.collateralAsset, collateralToWithdraw, address(this));
         } else {
@@ -530,30 +503,29 @@ library ALMFLib {
             $.tempAction = ILeverageLendingStrategy.CurrentAction.Withdraw;
             LeverageLendingLib.requestFlashLoan($, flashAssets, flashAmounts);
         }
-        console.log("_withdrawUsingFlash.done");
     }
 
-//endregion ------------------------------------- Withdraw
+    //endregion ------------------------------------- Withdraw
 
-//region ------------------------------------- View
+    //region ------------------------------------- View
     /// @notice Calculate total value: collateral - debt in base asset (USD, 18 decimals)
     /// Balance on the strategy is NOT included.
     function calcTotal(ALMFCalcLib.State memory state) internal pure returns (uint totalValue) {
         totalValue = state.collateralBase - state.debtBase;
-        console.log("calcTotal", totalValue);
     }
 
     /// @notice Get prices of collateral and borrow assets from Aave price oracle in USD, decimals 18
-    function getPrices(address aaveAddressProvider, address collateralAsset, address borrowAsset)
-        internal
-        view
-        returns (uint priceC, uint priceB)
-    {
+    function getPrices(
+        address aaveAddressProvider,
+        address collateralAsset,
+        address borrowAsset
+    ) internal view returns (uint priceC, uint priceB) {
         address[] memory assets = new address[](2);
         assets[0] = collateralAsset;
         assets[1] = borrowAsset;
 
-        uint[] memory prices = IAavePriceOracle(IAaveAddressProvider(aaveAddressProvider).getPriceOracle()).getAssetsPrices(assets);
+        uint[] memory prices =
+            IAavePriceOracle(IAaveAddressProvider(aaveAddressProvider).getPriceOracle()).getAssetsPrices(assets);
         return (prices[0] * 1e10, prices[1] * 1e10); // Aave prices have 8 decimals, we need 18
     }
 
@@ -584,29 +556,28 @@ library ALMFLib {
 
         (data.minTargetLeverage, data.maxTargetLeverage) = _getFarmLeverageConfig(farm);
 
-//        console.log("collateralAsset", data.collateralAsset);
-//        console.log("borrowAsset", data.borrowAsset);
-//        console.log("lendingVault", data.lendingVault);
-//        console.log("borrowingVault", data.borrowingVault);
-////        console.log("flashLoanVault", data.flashLoanVault);
-////        console.log("flashLoanKind", data.flashLoanKind);
-//        console.log("swapFee18", data.swapFee18);
-//        console.log("flashFee18", data.flashFee18);
-//        console.log("priceC18", data.priceC18);
-//        console.log("priceB18", data.priceB18);
-//        console.log("minTargetLeverage", data.minTargetLeverage);
-//        console.log("maxTargetLeverage", data.maxTargetLeverage);
+        //        console.log("collateralAsset", data.collateralAsset);
+        //        console.log("borrowAsset", data.borrowAsset);
+        //        console.log("lendingVault", data.lendingVault);
+        //        console.log("borrowingVault", data.borrowingVault);
+        ////        console.log("flashLoanVault", data.flashLoanVault);
+        ////        console.log("flashLoanKind", data.flashLoanKind);
+        //        console.log("swapFee18", data.swapFee18);
+        //        console.log("flashFee18", data.flashFee18);
+        //        console.log("priceC18", data.priceC18);
+        //        console.log("priceB18", data.priceB18);
+        //        console.log("minTargetLeverage", data.minTargetLeverage);
+        //        console.log("maxTargetLeverage", data.maxTargetLeverage);
 
         return data;
     }
 
     /// @return targetMinLeverage Minimum target leverage, INTERNAL_PRECISION
     /// @return targetMaxLeverage Maximum target leverage, INTERNAL_PRECISION
-    function _getFarmLeverageConfig(IFactory.Farm memory farm) internal pure returns (uint targetMinLeverage, uint targetMaxLeverage) {
-        return (
-            ALMFCalcLib.ltvToLeverage(farm.nums[0]),
-            ALMFCalcLib.ltvToLeverage(farm.nums[1])
-        );
+    function _getFarmLeverageConfig(
+        IFactory.Farm memory farm
+    ) internal pure returns (uint targetMinLeverage, uint targetMaxLeverage) {
+        return (ALMFCalcLib.ltvToLeverage(farm.nums[0]), ALMFCalcLib.ltvToLeverage(farm.nums[1]));
     }
 
     /// @return targetMinLtv Minimum target ltv, INTERNAL_PRECISION
@@ -619,7 +590,8 @@ library ALMFLib {
     function _getState(ALMFCalcLib.StaticData memory data) internal view returns (ALMFCalcLib.State memory state) {
         IPool pool = IPool(IAaveAddressProvider(data.addressProvider).getPool());
 
-        (uint totalCollateralBase, uint totalDebtBase, , , uint maxLtv, uint healthFactor) = pool.getUserAccountData(address(this));
+        (uint totalCollateralBase, uint totalDebtBase,,, uint maxLtv, uint healthFactor) =
+            pool.getUserAccountData(address(this));
 
         state = ALMFCalcLib.State({
             collateralBase: totalCollateralBase * 1e10,
@@ -628,16 +600,17 @@ library ALMFLib {
             healthFactor: healthFactor
         });
 
-//        console.log("collateralBase", state.collateralBase);
-//        console.log("debtBase", state.debtBase);
-//        console.log("maxLtv", state.maxLtv);
-//        console.log("healthFactor", state.healthFactor);
-//        console.log("current ltv", ALMFCalcLib.getLtv(state.collateralBase, state.debtBase));
+        //        console.log("collateralBase", state.collateralBase);
+        //        console.log("debtBase", state.debtBase);
+        //        console.log("maxLtv", state.maxLtv);
+        //        console.log("healthFactor", state.healthFactor);
+        //        console.log("current ltv", ALMFCalcLib.getLtv(state.collateralBase, state.debtBase));
     }
 
     /// @notice Get maximum LTV for the collateral asset in AAVE, INTERNAL_PRECISION
     function _getMaxLtv(ALMFCalcLib.StaticData memory data) internal view returns (uint maxLtv) {
-        IAaveDataProvider dataProvider = IAaveDataProvider(IAaveAddressProvider(data.addressProvider).getPoolDataProvider());
+        IAaveDataProvider dataProvider =
+            IAaveDataProvider(IAaveAddressProvider(data.addressProvider).getPoolDataProvider());
         (, maxLtv,,,,,,,,) = dataProvider.getReserveConfigurationData(data.collateralAsset);
     }
 
@@ -650,24 +623,24 @@ library ALMFLib {
         ILeverageLendingStrategy.LeverageLendingBaseStorage storage $,
         IFactory.Farm memory farm
     )
-    internal
-    view
-    returns (
-        uint ltv,
-        uint maxLtv,
-        uint leverage,
-        uint collateralAmount,
-        uint debtAmount,
-        uint targetLeveragePercent
-    ) {
-        console.log("health");
+        internal
+        view
+        returns (
+            uint ltv,
+            uint maxLtv,
+            uint leverage,
+            uint collateralAmount,
+            uint debtAmount,
+            uint targetLeveragePercent
+        )
+    {
         ALMFCalcLib.StaticData memory data = _getStaticData(platform, $, farm);
         IPool pool = IPool(IAToken(data.lendingVault).POOL());
 
         // Maximum LTV with 4 decimals
         uint collateralAmountBase;
         uint debtAmountBase;
-        (collateralAmountBase, debtAmountBase, , , maxLtv, ) = pool.getUserAccountData(address(this));
+        (collateralAmountBase, debtAmountBase,,, maxLtv,) = pool.getUserAccountData(address(this));
 
         // Current amount of collateral asset (strategy asset)
         collateralAmount = ALMFCalcLib.baseToCollateral(collateralAmountBase, data);
@@ -696,9 +669,10 @@ library ALMFLib {
         ALMFCalcLib.State memory state = _getState(data);
         totalValue = calcTotal(state);
     }
-//endregion ------------------------------------- View
 
-//region ------------------------------------- Swap
+    //endregion ------------------------------------- View
+
+    //region ------------------------------------- Swap
     function _swap(
         address platform,
         address tokenIn,
@@ -709,9 +683,10 @@ library ALMFLib {
         ISwapper swapper = ISwapper(IPlatform(platform).swapper());
         swapper.swap(tokenIn, tokenOut, amount, priceImpactTolerance);
     }
-//endregion ------------------------------------- Swap
 
-//region -------------------------------------  Rebalance debt
+    //endregion ------------------------------------- Swap
+
+    //region -------------------------------------  Rebalance debt
     function rebalanceDebt(
         address platform,
         uint newLtv,
@@ -730,32 +705,27 @@ library ALMFLib {
         // real_TVL is not changed if current strategy balance of collateral is zero
 
         uint tvlBase = ALMFCalcLib.collateralToBase(StrategyLib.balance(data.collateralAsset), data) + calcTotal(state);
-        console.log("rebalanceDebt.tvlPricedInCollateralAsset", tvlBase);
-        console.log("rebalanceDebt.newLtv", newLtv);
 
-        uint newCollateralValueBase = tvlBase * ALMFCalcLib.INTERNAL_PRECISION / (ALMFCalcLib.INTERNAL_PRECISION - newLtv);
+        uint newCollateralValueBase =
+            tvlBase * ALMFCalcLib.INTERNAL_PRECISION / (ALMFCalcLib.INTERNAL_PRECISION - newLtv);
         uint newDebtAmountBase = newCollateralValueBase * newLtv / ALMFCalcLib.INTERNAL_PRECISION;
 
         uint debtDiff;
         if (newLtv < ALMFCalcLib.getLtv(state.collateralBase, state.debtBase)) {
-            console.log("case 1");
             // need decrease debt and collateral
             $.tempAction = ILeverageLendingStrategy.CurrentAction.DecreaseLtv;
 
-            console.log("ALMFCalcLib.baseToBorrow(state.debtBase, data)", ALMFCalcLib.baseToBorrow(state.debtBase, data));
             debtDiff = ALMFCalcLib.baseToBorrow(state.debtBase - newDebtAmountBase, data);
 
-            $.tempCollateralAmount = (ALMFCalcLib.baseToCollateral(state.collateralBase - newCollateralValueBase, data)) * $.decreaseLtvParam0 / ALMFCalcLib.INTERNAL_PRECISION;
+            $.tempCollateralAmount = (ALMFCalcLib.baseToCollateral(state.collateralBase - newCollateralValueBase, data))
+                * $.decreaseLtvParam0 / ALMFCalcLib.INTERNAL_PRECISION;
         } else {
-            console.log("case 2");
             // need increase debt and collateral
             $.tempAction = ILeverageLendingStrategy.CurrentAction.IncreaseLtv;
 
-            console.log("ALMFCalcLib.baseToBorrow(state.debtBase, data)", ALMFCalcLib.baseToBorrow(state.debtBase, data));
-            debtDiff = (ALMFCalcLib.baseToBorrow(newDebtAmountBase - state.debtBase, data)) * $.increaseLtvParam0 / ALMFCalcLib.INTERNAL_PRECISION;
+            debtDiff = (ALMFCalcLib.baseToBorrow(newDebtAmountBase - state.debtBase, data)) * $.increaseLtvParam0
+                / ALMFCalcLib.INTERNAL_PRECISION;
         }
-
-        console.log("rebalanceDebt.debtDiff", debtDiff);
 
         (address[] memory flashAssets, uint[] memory flashAmounts) = _getFlashLoanAmounts(debtDiff, data.borrowAsset);
 
@@ -766,9 +736,9 @@ library ALMFLib {
         state = _getState(data);
         resultLtv = ALMFCalcLib.getLtv(state.collateralBase, state.debtBase);
     }
-//endregion ------------------------------------- Rebalance debt
+    //endregion ------------------------------------- Rebalance debt
 
-//region ------------------------------------- Real tvl
+    //region ------------------------------------- Real tvl
 
     function realTvl(
         address platform,
@@ -784,8 +754,7 @@ library ALMFLib {
         tvl = state.collateralBase - state.debtBase;
         trusted = true;
     }
-//endregion ------------------------------------- Real tvl
-
+    //endregion ------------------------------------- Real tvl
 
     function _getDepositAndBorrowAprs(
         address lendingVault,
@@ -799,11 +768,11 @@ library ALMFLib {
         // liquidityRate and variableBorrowRate are in Ray (1e27)
         // To convert to percentage with 5 decimals (1e5), use:
         // rate(1e27) * 1e5 / 1e27 = rate / 1e22
-        depositApr = uint256(collateralData.currentLiquidityRate) * ConstantsLib.DENOMINATOR / 1e27;
-        borrowApr = uint256(borrowData.currentVariableBorrowRate) * ConstantsLib.DENOMINATOR / 1e27;
+        depositApr = uint(collateralData.currentLiquidityRate) * ConstantsLib.DENOMINATOR / 1e27;
+        borrowApr = uint(borrowData.currentVariableBorrowRate) * ConstantsLib.DENOMINATOR / 1e27;
     }
 
-//region ------------------------------------- Internal utils
+    //region ------------------------------------- Internal utils
     function _getFlashLoanAmounts(
         uint borrowAmount,
         address borrowAsset
@@ -831,5 +800,5 @@ library ALMFLib {
             require(state.healthFactor > 1e18 && ltv < state.maxLtv, IControllable.IncorrectLtv(ltv));
         }
     }
-//endregion ------------------------------------- Internal utils
+    //endregion ------------------------------------- Internal utils
 }

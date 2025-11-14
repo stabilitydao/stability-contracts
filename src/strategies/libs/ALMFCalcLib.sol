@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {console} from "forge-std/console.sol";
 import {ISwapper} from "../../interfaces/ISwapper.sol";
 import {IPlatform} from "../../interfaces/IPlatform.sol";
 import {StrategyLib} from "./StrategyLib.sol";
@@ -59,9 +58,9 @@ library ALMFCalcLib {
 
         /// @notice Health factor, decimals 18; unhealthy if less than 1e18
         uint healthFactor;
-}
+    }
 
-//region ------------------------------------- Deposit logic
+    //region ------------------------------------- Deposit logic
 
     /// @notice Split deposit amount on two parts: amount to deposit as collateral and amount to be used to repay
     /// @param amount Total amount to deposit in base asset
@@ -72,21 +71,33 @@ library ALMFCalcLib {
     /// @return aD Amount to deposit as collateral in base asset
     /// @return aR Amount to be used to repay debt in base asset
     /// @dev Formula: A_r = [ TL*D0 - (TL - 1)*(C0 + A) ]  /  [ 1 - TL*s ]
-    function splitDepositAmount(uint amount, uint targetLeverage, uint collateralBase, uint debtBase, uint swapFee18) internal pure returns (uint aD, uint aR) {
-        int arInt = (int(targetLeverage * debtBase) - int(targetLeverage - INTERNAL_PRECISION) * int(collateralBase + amount))
-            / (int(INTERNAL_PRECISION) - int(targetLeverage * swapFee18 / 1e18));
+    function splitDepositAmount(
+        uint amount,
+        uint targetLeverage,
+        uint collateralBase,
+        uint debtBase,
+        uint swapFee18
+    ) internal pure returns (uint aD, uint aR) {
+        int arInt =
+            (int(targetLeverage * debtBase) - int(targetLeverage - INTERNAL_PRECISION) * int(collateralBase + amount))
+                / (int(INTERNAL_PRECISION) - int(targetLeverage * swapFee18 / 1e18));
         aR = arInt > 0 ? Math.min(uint(arInt), amount) : 0;
         aD = amount > aR ? amount - aR : 0;
     }
 
-//endregion ------------------------------------- Deposit logic
+    //endregion ------------------------------------- Deposit logic
 
-//region ------------------------------------- Withdraw logic
+    //region ------------------------------------- Withdraw logic
     /// @notice Calculate F and C1 amounts in assumption that all fees are zero (= user takes all losses on himself)
     /// @param valueToWithdraw Value that user is going to withdraw, in USD, decimals 18
     /// @return flashAmount Flash loan amount in borrow asset
     /// @return collateralToWithdraw Amount of collateral to withdraw from aave in collateral asset
-    function calcWithdrawAmounts(uint valueToWithdraw, uint leverageAdj, StaticData memory data, State memory state) internal pure returns (uint flashAmount, uint collateralToWithdraw) {
+    function calcWithdrawAmounts(
+        uint valueToWithdraw,
+        uint leverageAdj,
+        StaticData memory data,
+        State memory state
+    ) internal pure returns (uint flashAmount, uint collateralToWithdraw) {
         //  state.collateralBase  — initial collateral (in base units)
         //  state.debtBase  — initial debt (same units)
         //  valueToWithdraw   — amount the user must receive (user payout, formerly “value”)
@@ -99,28 +110,23 @@ library ALMFCalcLib {
         //  β = α * LTVa
         //  C1 — amount of collateral withdrawn from the pool
         //  F  — flash-loan size in borrow-asset units
-        console.log("calcWithdrawAmounts.valueToWithdraw", valueToWithdraw);
-        console.log("calcWithdrawAmounts.leverageAdj", leverageAdj);
-        console.log("calcWithdrawAmounts.collateralBase", state.collateralBase);
-        console.log("calcWithdrawAmounts.debtBase", state.debtBase);
 
         uint ltvAdj = leverageToLtv(leverageAdj);
-        console.log("calcWithdrawAmounts.ltvAdj", ltvAdj);
 
         uint alpha = INTERNAL_PRECISION; // todo optimize
         uint beta = ltvAdj;
 
-        int c1 = (int(INTERNAL_PRECISION * valueToWithdraw) + int(alpha * state.debtBase) - int(beta * state.collateralBase) ) / int(INTERNAL_PRECISION - beta);
-        console.logInt(c1);
+        int c1 =
+            (int(INTERNAL_PRECISION * valueToWithdraw) + int(alpha * state.debtBase) - int(beta * state.collateralBase))
+                / int(INTERNAL_PRECISION - beta);
 
-        int f = (int(INTERNAL_PRECISION * state.debtBase) - int(ltvAdj * state.collateralBase) + int(ltvAdj * valueToWithdraw)) / int(INTERNAL_PRECISION - beta);
-        console.logInt(f);
+        int f =
+            (int(INTERNAL_PRECISION * state.debtBase)
+                    - int(ltvAdj * state.collateralBase)
+                    + int(ltvAdj * valueToWithdraw)) / int(INTERNAL_PRECISION - beta);
 
         if (f < 0 || c1 < 0) {
-            return (
-                0,
-                _baseToCollateral(valueToWithdraw, data.priceC18, data.decimalsC)
-            );
+            return (0, _baseToCollateral(valueToWithdraw, data.priceC18, data.decimalsC));
         } else {
             return (
                 _baseToBorrow(uint(f), data.priceB18, data.decimalsB),
@@ -146,11 +152,8 @@ library ALMFCalcLib {
         uint requiredAmount = amountToRepay - balanceWithoutRewards(token, rewardsBalance);
 
         // we use higher (x2) price impact then required for safety
-        uint minCollateralToSwap = swapper.getPrice(
-            token,
-            collateralAsset,
-            requiredAmount * (100_000 + 2 * priceImpactTolerance) / 100_000
-        ); // priceImpactTolerance has its own denominator
+        uint minCollateralToSwap =
+            swapper.getPrice(token, collateralAsset, requiredAmount * (100_000 + 2 * priceImpactTolerance) / 100_000); // priceImpactTolerance has its own denominator
 
         return Math.min(minCollateralToSwap, StrategyLib.balance(collateralAsset));
     }
@@ -164,9 +167,10 @@ library ALMFCalcLib {
         if (optionalLimit == 0) return amount;
         return Math.min(amount, optionalLimit);
     }
-//endregion ------------------------------------- Withdraw logic
 
-//region ------------------------------------- State
+    //endregion ------------------------------------- Withdraw logic
+
+    //region ------------------------------------- State
     /// @notice Calculate current leverage
     /// @param collateralBase Current collateral amount in base asset
     /// @param debtBase Current debt amount in base asset
@@ -206,6 +210,7 @@ library ALMFCalcLib {
     function collateralToBase(uint amount, ALMFCalcLib.StaticData memory data) internal pure returns (uint balance) {
         balance = _collateralToBase(amount, data.priceC18, data.decimalsC);
     }
+
     function borrowToBase(uint amount, ALMFCalcLib.StaticData memory data) internal pure returns (uint balance) {
         balance = _borrowToBase(amount, data.priceB18, data.decimalsB);
     }
@@ -217,7 +222,6 @@ library ALMFCalcLib {
     function baseToBorrow(uint amountBase, ALMFCalcLib.StaticData memory data) internal pure returns (uint) {
         return _baseToBorrow(amountBase, data.priceB18, data.decimalsB);
     }
-
 
     function _collateralToBase(uint amountC, uint priceC18, uint8 decimalsC) internal pure returns (uint) {
         return Math.mulDiv(amountC, priceC18, 10 ** decimalsC);
@@ -234,6 +238,5 @@ library ALMFCalcLib {
     function _baseToBorrow(uint amountBase, uint priceB18, uint8 decimalsB) internal pure returns (uint) {
         return Math.mulDiv(amountBase, 10 ** decimalsB, priceB18);
     }
-//endregion ------------------------------------- State
-
+    //endregion ------------------------------------- State
 }

@@ -120,9 +120,7 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
         vm.startPrank(platform.multisig());
         factory.addFarms(farms);
 
-        console.log("FARM_ID", factory.farmsLength() - 1);
         return factory.farmsLength() - 1;
-
     }
 
     function _preDeposit() internal override {
@@ -143,22 +141,28 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
         _testDepositWaitHardworkWithdraw();
 
         // check flash loan vault of various kinds
-        _testDepositWithdrawUsingFlashLoan(SonicConstantsLib.BEETS_VAULT, ILeverageLendingStrategy.FlashLoanKind.Default_0);
-        _testDepositWithdrawUsingFlashLoan(SonicConstantsLib.BEETS_VAULT_V3, ILeverageLendingStrategy.FlashLoanKind.BalancerV3_1);
-        _testDepositWithdrawUsingFlashLoan(SonicConstantsLib.POOL_SHADOW_CL_USDC_USDT, ILeverageLendingStrategy.FlashLoanKind.UniswapV3_2);
-        _testDepositWithdrawUsingFlashLoan(SonicConstantsLib.POOL_ALGEBRA_WS_USDC, ILeverageLendingStrategy.FlashLoanKind.AlgebraV4_3);
+        _testDepositWithdrawUsingFlashLoan(
+            SonicConstantsLib.BEETS_VAULT, ILeverageLendingStrategy.FlashLoanKind.Default_0
+        );
+        _testDepositWithdrawUsingFlashLoan(
+            SonicConstantsLib.BEETS_VAULT_V3, ILeverageLendingStrategy.FlashLoanKind.BalancerV3_1
+        );
+        _testDepositWithdrawUsingFlashLoan(
+            SonicConstantsLib.POOL_SHADOW_CL_USDC_USDT, ILeverageLendingStrategy.FlashLoanKind.UniswapV3_2
+        );
+        _testDepositWithdrawUsingFlashLoan(
+            SonicConstantsLib.POOL_ALGEBRA_WS_USDC, ILeverageLendingStrategy.FlashLoanKind.AlgebraV4_3
+        );
 
-// todo
-//        _testStrategyParams_All();
-//        _checkMaxDepositAssets_All();
         vm.revertToState(snapshot);
     }
 
     function _preHardWork() internal override {
         // emulate merkl rewards
-        deal(SonicConstantsLib.TOKEN_WS, currentStrategy, 1e18);
-        deal(SonicConstantsLib.TOKEN_SILO, currentStrategy, 1e18);
+        deal(SonicConstantsLib.TOKEN_USDC, currentStrategy, 1e6);
+        deal(SonicConstantsLib.TOKEN_USDT, currentStrategy, 1e6);
     }
+
     //endregion --------------------------------------- Universal test
 
     //region --------------------------------------- Additional tests
@@ -171,7 +175,7 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
 
         // --------------------------------------------- Deposit
         State memory stateAfterDeposit = _getState();
-        (uint depositedAssets, uint depositedValue) = _tryToDepositToVault(strategy.vault(), amount, REVERT_NO, address(this));
+        _tryToDepositToVault(strategy.vault(), amount, REVERT_NO, address(this));
         vm.roll(block.number + 6);
 
         // --------------------------------------------- Hardwork 1
@@ -192,66 +196,103 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
 
         State memory stateAfterHW2 = _getState();
 
-        assertEq(stateAfterDeposit.revenueAmounts[0], 0, "Revenue before first claimReview is 0 because share price is not initialized yet");
-        assertApproxEqRel(stateAfterHW1.revenueAmounts[0] * priceWeth8 * 1e6 / 1e8 / 1e18, 100e6, 2e16, "Revenue after first hardwork is ~$100");
-        assertApproxEqRel(stateAfterHW2.revenueAmounts[0] * priceWeth8 * 1e6 / 1e8 / 1e18, 300e6, 2e16, "Revenue after first hardwork is ~$300");
+        assertEq(
+            stateAfterDeposit.revenueAmounts[0],
+            0,
+            "Revenue before first claimReview is 0 because share price is not initialized yet"
+        );
+        assertApproxEqRel(
+            stateAfterHW1.revenueAmounts[0] * priceWeth8 * 1e6 / 1e8 / 1e18,
+            100e6,
+            2e16,
+            "Revenue after first hardwork is ~$100"
+        );
+        assertApproxEqRel(
+            stateAfterHW2.revenueAmounts[0] * priceWeth8 * 1e6 / 1e8 / 1e18,
+            300e6,
+            2e16,
+            "Revenue after first hardwork is ~$300"
+        );
     }
 
     function _testDepositChangeLtvWithdraw() internal {
-        console.log("_testDepositChangeLtvWithdraw.1");
         {
-            (State memory stateInitial,
-            State memory stateAfterDeposit,
-            State memory stateAfterWithdraw
-            ) = _depositChangeLtvWithdraw(49_00, 50_97, 52_00, 51_97);
-            _printState(stateInitial);
-            _printState(stateAfterDeposit);
-            _printState(stateAfterWithdraw);
+            (, State memory stateAfterDeposit, State memory stateAfterWithdraw) =
+                _depositChangeLtvWithdraw(49_00, 50_97, 52_00, 51_97);
 
-            assertApproxEqRel(stateAfterDeposit.leverage, stateAfterDeposit.targetLeverage, 1e16, "Leverage after deposit should be equal to target 111");
-            assertLt(stateAfterDeposit.leverage, stateAfterWithdraw.targetLeverage, "leverage before withdraw less than target");
+            assertApproxEqRel(
+                stateAfterDeposit.leverage,
+                stateAfterDeposit.targetLeverage,
+                1e16,
+                "Leverage after deposit should be equal to target 111"
+            );
+            assertLt(
+                stateAfterDeposit.leverage,
+                stateAfterWithdraw.targetLeverage,
+                "leverage before withdraw less than target"
+            );
             assertGt(stateAfterWithdraw.leverage, stateAfterDeposit.leverage, "withdraw increased the leverage");
         }
-        console.log("_testDepositChangeLtvWithdraw.2");
         {
-            (State memory stateInitial,
-            State memory stateAfterDeposit,
-            State memory stateAfterWithdraw
-            ) = _depositChangeLtvWithdraw(49_00, 50_97, 47_00, 48_97);
+            (, State memory stateAfterDeposit, State memory stateAfterWithdraw) =
+                _depositChangeLtvWithdraw(49_00, 50_97, 47_00, 48_97);
 
-            assertApproxEqRel(stateAfterDeposit.leverage, stateAfterDeposit.targetLeverage, 1e16, "Leverage after deposit should be equal to target 222");
-            assertGt(stateAfterDeposit.leverage, stateAfterWithdraw.targetLeverage, "leverage before withdraw greater than target");
+            assertApproxEqRel(
+                stateAfterDeposit.leverage,
+                stateAfterDeposit.targetLeverage,
+                1e16,
+                "Leverage after deposit should be equal to target 222"
+            );
+            assertGt(
+                stateAfterDeposit.leverage,
+                stateAfterWithdraw.targetLeverage,
+                "leverage before withdraw greater than target"
+            );
             assertLt(stateAfterWithdraw.leverage, stateAfterDeposit.leverage, "withdraw decreased the leverage");
         }
     }
 
     function _testDepositChangeLtvDeposit() internal {
         {
-            (State memory stateInitial,
-                State memory stateAfterDeposit,
-                State memory stateAfterDeposit2
-            ) = _depositChangeLtvDeposit(49_00, 50_97, 52_00, 51_97);
-            _printState(stateInitial);
-            _printState(stateAfterDeposit);
-            _printState(stateAfterDeposit2);
+            (, State memory stateAfterDeposit, State memory stateAfterDeposit2) =
+                _depositChangeLtvDeposit(49_00, 50_97, 52_00, 51_97);
 
-            assertApproxEqRel(stateAfterDeposit.leverage, stateAfterDeposit.targetLeverage, 1e16, "Leverage after deposit should be equal to target 333");
-            assertLt(stateAfterDeposit.leverage, stateAfterDeposit2.targetLeverage, "leverage before withdraw less than target");
+            assertApproxEqRel(
+                stateAfterDeposit.leverage,
+                stateAfterDeposit.targetLeverage,
+                1e16,
+                "Leverage after deposit should be equal to target 333"
+            );
+            assertLt(
+                stateAfterDeposit.leverage,
+                stateAfterDeposit2.targetLeverage,
+                "leverage before withdraw less than target"
+            );
             assertGt(stateAfterDeposit2.leverage, stateAfterDeposit.leverage, "deposit2 increased the leverage");
         }
         {
-            (State memory stateInitial,
-                State memory stateAfterDeposit,
-                State memory stateAfterDeposit2
-            ) = _depositChangeLtvDeposit(49_00, 50_97, 47_00, 48_97);
+            (, State memory stateAfterDeposit, State memory stateAfterDeposit2) =
+                _depositChangeLtvDeposit(49_00, 50_97, 47_00, 48_97);
 
-            assertApproxEqRel(stateAfterDeposit.leverage, stateAfterDeposit.targetLeverage, 1e16, "Leverage after deposit should be equal to target 444");
-            assertGt(stateAfterDeposit.leverage, stateAfterDeposit2.targetLeverage, "leverage before deposit2 greater than target");
+            assertApproxEqRel(
+                stateAfterDeposit.leverage,
+                stateAfterDeposit.targetLeverage,
+                1e16,
+                "Leverage after deposit should be equal to target 444"
+            );
+            assertGt(
+                stateAfterDeposit.leverage,
+                stateAfterDeposit2.targetLeverage,
+                "leverage before deposit2 greater than target"
+            );
             assertLt(stateAfterDeposit2.leverage, stateAfterDeposit.leverage, "deposit2 decreased the leverage");
         }
     }
 
-    function _testDepositWithdrawUsingFlashLoan(address flashLoanVault, ILeverageLendingStrategy.FlashLoanKind kind_) internal {
+    function _testDepositWithdrawUsingFlashLoan(
+        address flashLoanVault,
+        ILeverageLendingStrategy.FlashLoanKind kind_
+    ) internal {
         uint snapshot = vm.snapshotState();
         _setUpFlashLoanVault(flashLoanVault, kind_);
 
@@ -259,8 +300,13 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
         State[] memory states = _depositWithdraw(amount, SonicConstantsLib.TOKEN_USDC, 0, 0, false);
         vm.revertToState(snapshot);
 
-        assertApproxEqRel(states[INDEX_AFTER_WITHDRAW_4].total, states[INDEX_INIT_0].total, states[INDEX_INIT_0].total/100_000, "Total should return back to prev value");
-        assertApproxEqRel(states[4].userBalanceAsset, amount, amount/50, "User shouldn't loss more than 2%");
+        assertApproxEqRel(
+            states[INDEX_AFTER_WITHDRAW_4].total,
+            states[INDEX_INIT_0].total,
+            states[INDEX_INIT_0].total / 100_000,
+            "Total should return back to prev value"
+        );
+        assertApproxEqRel(states[4].userBalanceAsset, amount, amount / 50, "User shouldn't loss more than 2%");
     }
 
     function _testDepositWaitHardworkWithdraw() internal {
@@ -285,30 +331,45 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
         uint wethPrice = _getWethPrice8();
 
         // --------------------------------------------- Compare results
-        assertApproxEqAbs(statesHW2[INDEX_AFTER_HARDWORK_3].total - statesInstant[INDEX_AFTER_HARDWORK_3].total, 100e18, 3e18, "total is increased on rewards amount - fees");
-        assertLt(statesHW1[INDEX_AFTER_HARDWORK_3].total, statesInstant[INDEX_AFTER_HARDWORK_3].total, "total is decreased because the borrow rate exceeds supply rate");
+        assertApproxEqAbs(
+            statesHW2[INDEX_AFTER_HARDWORK_3].total - statesInstant[INDEX_AFTER_HARDWORK_3].total,
+            100e18,
+            3e18,
+            "total is increased on rewards amount - fees"
+        );
+        assertLt(
+            statesHW1[INDEX_AFTER_HARDWORK_3].total,
+            statesInstant[INDEX_AFTER_HARDWORK_3].total,
+            "total is decreased because the borrow rate exceeds supply rate"
+        );
 
-        assertLt(statesHW1[INDEX_AFTER_WITHDRAW_4].userBalanceAsset, statesInstant[INDEX_AFTER_WITHDRAW_4].userBalanceAsset, "user lost some amount because of borrow rate");
+        assertLt(
+            statesHW1[INDEX_AFTER_WITHDRAW_4].userBalanceAsset,
+            statesInstant[INDEX_AFTER_WITHDRAW_4].userBalanceAsset,
+            "user lost some amount because of borrow rate"
+        );
         assertApproxEqRel(
             statesHW2[INDEX_AFTER_WITHDRAW_4].userBalanceAsset,
-            100e18*wethPrice/1e18 + statesInstant[INDEX_AFTER_WITHDRAW_4].userBalanceAsset,
+            100e18 * wethPrice / 1e18 + statesInstant[INDEX_AFTER_WITHDRAW_4].userBalanceAsset,
             3e16, //  < 3%
             "user received almost all rewards"
         );
     }
 
-    function _testMaxDepositAndMaxWithdraw() internal {
+    function _testMaxDepositAndMaxWithdraw() internal view {
         assertEq(IStrategy(currentStrategy).maxDepositAssets().length, 0, "any amount can be deposited");
         assertEq(IStrategy(currentStrategy).maxWithdrawAssets(0).length, 0, "any amount can be withdrawn");
     }
+
     //endregion --------------------------------------- Additional tests
 
     //region --------------------------------------- Test implementations
-    function _depositChangeLtvWithdraw(uint minLtv0, uint maxLtv0, uint minLtv1, uint maxLtv1) internal returns (
-        State memory stateInitial,
-        State memory stateAfterDeposit,
-        State memory stateAfterWithdraw
-    ) {
+    function _depositChangeLtvWithdraw(
+        uint minLtv0,
+        uint maxLtv0,
+        uint minLtv1,
+        uint maxLtv1
+    ) internal returns (State memory stateInitial, State memory stateAfterDeposit, State memory stateAfterWithdraw) {
         uint snapshot = vm.snapshotState();
         address vault = IStrategy(currentStrategy).vault();
         _setMinMaxLtv(minLtv0, maxLtv0);
@@ -328,11 +389,12 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
         vm.revertToState(snapshot);
     }
 
-    function _depositChangeLtvDeposit(uint minLtv0, uint maxLtv0, uint minLtv1, uint maxLtv1) internal returns (
-        State memory stateInitial,
-        State memory stateAfterDeposit,
-        State memory stateAfterDeposit2
-    ) {
+    function _depositChangeLtvDeposit(
+        uint minLtv0,
+        uint maxLtv0,
+        uint minLtv1,
+        uint maxLtv1
+    ) internal returns (State memory stateInitial, State memory stateAfterDeposit, State memory stateAfterDeposit2) {
         uint snapshot = vm.snapshotState();
         address vault = IStrategy(currentStrategy).vault();
         _setMinMaxLtv(minLtv0, maxLtv0);
@@ -360,9 +422,7 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
         uint rewardsAmount,
         uint waitSec,
         bool hardworkBeforeWithdraw
-    ) internal returns (
-        State[] memory states
-    ) {
+    ) internal returns (State[] memory states) {
         uint snapshot = vm.snapshotState();
         states = new State[](5);
 
@@ -370,7 +430,8 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
 
         // --------------------------------------------- Deposit
         states[0] = _getState();
-        (uint depositedAssets, uint depositedValue) = _tryToDepositToVault(strategy.vault(), amount, REVERT_NO, address(this));
+        (uint depositedAssets, ) =
+            _tryToDepositToVault(strategy.vault(), amount, REVERT_NO, address(this));
         vm.roll(block.number + 6);
         states[1] = _getState();
 
@@ -390,7 +451,7 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
         states[3] = _getState();
 
         // --------------------------------------------- Withdraw
-        uint withdrawn1 = _tryToWithdrawFromVault(strategy.vault(), states[1].vaultBalance - states[0].vaultBalance);
+        _tryToWithdrawFromVault(strategy.vault(), states[1].vaultBalance - states[0].vaultBalance);
         vm.roll(block.number + 6);
         states[4] = _getState();
 
@@ -400,337 +461,19 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
         assertEq(depositedAssets, amount, "Deposited amount should be equal to amountsToDeposit");
     }
 
-    function _testRebalance(uint targetLeveragePercent_, uint targetLeveragePercentNew_, bool freeFlashLoan_) internal {
-        uint snapshot = vm.snapshotState();
-
-        if (freeFlashLoan_) {
-            // todo _setUpFlashLoanVault(0, ILeverageLendingStrategy.FlashLoanKind.BalancerV3_1);
-        } else {
-            // todo _setUpFlashLoanVault(getUnlimitedFlashAmount(), ILeverageLendingStrategy.FlashLoanKind.UniswapV3_2);
-        }
-
-        // todo _setTargetLeveragePercent(targetLeveragePercent_);
-        IStrategy strategy = IStrategy(currentStrategy);
-
-        // emulate rewards BEFORE deposit
-        deal(SonicConstantsLib.TOKEN_WS, currentStrategy, 177e18);
-
-        // --------------------------------------------- Deposit max amount (but less maxDeposit to be able to rebalance)
-        uint amount = strategy.maxDepositAssets()[0] / 4;
-
-        State[4] memory states;
-        states[0] = _getState();
-        (uint depositedAssets, uint depositedValue) =
-            _tryToDepositToVault(strategy.vault(), amount, REVERT_NO, address(this));
-        vm.roll(block.number + 6);
-        states[1] = _getState();
-        // console.log("deposit", amountsToDeposit[0], depositedAssets, depositedValue);
-
-        // --------------------------------------------- Rebalance: ensure that real share price is not changed
-        (uint sharePrice,) = ILeverageLendingStrategy(address(strategy)).realSharePrice();
-        (uint realTvl,) = ILeverageLendingStrategy(address(strategy)).realTvl();
-        // console.log("start rebalance", sharePrice, realTvl, strategy.total());
-        ILeverageLendingStrategy(address(strategy))
-            .rebalanceDebt(targetLeveragePercentNew_, sharePrice * (1e6 - 1) / 1e6);
-        // 0
-
-        (uint sharePriceAfter,) = ILeverageLendingStrategy(address(strategy)).realSharePrice();
-        (uint realTvlAfter,) = ILeverageLendingStrategy(address(strategy)).realTvl();
-        states[2] = _getState();
-
-        uint withdrawn1 = _tryToWithdrawFromVault(strategy.vault(), depositedValue);
-        vm.roll(block.number + 6);
-        states[3] = _getState();
-
-        uint wsFinalBalance = IERC20(SonicConstantsLib.TOKEN_WS).balanceOf(currentStrategy);
-        vm.revertToState(snapshot);
-
-        // --------------------------------------------- Check results
-        assertApproxEqAbs(sharePriceAfter, sharePrice, 1e10, "Share price should not change after rebalance");
-        assertApproxEqAbs(realTvl, realTvlAfter, 1e14, "TVL should not change after rebalance");
-
-        assertEq(depositedAssets, amount, "Deposited amount should be equal to amountsToDeposit");
-        if (freeFlashLoan_) {
-            assertApproxEqAbs(
-                depositedAssets,
-                withdrawn1,
-                depositedAssets / 100,
-                "Withdrawn amount should be equal to deposited amount 1"
-            );
-
-            // some amount left in the collateral vault after full withdraw
-            assertApproxEqAbs(
-                depositedAssets,
-                withdrawn1 + states[3].collateralAmount,
-                depositedAssets / 100_000,
-                "Withdrawn amount should be equal to deposited amount 2"
-            );
-        }
-
-        assertLt(states[0].vaultBalance, states[1].vaultBalance, "vaultBalance should increase after deposit");
-        assertEq(
-            states[1].vaultBalance,
-            states[0].vaultBalance + depositedValue,
-            "vaultBalance should increase on expected value after deposit 3"
-        );
-        assertEq(states[2].vaultBalance, states[1].vaultBalance, "vaultBalance should not change after rebalance");
-        assertEq(states[3].vaultBalance, states[0].vaultBalance, "vaultBalance should decrease after withdraw");
-
-        assertNotEq(sharePrice, 0, "Share price is not 0");
-
-        assertEq(
-            wsFinalBalance,
-            177e18,
-            "wS balance should not change after on rebalance (only hardwork can process rewards)"
-        );
-        //        console.log("sharePrice.before", sharePrice);
-        //        console.log("sharePrice.after", sharePriceAfter);
-        //        console.log("realTvl.before", realTvl);
-        //        console.log("realTvl.after", realTvlAfter);
-    }
-
-    /// @notice Deposit, check state, withdraw half, check state, withdraw all, check state
-    function _testOneDepositTwoWithdraw(
-        uint targetLeveragePercent_,
-        uint amountNoDecimals,
-        bool freeFlashLoan_
-    ) internal {
-        uint snapshot = vm.snapshotState();
-
-        if (freeFlashLoan_) {
-            // todo _setUpFlashLoanVault(0, ILeverageLendingStrategy.FlashLoanKind.BalancerV3_1);
-        } else {
-            // todo _setUpFlashLoanVault(getUnlimitedFlashAmount(), ILeverageLendingStrategy.FlashLoanKind.UniswapV3_2);
-        }
-
-        // todo _setTargetLeveragePercent(targetLeveragePercent_);
-        IStrategy strategy = IStrategy(currentStrategy);
-
-        // --------------------------------------------- Make initial deposit to the strategy
-        uint amount = 1000 * 10 ** IERC20Metadata(strategy.assets()[0]).decimals();
-        _tryToDepositToVault(strategy.vault(), amount, REVERT_NO, address(this));
-        vm.roll(block.number + 6);
-
-        // --------------------------------------------- Deposit
-        amount = amountNoDecimals * 10 ** IERC20Metadata(strategy.assets()[0]).decimals();
-
-        State memory state0 = _getState();
-        (uint depositedAssets, uint depositedValue) = _tryToDepositToVault(strategy.vault(), amount, REVERT_NO, address(this));
-        vm.roll(block.number + 6);
-        State memory state1 = _getState();
-
-        uint withdrawn1 = _tryToWithdrawFromVault(strategy.vault(), depositedValue / 2);
-        vm.roll(block.number + 6);
-        State memory state2 = _getState();
-
-        uint withdrawn2 = _tryToWithdrawFromVault(strategy.vault(), depositedValue - depositedValue / 2);
-        vm.roll(block.number + 6);
-        State memory state3 = _getState();
-
-        vm.revertToState(snapshot);
-
-        // --------------------------------------------- Check results
-        assertEq(depositedAssets, amount, "Deposited amount should be equal to amountsToDeposit");
-        if (freeFlashLoan_) {
-            assertApproxEqAbs(
-                depositedAssets,
-                withdrawn1 + withdrawn2,
-                depositedAssets / 100,
-                "Withdrawn amount should be equal to deposited amount 3"
-            );
-        }
-
-        // todo
-        //        assertApproxEqAbs(state0.targetLeverage, state1.leverage,
-        //            2000,
-        //            "The leverage should be equal to target leverage after deposit"
-        //        );
-        //        assertApproxEqAbs(state0.targetLeverage, state2.leverage,
-        //            2000,
-        //            "The leverage should be equal to target leverage after withdrawing half"
-        //        );
-        //        assertApproxEqAbs(state0.targetLeverage, state3.leverage,
-        //            2000,
-        //            "The leverage should be equal to target leverage after withdrawing all"
-        //        );
-
-        assertLt(state0.total, state1.total, "Total should increase after deposit");
-        assertEq(state1.total, state0.total + depositedValue, "Total should increase on expected value after deposit 1");
-        assertEq(
-            state2.total,
-            state0.total + depositedValue - depositedValue / 2,
-            "Total should decrease after first withdraw"
-        );
-        assertEq(state3.total, state0.total, "Total should return to initial value after second withdraw");
-    }
-
-    function _testMultipleDepositsAndMultipleWithdraw(
-        uint targetLeveragePercent_,
-        uint amountNoDecimals,
-        bool freeFlashLoan_
-    ) internal {
-        uint snapshot = vm.snapshotState();
-
-        if (freeFlashLoan_) {
-            // todo _setUpFlashLoanVault(0, ILeverageLendingStrategy.FlashLoanKind.BalancerV3_1);
-        } else {
-            // todo _setUpFlashLoanVault(getUnlimitedFlashAmount(), ILeverageLendingStrategy.FlashLoanKind.UniswapV3_2);
-        }
-
-        // todo _setTargetLeveragePercent(targetLeveragePercent_);
-        IStrategy strategy = IStrategy(currentStrategy);
-
-        // --------------------------------------------- Make initial deposit to the strategy
-        uint amount = (freeFlashLoan_ ? 100 : 10_000) * 10 ** IERC20Metadata(strategy.assets()[0]).decimals();
-        _tryToDepositToVault(strategy.vault(), amount, REVERT_NO, address(this));
-        vm.roll(block.number + 6);
-
-        uint valueBefore = strategy.total();
-
-        uint totalDeposited = amount;
-        uint totalWithdrawn = 0;
-
-        // --------------------------------------------- Deposit
-        for (uint i; i < 10; ++i) {
-            amount = amountNoDecimals * 10 ** IERC20Metadata(strategy.assets()[0]).decimals();
-
-            // State memory state0 = _getState();
-            (uint depositedAssets, uint depositedValue) = _tryToDepositToVault(strategy.vault(), amount, REVERT_NO, address(this));
-            vm.roll(block.number + 6);
-            totalDeposited += depositedAssets;
-            // console.log("i, deposited assets, value", i, depositedAssets, depositedValue);
-            // State memory state1 = _getState();
-
-            uint withdrawn1 = _tryToWithdrawFromVault(strategy.vault(), depositedValue * (i + 1) / (i + 2));
-            vm.roll(block.number + 6);
-            // State memory state2 = _getState();
-            totalWithdrawn += withdrawn1;
-        }
-
-        uint withdrawn2 = _tryToWithdrawFromVault(strategy.vault(), (strategy.total() - valueBefore) / 2);
-        vm.roll(block.number + 6);
-        // State memory state3 = _getState();
-        totalWithdrawn += withdrawn2;
-
-        withdrawn2 = _tryToWithdrawFromVault(strategy.vault(), strategy.total());
-        vm.roll(block.number + 6);
-        // state3 = _getState();
-        totalWithdrawn += withdrawn2;
-
-        vm.revertToState(snapshot);
-
-        assertApproxEqAbs(
-            totalDeposited,
-            totalWithdrawn,
-            totalDeposited / 1000,
-            "Withdrawn amount should be close to deposited amount 4"
-        );
-        //        assertLe(
-        //            _getDiffPercent18(totalDeposited, totalWithdrawn),
-        //            1e18 / 100 / 100, // less 0.01%
-        //            "Withdrawn amount should be close to deposited amount"
-        //        );
-    }
-
     //endregion --------------------------------------- Test implementations
 
-    //region --------------------------------------- maxDeposit tests
-    /// @notice Ensure that the value returned by SiloALMFStrategy.maxDepositAssets is not unlimited.
-    /// Ensure that we can deposit max amount and that we CAN'T deposit more than max amount.
-    function _checkMaxDepositAssets_All() internal {
-        _checkMaxDepositAssets_MaxDeposit_UnlimitedFlash();
-        _checkMaxDepositAssets_AmountMoreThanMaxDeposit_UnlimitedFlash();
-        _checkMaxDepositAssets_MaxDeposit_LimitedFlash();
-        _checkMaxDepositAssets_AmountMoreThanMaxDeposit_LimitedFlash();
-    }
-
-    function _checkMaxDepositAssets_MaxDeposit_UnlimitedFlash() internal {
-        IStrategy strategy = IStrategy(currentStrategy);
-
-        // ---------------------------- try to deposit maxDeposit - unlimited flash loan is available
-        uint snapshot = vm.snapshotState();
-        // todo _setUpFlashLoanVault(getUnlimitedFlashAmount(), ILeverageLendingStrategy.FlashLoanKind.UniswapV3_2);
-        uint[] memory maxDepositAssets = strategy.maxDepositAssets();
-        (uint deposited,) = _tryToDepositToVault(strategy.vault(), maxDepositAssets[0], REVERT_NO, address(this));
-
-        // ---------------------------- try to withdraw full amount back without any losses
-        // todo uint withdrawn = _tryToWithdrawAll(strategy);
-        vm.revertToState(snapshot);
-
-        // todo
-//        assertLt(
-//            _getDiffPercent18(deposited, withdrawn),
-//            1e18 * 97 / 100,
-//            "Withdrawn amount should be close to deposited amount (fee amount)"
-//        );
-    }
-
-    function _checkMaxDepositAssets_AmountMoreThanMaxDeposit_UnlimitedFlash() internal {
-        IStrategy strategy = IStrategy(currentStrategy);
-
-        // ---------------------------- try to deposit maxDeposit + 1% - unlimited flash loan is available
-        uint snapshot = vm.snapshotState();
-        // todo _setUpFlashLoanVault(getUnlimitedFlashAmount(), ILeverageLendingStrategy.FlashLoanKind.AlgebraV4_3);
-        uint[] memory maxDepositAssets = strategy.maxDepositAssets();
-        for (uint i = 0; i < maxDepositAssets.length; i++) {
-            maxDepositAssets[i] = maxDepositAssets[i] * 101 / 100;
-        }
-        _tryToDepositToVault(strategy.vault(), maxDepositAssets[0], REVERT_NOT_ENOUGH_LIQUIDITY, address(this));
-        vm.revertToState(snapshot);
-    }
-
-    function _checkMaxDepositAssets_MaxDeposit_LimitedFlash() internal {
-        IStrategy strategy = IStrategy(currentStrategy);
-
-        // ---------------------------- try to deposit maxDeposit with limited flash loan
-        uint snapshot = vm.snapshotState();
-        // todo _setUpFlashLoanVault(0, ILeverageLendingStrategy.FlashLoanKind.UniswapV3_2);
-        uint[] memory maxDepositAssets = strategy.maxDepositAssets();
-
-        _tryToDepositToVault(strategy.vault(), maxDepositAssets[0], REVERT_NO, address(this));
-
-        //        // ---------------------------- try to withdraw full amount back without any losses
-        //        uint withdrawn = _tryToWithdrawAll(strategy);
-        vm.revertToState(snapshot);
-        //
-        //        assertLt(_getDiffPercent18(deposited, withdrawn), 1e18*97/100, "Withdrawn amount should be close to deposited amount (fee amount)");
-    }
-
-    function _checkMaxDepositAssets_AmountMoreThanMaxDeposit_LimitedFlash() internal {
-// todo
-//        IStrategy strategy = IStrategy(currentStrategy);
-//
-//        // ---------------------------- try to deposit maxDeposit + 1% with limited flash loan
-//        uint snapshot = vm.snapshotState();
-//        address flashLoanVault = _setUpFlashLoanVault(0, ILeverageLendingStrategy.FlashLoanKind.UniswapV3_2);
-//
-//        uint farmId = _currentFarmId();
-//        address borrowVault = farmId == FARM_META_USD_USDC_53
-//            ? SonicConstantsLib.SILO_VAULT_121_USDC
-//            : farmId == FARM_META_USD_SCUSD_54
-//                ? SonicConstantsLib.SILO_VAULT_125_SCUSD
-//                : SonicConstantsLib.SILO_VAULT_128_S;
-//        address asset = IERC4626(borrowVault).asset();
-//        uint expectedRevertKind = IERC20(asset).balanceOf(flashLoanVault) < IERC20(asset).balanceOf(borrowVault)
-//            ? REVERT_INSUFFICIENT_BALANCE
-//            : REVERT_NOT_ENOUGH_LIQUIDITY;
-//
-//        uint[] memory maxDepositAssets = strategy.maxDepositAssets();
-//        for (uint i = 0; i < maxDepositAssets.length; i++) {
-//            maxDepositAssets[i] = maxDepositAssets[i] * 101 / 100;
-//        }
-//        _tryToDepositToVault(strategy.vault(), maxDepositAssets, expectedRevertKind, address(this));
-//        vm.revertToState(snapshot);
-    }
-
-    //endregion --------------------------------------- maxDeposit tests
-
-    //region --------------------------------------- Internal logic
+        //region --------------------------------------- Internal logic
     function _currentFarmId() internal view returns (uint) {
         return IFarmingStrategy(currentStrategy).farmId();
     }
-    
-    function _tryToDepositToVault(address vault, uint amount, uint revertKind, address user) internal returns (uint deposited, uint depositedValue) {
+
+    function _tryToDepositToVault(
+        address vault,
+        uint amount,
+        uint revertKind,
+        address user
+    ) internal returns (uint deposited, uint depositedValue) {
         address[] memory assets = IVault(vault).assets();
         uint[] memory amountsToDeposit = new uint[](1);
         amountsToDeposit[0] = amount;
@@ -741,10 +484,10 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
 
         uint balanceBefore = IVault(vault).balanceOf(user);
         // ----------------------------- Try to deposit assets to the vault
-// todo
-//        if (revertKind == REVERT_NOT_ENOUGH_LIQUIDITY) {
-//            vm.expectRevert(ISilo.NotEnoughLiquidity.selector);
-//        }
+        // todo
+        //        if (revertKind == REVERT_NOT_ENOUGH_LIQUIDITY) {
+        //            vm.expectRevert(ISilo.NotEnoughLiquidity.selector);
+        //        }
         if (revertKind == REVERT_INSUFFICIENT_BALANCE) {
             vm.expectRevert(IControllable.InsufficientBalance.selector);
         }
@@ -819,7 +562,8 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
         state.total = IStrategy(currentStrategy).total();
         state.maxLeverage = 100_00 * 1e4 / (1e4 - state.maxLtv);
         state.targetLeverage = state.maxLeverage * state.targetLeveragePercent / 100_00;
-        state.strategyBalanceAsset = IERC20(IStrategy(address(strategy)).assets()[0]).balanceOf(address(currentStrategy));
+        state.strategyBalanceAsset =
+            IERC20(IStrategy(address(strategy)).assets()[0]).balanceOf(address(currentStrategy));
         state.userBalanceAsset = IERC20(IStrategy(address(strategy)).assets()[0]).balanceOf(address(address(this)));
         (state.realTvl,) = strategy.realTvl();
         (state.realSharePrice,) = strategy.realSharePrice();
@@ -863,6 +607,7 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
         vm.prank(platform.multisig());
         factory.updateFarm(farmId, farm);
     }
+
     //endregion --------------------------------------- Internal logic
 
     //region --------------------------------------- Helper functions
@@ -912,7 +657,8 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
     }
 
     function _getWethPrice8() internal view returns (uint) {
-        return IAavePriceOracle(IAaveAddressProvider(IPool(POOL).ADDRESSES_PROVIDER()).getPriceOracle()).getAssetPrice(SonicConstantsLib.TOKEN_WETH);
+        return IAavePriceOracle(IAaveAddressProvider(IPool(POOL).ADDRESSES_PROVIDER()).getPriceOracle())
+            .getAssetPrice(SonicConstantsLib.TOKEN_WETH);
     }
 
     //endregion --------------------------------------- Helper functions
