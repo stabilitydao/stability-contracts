@@ -54,6 +54,8 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
         uint realTvl;
         uint realSharePrice;
         uint vaultBalance;
+        address[] revenueAssets;
+        uint[] revenueAmounts;
     }
 
     uint internal constant FORK_BLOCK = 55057575; // Nov-13-2025 02:19:01 AM +UTC
@@ -69,6 +71,15 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
         duration1 = 0.1 hours;
         duration2 = 0.1 hours;
         duration3 = 0.1 hours;
+
+        // ALMF uses real share price as share price
+        // so it cannot initialize share price during deposit.
+        // It sets initial value of share price in first claimRevenue.
+        // As result, following check is failed in universal test:
+        // "Universal test: estimated totalRevenueUSD is zero"
+        // So, we should disable it by setting allowZeroTotalRevenueUSD.
+        // And make all checks in additional tests instead.
+        allowZeroTotalRevenueUSD = true;
 
         // _upgradePlatform(platform.multisig(), IPlatform(PLATFORM).priceReader());
     }
@@ -121,6 +132,9 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
         // initial supply
         _tryToDepositToVault(IStrategy(currentStrategy).vault(), 0.1e18, REVERT_NO, makeAddr("initial supplier"));
 
+        // check revenue (replacement for "Universal test: estimated totalRevenueUSD is zero")
+        _testDepositTwoHardworks();
+
         // set TL, deposit, change TL, withdraw/deposit => leverage was changed toward new TL
         _testDepositChangeLtvWithdraw();
         _testDepositChangeLtvDeposit();
@@ -148,6 +162,41 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
     //endregion --------------------------------------- Universal test
 
     //region --------------------------------------- Additional tests
+    function _testDepositTwoHardworks() internal {
+        uint amount = 1e18;
+
+        uint priceWeth8 = _getWethPrice8();
+
+        IStrategy strategy = IStrategy(currentStrategy);
+
+        // --------------------------------------------- Deposit
+        State memory stateAfterDeposit = _getState();
+        (uint depositedAssets, uint depositedValue) = _tryToDepositToVault(strategy.vault(), amount, REVERT_NO, address(this));
+        vm.roll(block.number + 6);
+
+        // --------------------------------------------- Hardwork 1
+        _skip(1 days, 0);
+        deal(SonicConstantsLib.TOKEN_USDT, currentStrategy, 100e6);
+
+        vm.prank(platform.multisig());
+        IVault(strategy.vault()).doHardWork();
+
+        State memory stateAfterHW1 = _getState();
+
+        // --------------------------------------------- Hardwork 2
+        _skip(1 days, 0);
+        deal(SonicConstantsLib.TOKEN_USDT, currentStrategy, 300e6);
+
+        vm.prank(platform.multisig());
+        IVault(strategy.vault()).doHardWork();
+
+        State memory stateAfterHW2 = _getState();
+
+        assertEq(stateAfterDeposit.revenueAmounts[0], 0, "Revenue before first claimReview is 0 because share price is not initialized yet");
+        assertApproxEqRel(stateAfterHW1.revenueAmounts[0] * priceWeth8 * 1e6 / 1e8 / 1e18, 100e6, 2e16, "Revenue after first hardwork is ~$100");
+        assertApproxEqRel(stateAfterHW2.revenueAmounts[0] * priceWeth8 * 1e6 / 1e8 / 1e18, 300e6, 2e16, "Revenue after first hardwork is ~$300");
+    }
+
     function _testDepositChangeLtvWithdraw() internal {
         console.log("_testDepositChangeLtvWithdraw.1");
         {
@@ -233,7 +282,7 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
         vm.revertToState(snapshot);
 
         // --------------------------------------------- Get WETH price
-        uint wethPrice = IAavePriceOracle(IAaveAddressProvider(IPool(POOL).ADDRESSES_PROVIDER()).getPriceOracle()).getAssetPrice(SonicConstantsLib.TOKEN_WETH);
+        uint wethPrice = _getWethPrice8();
 
         // --------------------------------------------- Compare results
         assertApproxEqAbs(statesHW2[INDEX_AFTER_HARDWORK_3].total - statesInstant[INDEX_AFTER_HARDWORK_3].total, 100e18, 3e18, "total is increased on rewards amount - fees");
@@ -248,31 +297,9 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
         );
     }
 
-    function _testTODO() internal {
-        uint snapshot = vm.snapshotState();
-
-        // --------------------------------------------- Ensure that rebalance doesn't change real share price
-        _testRebalance(75_00, 85_00, true); // rebalance with free flash loan
-
-        // --------------------------------------------- targetLeveragePercent - percent of max leverage.
-        // todo _testDepositWithdraw(80_00, 1000);
-        _testOneDepositTwoWithdraw(80_00, 1000, true);
-        _testOneDepositTwoWithdraw(85_00, 10_000, false);
-        _testOneDepositTwoWithdraw(75_00, 50_000, false);
-
-        // --------------------------------------------- try to set HIGH values of deposit/withdraw-params
-        _setDepositParams(100_00, 99_80);
-        _setWithdrawParams(100_00, 110_00, 110_00);
-        _testMultipleDepositsAndMultipleWithdraw(80_00, 1000, true); // free flash loan
-
-        _setWithdrawParams(110_00, 100_00, 100_00);
-        _testMultipleDepositsAndMultipleWithdraw(80_00, 1000, true); // free flash loan
-
-        _setDepositParams(110_00, 98_00);
-        _setWithdrawParams(100_00, 100_00, 100_00);
-        _testMultipleDepositsAndMultipleWithdraw(80_00, 1000, true); // free flash loan
-
-        vm.revertToState(snapshot);
+    function _testMaxDepositAndMaxWithdraw() internal {
+        assertEq(IStrategy(currentStrategy).maxDepositAssets().length, 0, "any amount can be deposited");
+        assertEq(IStrategy(currentStrategy).maxWithdrawAssets(0).length, 0, "any amount can be withdrawn");
     }
     //endregion --------------------------------------- Additional tests
 
@@ -350,6 +377,7 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
         _skip(waitSec, 0);
         states[2] = _getState();
 
+        // --------------------------------------------- Hardwork
         if (rewardsAmount != 0) {
             // emulate merkl rewards
             deal(rewards, currentStrategy, rewardsAmount);
@@ -361,6 +389,7 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
         }
         states[3] = _getState();
 
+        // --------------------------------------------- Withdraw
         uint withdrawn1 = _tryToWithdrawFromVault(strategy.vault(), states[1].vaultBalance - states[0].vaultBalance);
         vm.roll(block.number + 6);
         states[4] = _getState();
@@ -795,6 +824,7 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
         (state.realTvl,) = strategy.realTvl();
         (state.realSharePrice,) = strategy.realSharePrice();
         state.vaultBalance = IVault(IStrategy(address(strategy)).vault()).balanceOf(address(this));
+        (state.revenueAssets, state.revenueAmounts) = IStrategy(currentStrategy).getRevenue();
 
         // _printState(state);
         return state;
@@ -816,6 +846,9 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
         console.log("vaultBalance", state.vaultBalance);
         console.log("strategyBalanceAsset", state.strategyBalanceAsset);
         console.log("userBalanceAsset", state.userBalanceAsset);
+        for (uint i = 0; i < state.revenueAssets.length; i++) {
+            console.log("revenueAsset", i, state.revenueAssets[i], state.revenueAmounts[i]);
+        }
     }
 
     function _setMinMaxLtv(uint minLtv, uint maxLtv) internal {
@@ -876,6 +909,10 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
 
         vm.prank(multisig);
         strategy.setUniversalParams(params, addresses);
+    }
+
+    function _getWethPrice8() internal view returns (uint) {
+        return IAavePriceOracle(IAaveAddressProvider(IPool(POOL).ADDRESSES_PROVIDER()).getPriceOracle()).getAssetPrice(SonicConstantsLib.TOKEN_WETH);
     }
 
     //endregion --------------------------------------- Helper functions

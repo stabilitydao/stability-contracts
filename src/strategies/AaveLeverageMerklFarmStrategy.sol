@@ -300,20 +300,12 @@ contract AaveLeverageMerklFarmStrategy is
     }
 
     /// @inheritdoc IStrategy
+    /// @dev Assume that all amount can be withdrawn always for simplicity. Implement later.
     function maxWithdrawAssets(uint mode) public view override returns (uint[] memory amounts) {
-        address aToken = _getAToken();
-        address asset = IAToken(aToken).UNDERLYING_ASSET_ADDRESS();
+        mode; // hide warning
 
-        // currently available reserves in the pool
-        uint availableLiquidity = IERC20(asset).balanceOf(aToken);
-
-        // aToken balance of the strategy
-        uint aTokenBalance = IERC20(aToken).balanceOf(address(this));
-
-        amounts = new uint[](1);
-        amounts[0] = mode == 0 ? Math.min(availableLiquidity, aTokenBalance) : aTokenBalance;
-
-        // todo take leverage into account
+        // for simplicity of v.1.0: any amount can be withdrawn
+        return amounts;
     }
 
     /// @inheritdoc StrategyBase
@@ -323,33 +315,14 @@ contract AaveLeverageMerklFarmStrategy is
     }
 
     /// @inheritdoc IStrategy
+    /// @dev Assume that any amount can be deposite always for simplicity. Implement later.
     function maxDepositAssets() public view override returns (uint[] memory amounts) {
-        amounts = new uint[](1);
+        // in real implementation we should take into account both borrow and supply cap
+        // result amount should take leverage into account
+        // max deposit is limited by amount available to borrow from the borrow pool
 
-        address aToken = _getAToken();
-        address asset = IAToken(aToken).UNDERLYING_ASSET_ADDRESS();
-
-        // get supply cap for the borrow asset
-        // slither-disable-next-line unused-return
-        (, uint supplyCap) = IAaveDataProvider(
-            IAaveAddressProvider(IPool(IAToken(aToken).POOL()).ADDRESSES_PROVIDER()).getPoolDataProvider()
-        ).getReserveCaps(asset);
-
-        if (supplyCap == 0) {
-            amounts[0] = type(uint).max; // max deposit is not limited
-        } else {
-            supplyCap *= 10 ** IERC20Metadata(asset).decimals();
-
-            // get total supplied amount for the borrow asset
-            uint totalSupplied = IAToken(aToken).totalSupply();
-
-            // calculate available amount to supply as (supply cap - total supplied)
-            amounts[0] = (supplyCap > totalSupplied ? supplyCap - totalSupplied : 0) * 99 / 100; // leave 1% margin
-            // todo result amount should take leverage into account
-
-            // todo max deposit is limited by amount available to borrow from the borrow pool
-
-        }
+        // for simplicity of v1.0: any amount can be deposited
+        return amounts;
     }
 
 //endregion ----------------------------------- View functions
@@ -601,15 +574,15 @@ contract AaveLeverageMerklFarmStrategy is
 
         if (newPrice > oldPrice && oldPrice != 0) {
             uint _totalSupply = IVault(vault()).totalSupply();
-            uint price = IAavePriceOracle(
+            uint price8 = IAavePriceOracle(
                 IAaveAddressProvider(
                     IPool(IAToken(u).POOL()).ADDRESSES_PROVIDER()
                 ).getPriceOracle()
             ).getAssetPrice(__assets[0]);
 
             // share price already takes into account accumulated interest
-            uint amountUSD = _totalSupply * (newPrice - oldPrice) / 1e18;
-            amounts[0] = amountUSD * price / 1e18;
+            uint amountUSD18 = _totalSupply * (newPrice - oldPrice) / 1e18;
+            amounts[0] = amountUSD18 * 1e8 * 10**IERC20Metadata(__assets[0]).decimals() / price8 / 1e18;
         }
     }
 

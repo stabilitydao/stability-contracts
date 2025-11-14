@@ -584,18 +584,18 @@ library ALMFLib {
 
         (data.minTargetLeverage, data.maxTargetLeverage) = _getFarmLeverageConfig(farm);
 
-        console.log("collateralAsset", data.collateralAsset);
-        console.log("borrowAsset", data.borrowAsset);
-        console.log("lendingVault", data.lendingVault);
-        console.log("borrowingVault", data.borrowingVault);
-//        console.log("flashLoanVault", data.flashLoanVault);
-//        console.log("flashLoanKind", data.flashLoanKind);
-        console.log("swapFee18", data.swapFee18);
-        console.log("flashFee18", data.flashFee18);
-        console.log("priceC18", data.priceC18);
-        console.log("priceB18", data.priceB18);
-        console.log("minTargetLeverage", data.minTargetLeverage);
-        console.log("maxTargetLeverage", data.maxTargetLeverage);
+//        console.log("collateralAsset", data.collateralAsset);
+//        console.log("borrowAsset", data.borrowAsset);
+//        console.log("lendingVault", data.lendingVault);
+//        console.log("borrowingVault", data.borrowingVault);
+////        console.log("flashLoanVault", data.flashLoanVault);
+////        console.log("flashLoanKind", data.flashLoanKind);
+//        console.log("swapFee18", data.swapFee18);
+//        console.log("flashFee18", data.flashFee18);
+//        console.log("priceC18", data.priceC18);
+//        console.log("priceB18", data.priceB18);
+//        console.log("minTargetLeverage", data.minTargetLeverage);
+//        console.log("maxTargetLeverage", data.maxTargetLeverage);
 
         return data;
     }
@@ -628,11 +628,11 @@ library ALMFLib {
             healthFactor: healthFactor
         });
 
-        console.log("collateralBase", state.collateralBase);
-        console.log("debtBase", state.debtBase);
-        console.log("maxLtv", state.maxLtv);
-        console.log("healthFactor", state.healthFactor);
-        console.log("current ltv", ALMFCalcLib.getLtv(state.collateralBase, state.debtBase));
+//        console.log("collateralBase", state.collateralBase);
+//        console.log("debtBase", state.debtBase);
+//        console.log("maxLtv", state.maxLtv);
+//        console.log("healthFactor", state.healthFactor);
+//        console.log("current ltv", ALMFCalcLib.getLtv(state.collateralBase, state.debtBase));
     }
 
     /// @notice Get maximum LTV for the collateral asset in AAVE, INTERNAL_PRECISION
