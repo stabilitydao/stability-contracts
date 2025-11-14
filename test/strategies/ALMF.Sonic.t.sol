@@ -430,8 +430,7 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
 
         // --------------------------------------------- Deposit
         states[0] = _getState();
-        (uint depositedAssets, ) =
-            _tryToDepositToVault(strategy.vault(), amount, REVERT_NO, address(this));
+        (uint depositedAssets,) = _tryToDepositToVault(strategy.vault(), amount, REVERT_NO, address(this));
         vm.roll(block.number + 6);
         states[1] = _getState();
 
@@ -463,7 +462,7 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
 
     //endregion --------------------------------------- Test implementations
 
-        //region --------------------------------------- Internal logic
+    //region --------------------------------------- Internal logic
     function _currentFarmId() internal view returns (uint) {
         return IFarmingStrategy(currentStrategy).farmId();
     }
