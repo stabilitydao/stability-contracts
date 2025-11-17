@@ -1,34 +1,49 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {IFactory} from "../../interfaces/IFactory.sol";
-import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {ALMFCalcLib} from "./ALMFCalcLib.sol";
+import {ConstantsLib} from "../../core/libs/ConstantsLib.sol";
 import {IAToken} from "../../integrations/aave/IAToken.sol";
 import {IAaveAddressProvider} from "../../integrations/aave/IAaveAddressProvider.sol";
+import {IAaveDataProvider} from "../../integrations/aave/IAaveDataProvider.sol";
 import {IAavePriceOracle} from "../../integrations/aave/IAavePriceOracle.sol";
 import {IControllable} from "../../interfaces/IControllable.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IFactory} from "../../interfaces/IFactory.sol";
+import {IFarmingStrategy} from "../../interfaces/IFarmingStrategy.sol";
 import {ILeverageLendingStrategy} from "../../interfaces/ILeverageLendingStrategy.sol";
-import {IPool} from "../../integrations/aave/IPool.sol";
 import {IPlatform} from "../../interfaces/IPlatform.sol";
+import {IPool} from "../../integrations/aave/IPool.sol";
+import {IStrategy} from "../../interfaces/IStrategy.sol";
 import {ISwapper} from "../../interfaces/ISwapper.sol";
 import {IVaultMainV3} from "../../integrations/balancerv3/IVaultMainV3.sol";
+import {IVault} from "../../interfaces/IVault.sol";
 import {LeverageLendingLib} from "./LeverageLendingLib.sol";
-import {StrategyLib} from "./StrategyLib.sol";
-import {IAaveDataProvider} from "../../integrations/aave/IAaveDataProvider.sol";
-import {ConstantsLib} from "../../core/libs/ConstantsLib.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {StrategyLib} from "./StrategyLib.sol";
 
 library ALMFLib {
     using SafeERC20 for IERC20;
+
+    // keccak256(abi.encode(uint256(keccak256("erc7201:stability.AaveLeverageMerklFarmStrategy")) - 1)) & ~bytes32(uint256(0xff));
+    bytes32 internal constant AAVE_MERKL_FARM_STRATEGY_STORAGE_LOCATION = 0x735fb8abe13487f936dfcaad40428cb37101f887b7e375bd6616c095d1050600;
 
     uint public constant FARM_ADDRESS_LENDING_VAULT_INDEX = 0;
     uint public constant FARM_ADDRESS_BORROWING_VAULT_INDEX = 1;
     uint public constant FARM_ADDRESS_FLASH_LOAN_VAULT_INDEX = 2;
 
     uint public constant INTEREST_RATE_MODE_VARIABLE = 2;
+
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                          STORAGE                           */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    /// @custom:storage-location erc7201:stability.AaveLeverageMerklFarmStrategy
+    struct AlmfStrategyStorage {
+        uint lastSharePrice;
+    }
 
     //region ------------------------------------- Flash loan
     /// @notice token Borrow asset
@@ -264,6 +279,18 @@ library ALMFLib {
         IFactory.Farm memory farm,
         uint amount
     ) external returns (uint value) {
+        return _depositAssets(platform_, $, farm, amount);
+    }
+
+    /// @notice Deposit {amount} of the collateral asset
+    /// @param amount Amount of collateral asset to deposit
+    /// @return value Value is calculated as a delta of (total collateral - total debt) in base assets (USDC, 18 decimals)
+    function _depositAssets(
+        address platform_,
+        ILeverageLendingStrategy.LeverageLendingBaseStorage storage $,
+        IFactory.Farm memory farm,
+        uint amount
+    ) internal returns (uint value) {
         ALMFCalcLib.StaticData memory data = _getStaticData(platform_, $, farm);
         ALMFCalcLib.State memory state = _getState(data);
 
@@ -580,18 +607,9 @@ library ALMFLib {
         return (ALMFCalcLib.ltvToLeverage(farm.nums[0]), ALMFCalcLib.ltvToLeverage(farm.nums[1]));
     }
 
-    /// @return targetMinLtv Minimum target ltv, INTERNAL_PRECISION
-    /// @return targetMaxLtv Maximum target ltv, INTERNAL_PRECISION
-    function _getFarmLtvConfig(IFactory.Farm memory farm) internal pure returns (uint targetMinLtv, uint targetMaxLtv) {
-        return (farm.nums[0], farm.nums[1]);
-    }
-
     /// @notice Get current state: collateral and debt in base asset (USD, 18 decimals)
-    function _getState(ALMFCalcLib.StaticData memory data) internal view returns (ALMFCalcLib.State memory state) {
-        IPool pool = IPool(IAaveAddressProvider(data.addressProvider).getPool());
-
-        (uint totalCollateralBase, uint totalDebtBase,,, uint maxLtv, uint healthFactor) =
-            pool.getUserAccountData(address(this));
+    function _getState(address pool_) internal view returns (ALMFCalcLib.State memory state) {
+        (uint totalCollateralBase, uint totalDebtBase,,, uint maxLtv, uint healthFactor) = IPool(pool_).getUserAccountData(address(this));
 
         state = ALMFCalcLib.State({
             collateralBase: totalCollateralBase * 1e10,
@@ -605,6 +623,11 @@ library ALMFLib {
         //        console.log("maxLtv", state.maxLtv);
         //        console.log("healthFactor", state.healthFactor);
         //        console.log("current ltv", ALMFCalcLib.getLtv(state.collateralBase, state.debtBase));
+    }
+
+    /// @notice Get current state: collateral and debt in base asset (USD, 18 decimals)
+    function _getState(ALMFCalcLib.StaticData memory data) internal view returns (ALMFCalcLib.State memory state) {
+        return _getState(IAaveAddressProvider(data.addressProvider).getPool());
     }
 
     /// @notice Get maximum LTV for the collateral asset in AAVE, INTERNAL_PRECISION
@@ -623,7 +646,7 @@ library ALMFLib {
         ILeverageLendingStrategy.LeverageLendingBaseStorage storage $,
         IFactory.Farm memory farm
     )
-        internal
+        external
         view
         returns (
             uint ltv,
@@ -660,14 +683,8 @@ library ALMFLib {
         targetLeveragePercent = targetLeverage * ALMFCalcLib.INTERNAL_PRECISION / maxLeverage;
     }
 
-    function total(
-        address platform,
-        ILeverageLendingStrategy.LeverageLendingBaseStorage storage $,
-        IFactory.Farm memory farm
-    ) external view returns (uint totalValue) {
-        ALMFCalcLib.StaticData memory data = _getStaticData(platform, $, farm);
-        ALMFCalcLib.State memory state = _getState(data);
-        totalValue = calcTotal(state);
+    function total(ILeverageLendingStrategy.LeverageLendingBaseStorage storage $) internal view returns (uint totalValue) {
+        totalValue = calcTotal(_getState(IAToken($.lendingVault).POOL()));
     }
 
     //endregion ------------------------------------- View
@@ -686,13 +703,13 @@ library ALMFLib {
 
     //endregion ------------------------------------- Swap
 
-    //region -------------------------------------  Rebalance debt
+    //region ------------------------------------- Rebalance debt
     function rebalanceDebt(
         address platform,
         uint newLtv,
         ILeverageLendingStrategy.LeverageLendingBaseStorage storage $,
         IFactory.Farm memory farm
-    ) internal returns (uint resultLtv) {
+    ) external returns (uint resultLtv) {
         ALMFCalcLib.StaticData memory data = _getStaticData(platform, $, farm);
         ALMFCalcLib.State memory state = _getState(data);
 
@@ -740,27 +757,35 @@ library ALMFLib {
 
     //region ------------------------------------- Real tvl
 
-    function realTvl(
-        address platform,
-        ILeverageLendingStrategy.LeverageLendingBaseStorage storage $,
-        IFactory.Farm memory farm
-    ) public view returns (uint tvl, bool trusted) {
-        ALMFCalcLib.StaticData memory data = _getStaticData(platform, $, farm);
-        ALMFCalcLib.State memory state = _getState(data);
-        return _realTvl(state);
+    function realTvl(ILeverageLendingStrategy.LeverageLendingBaseStorage storage $) public view returns (uint tvl, bool trusted) {
+        return _realTvl(_getState(IAToken($.lendingVault).POOL()));
     }
 
     function _realTvl(ALMFCalcLib.State memory state) internal pure returns (uint tvl, bool trusted) {
         tvl = state.collateralBase - state.debtBase;
         trusted = true;
     }
+
+    function _realSharePrice(
+        ILeverageLendingStrategy.LeverageLendingBaseStorage storage $,
+        address vault_
+    ) internal view returns (uint sharePrice, bool trusted) {
+        uint __realTvl;
+        (__realTvl, trusted) = realTvl($);
+        uint totalSupply = IERC20(vault_).totalSupply();
+        if (totalSupply != 0) {
+            sharePrice = __realTvl * 1e18 / totalSupply;
+        }
+        return (sharePrice, trusted);
+    }
     //endregion ------------------------------------- Real tvl
 
+    //region ------------------------------------- Revenue
     function _getDepositAndBorrowAprs(
         address lendingVault,
         address collateralAsset,
         address borrowAsset
-    ) internal view returns (uint depositApr, uint borrowApr) {
+    ) external view returns (uint depositApr, uint borrowApr) {
         IPool pool = IPool(IAToken(lendingVault).POOL());
         IPool.ReserveData memory collateralData = pool.getReserveData(collateralAsset);
         IPool.ReserveData memory borrowData = pool.getReserveData(borrowAsset);
@@ -771,6 +796,114 @@ library ALMFLib {
         depositApr = uint(collateralData.currentLiquidityRate) * ConstantsLib.DENOMINATOR / 1e27;
         borrowApr = uint(borrowData.currentVariableBorrowRate) * ConstantsLib.DENOMINATOR / 1e27;
     }
+
+    function claimRevenue(
+        ILeverageLendingStrategy.LeverageLendingBaseStorage storage $,
+        AlmfStrategyStorage storage $a,
+        IFarmingStrategy.FarmingStrategyBaseStorage storage $f,
+        IStrategy.StrategyBaseStorage storage $base,
+        address vault_
+    )
+    external
+    returns (
+        address[] memory __assets,
+        uint[] memory __amounts,
+        address[] memory __rewardAssets,
+        uint[] memory __rewardAmounts
+    )
+    {
+        (uint newPrice,) = _realSharePrice($, vault_);
+        uint oldPrice = $a.lastSharePrice;
+        if (oldPrice == 0) {
+            // first initialization of share price
+            // we cannot do it in deposit() because total supply is used for calculation
+            $a.lastSharePrice = newPrice;
+            oldPrice = newPrice;
+        }
+        (__assets, __amounts) = _getRevenue($, oldPrice, newPrice, vault_);
+        $a.lastSharePrice = newPrice;
+
+        // ---------------------- collect Merkl rewards
+        __rewardAssets = $f._rewardAssets;
+        uint rwLen = __rewardAssets.length;
+        __rewardAmounts = new uint[](rwLen);
+        for (uint i; i < rwLen; ++i) {
+            // Reward asset can be equal to the borrow asset.
+            // The borrow asset is never left on the balance, see _receiveFlashLoan().
+            // So, any borrow asset on balance can be considered as a reward.
+            __rewardAmounts[i] = StrategyLib.balance(__rewardAssets[i]);
+        }
+
+        // This strategy doesn't use $base.total at all
+        // but StrategyBase expects it to be set in doHardWork in order to calculate aprCompound
+        // so, we set it twice: here (old value) and in _compound (new value)
+        $base.total = total($);
+    }
+
+    function getRevenue(
+        ILeverageLendingStrategy.LeverageLendingBaseStorage storage $,
+        uint oldPrice,
+        address vault_
+    ) external view returns (address[] memory assets, uint[] memory amounts) {
+        (uint newPrice,) = _realSharePrice($, vault_);
+        return _getRevenue($, oldPrice, newPrice, vault_);
+    }
+
+    function _getRevenue(
+        ILeverageLendingStrategy.LeverageLendingBaseStorage storage $,
+        uint oldPrice,
+        uint newPrice,
+        address vault_
+    ) internal view returns (address[] memory assets, uint[] memory amounts) {
+        // assume below that there is only 1 asset - collateral asset
+
+        amounts = new uint[](1);
+        assets = new address[](1);
+
+        assets[0] = $.collateralAsset;
+
+        if (newPrice > oldPrice && oldPrice != 0) {
+            uint _totalSupply = IVault(vault_).totalSupply();
+            uint price8 = IAavePriceOracle(
+                IAaveAddressProvider(IPool(IAToken($.lendingVault).POOL()).ADDRESSES_PROVIDER()).getPriceOracle()
+            ).getAssetPrice(assets[0]);
+
+            // share price already takes into account accumulated interest
+            uint amountUSD18 = _totalSupply * (newPrice - oldPrice) / 1e18;
+            amounts[0] = amountUSD18 * 1e8 * 10 ** IERC20Metadata(assets[0]).decimals() / price8 / 1e18;
+        }
+    }
+
+    function liquidateRewards(
+        address platform_,
+        address exchangeAsset,
+        address[] memory rewardAssets_,
+        uint[] memory rewardAmounts_,
+        uint priceImpactTolerance
+    ) external returns (uint earnedExchangeAsset) {
+        return StrategyLib.liquidateRewards(platform_, exchangeAsset, rewardAssets_, rewardAmounts_, priceImpactTolerance);
+    }
+
+    function compound(
+        address platform_,
+        ILeverageLendingStrategy.LeverageLendingBaseStorage storage $,
+        IStrategy.StrategyBaseStorage storage $base,
+        IFactory.Farm memory farm
+    ) external {
+        // assume below that there is only 1 asset - collateral asset
+        address asset = $.collateralAsset;
+        uint amount = StrategyLib.balance(asset);
+
+        if (amount != 0) {
+            _depositAssets(platform_, $, farm, amount);
+        }
+
+        // This strategy doesn't use $base.total at all
+        // but StrategyBase expects it to be set in doHardWork in order to calculate aprCompound
+        // so, we set it twice: here (new value) and in _claimRevenue (old value)
+        $base.total = total($);
+    }
+    //endregion ------------------------------------- Revenue
 
     //region ------------------------------------- Internal utils
     function _getFlashLoanAmounts(
@@ -798,6 +931,13 @@ library ALMFLib {
         if (state.debtBase != 0) {
             uint ltv = ALMFCalcLib.getLtv(state.collateralBase, state.debtBase);
             require(state.healthFactor > 1e18 && ltv < state.maxLtv, IControllable.IncorrectLtv(ltv));
+        }
+    }
+
+    function _getStorage() internal pure returns (AlmfStrategyStorage storage $) {
+        //slither-disable-next-line assembly
+        assembly {
+            $.slot := AAVE_MERKL_FARM_STRATEGY_STORAGE_LOCATION
         }
     }
     //endregion ------------------------------------- Internal utils

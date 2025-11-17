@@ -2,19 +2,14 @@
 pragma solidity ^0.8.23;
 
 import {IControllable} from "../../src/interfaces/IControllable.sol";
-import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IFarmingStrategy} from "../../src/interfaces/IFarmingStrategy.sol";
 import {ILeverageLendingStrategy} from "../../src/interfaces/ILeverageLendingStrategy.sol";
-import {IMetaVaultFactory} from "../../src/interfaces/IMetaVaultFactory.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
 import {IFactory} from "../../src/interfaces/IFactory.sol";
 import {IStabilityVault} from "../../src/interfaces/IStabilityVault.sol";
 import {IStrategy} from "../../src/interfaces/IStrategy.sol";
 import {IVault} from "../../src/interfaces/IVault.sol";
-import {IWrappedMetaVault} from "../../src/interfaces/IWrappedMetaVault.sol";
-import {MetaVault} from "../../src/core/vaults/MetaVault.sol";
-import {WrappedMetaVault} from "../../src/core/vaults/WrappedMetaVault.sol";
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 import {SonicFarmMakerLib} from "../../chains/sonic/SonicFarmMakerLib.sol";
 import {SonicSetup} from "../base/chains/SonicSetup.sol";
@@ -24,8 +19,8 @@ import {PriceReader} from "../../src/core/PriceReader.sol";
 import {IAaveAddressProvider} from "../../src/integrations/aave/IAaveAddressProvider.sol";
 import {IAavePriceOracle} from "../../src/integrations/aave/IAavePriceOracle.sol";
 import {IPool} from "../../src/integrations/aave/IPool.sol";
+import {ALMFLib} from "../../src/strategies/libs/ALMFLib.sol";
 import {console} from "forge-std/console.sol";
-import {IAavePoolConfigurator31} from "../../src/integrations/aave31/IAavePoolConfigurator31.sol";
 
 contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
     uint public constant REVERT_NO = 0;
@@ -82,9 +77,18 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
         allowZeroTotalRevenueUSD = true;
 
         // _upgradePlatform(platform.multisig(), IPlatform(PLATFORM).priceReader());
+
     }
 
     //region --------------------------------------- Universal test
+    function testStorage() public pure {
+        bytes32 h =
+            keccak256(abi.encode(uint(keccak256("erc7201:stability.AaveLeverageMerklFarmStrategy")) - 1)) & ~bytes32(uint(0xff));
+//        console.log("erc7201:stability.AaveLeverageMerklFarmStrategy");
+//        console.logBytes32(h);
+        assertEq(ALMFLib.AAVE_MERKL_FARM_STRATEGY_STORAGE_LOCATION, h, "ALMFLib storage location");
+    }
+
     function testALMFSonic() public universalTest {
         _addStrategy(_addFarm());
     }

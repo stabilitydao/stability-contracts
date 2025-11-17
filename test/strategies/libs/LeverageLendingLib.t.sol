@@ -4,10 +4,7 @@ pragma solidity ^0.8.28;
 import {Test} from "forge-std/Test.sol";
 import {ILeverageLendingStrategy} from "../../../src/interfaces/ILeverageLendingStrategy.sol";
 import {LeverageLendingLib} from "../../../src/strategies/libs/LeverageLendingLib.sol";
-import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {SonicConstantsLib} from "../../../chains/sonic/SonicConstantsLib.sol";
-import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
-import {SonicFarmMakerLib} from "../../../chains/sonic/SonicFarmMakerLib.sol";
 
 contract LeverageLendingLibTests is Test {
     uint internal constant FORK_BLOCK = 55065335; // Nov-13-2025 03:53:58 AM +UTC
