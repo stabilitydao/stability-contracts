@@ -19,7 +19,6 @@ library ALMFLib2 {
 
     string internal constant STRATEGY_LOGIC_ID = StrategyIdLib.AAVE_LEVERAGE_MERKL_FARM;
 
-
     //region ------------------------------------- View
     function _poolTvl(address platform_, address aToken) external view returns (uint tvlUsd) {
         address asset = IAToken(aToken).UNDERLYING_ASSET_ADDRESS();
@@ -39,8 +38,8 @@ library ALMFLib2 {
     function _getFarmLtvConfig(IFactory.Farm memory farm) internal pure returns (uint targetMinLtv, uint targetMaxLtv) {
         return (farm.nums[0], farm.nums[1]);
     }
-    //endregion ------------------------------------- View
 
+    //endregion ------------------------------------- View
 
     //region ------------------------------------- Init vars, desc
     function genDesc(IFactory.Farm memory farm) external view returns (string memory) {
@@ -61,14 +60,17 @@ library ALMFLib2 {
 
     /// @dev See IStrategy.initVariants
     function initVariants(address platform_)
-    external
-    view
-    returns (string[] memory variants, address[] memory addresses, uint[] memory nums, int24[] memory ticks)
+        external
+        view
+        returns (string[] memory variants, address[] memory addresses, uint[] memory nums, int24[] memory ticks)
     {
         return SharedLib.initVariantsForFarm(platform_, STRATEGY_LOGIC_ID, _genDesc);
     }
 
-    function getSpecificName(ILeverageLendingStrategy.LeverageLendingBaseStorage storage $, IFactory.Farm memory farm) external view returns (string memory, bool) {
+    function getSpecificName(
+        ILeverageLendingStrategy.LeverageLendingBaseStorage storage $,
+        IFactory.Farm memory farm
+    ) external view returns (string memory, bool) {
         (uint targetMinLtv, uint targetMaxLtv) = _getFarmLtvConfig(farm);
 
         return (
@@ -126,10 +128,7 @@ library ALMFLib2 {
         //        $.withdrawParam2 = 100_00;
 
         $.flashLoanKind = flashLoanKind_;
-
     }
 
     //endregion ------------------------------------- Init vars, desc
-
-
 }

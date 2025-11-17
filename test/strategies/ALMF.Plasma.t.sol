@@ -10,19 +10,18 @@ import {IFactory} from "../../src/interfaces/IFactory.sol";
 import {IStabilityVault} from "../../src/interfaces/IStabilityVault.sol";
 import {IStrategy} from "../../src/interfaces/IStrategy.sol";
 import {IVault} from "../../src/interfaces/IVault.sol";
-import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
-import {SonicFarmMakerLib} from "../../chains/sonic/SonicFarmMakerLib.sol";
-import {SonicSetup} from "../base/chains/SonicSetup.sol";
+import {PlasmaConstantsLib} from "../../chains/plasma/PlasmaConstantsLib.sol";
+import {PlasmaFarmMakerLib} from "../../chains/plasma/PlasmaFarmMakerLib.sol";
+import {PlasmaSetup} from "../base/chains/PlasmaSetup.sol";
 import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
 import {UniversalTest} from "../base/UniversalTest.sol";
 import {PriceReader} from "../../src/core/PriceReader.sol";
 import {IAaveAddressProvider} from "../../src/integrations/aave/IAaveAddressProvider.sol";
 import {IAavePriceOracle} from "../../src/integrations/aave/IAavePriceOracle.sol";
 import {IPool} from "../../src/integrations/aave/IPool.sol";
-import {ALMFLib} from "../../src/strategies/libs/ALMFLib.sol";
 import {console} from "forge-std/console.sol";
 
-contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
+contract ALMFStrategyPlasmaTest is PlasmaSetup, UniversalTest {
     uint public constant REVERT_NO = 0;
     uint public constant REVERT_NOT_ENOUGH_LIQUIDITY = 1;
     uint public constant REVERT_INSUFFICIENT_BALANCE = 2;
@@ -53,14 +52,17 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
         uint[] revenueAmounts;
     }
 
-    uint internal constant FORK_BLOCK = 55057575; // Nov-13-2025 02:19:01 AM +UTC
+    uint internal constant FORK_BLOCK = 6452516; // Nov-17-2025 12:36:59 UTC
 
-    address internal constant POOL = 0x5362dBb1e601abF3a4c14c22ffEdA64042E5eAA3;
-    address internal constant ATOKEN_USDC = 0x578Ee1ca3a8E1b54554Da1Bf7C583506C4CD11c6;
-    address internal constant ATOKEN_WETH = 0xe18Ab82c81E7Eecff32B8A82B1b7d2d23F1EcE96;
+    address internal constant ADDRESS_PROVIDER = 0x061D8e131F26512348ee5FA42e2DF1bA9d6505E9;
+    address internal constant POOL_DATA_PROVIDER = 0xf2D6E38B407e31E7E7e4a16E6769728b76c7419F;
+    address internal constant POOL = 0x925a2A7214Ed92428B5b1B090F80b25700095e12;
+    address internal constant ATOKEN_USDT = 0x5D72a9d9A9510Cd8cBdBA12aC62593A58930a948;
+    address internal constant ATOKEN_WETH = 0xf1aB7f60128924d69f6d7dE25A20eF70bBd43d07;
+    address internal constant POOL_WXPL_USDT0 = 0x8603C67B7Cc056ef6981a9C709854c53b699Fa66;
 
     constructor() {
-        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL"), FORK_BLOCK));
+        vm.selectFork(vm.createFork(vm.envString("PLASMA_RPC_URL"), FORK_BLOCK));
 
         allowZeroApr = true;
         duration1 = 0.1 hours;
@@ -80,15 +82,7 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
     }
 
     //region --------------------------------------- Universal test
-    function testStorage() public pure {
-        bytes32 h = keccak256(abi.encode(uint(keccak256("erc7201:stability.AaveLeverageMerklFarmStrategy")) - 1))
-            & ~bytes32(uint(0xff));
-        //        console.log("erc7201:stability.AaveLeverageMerklFarmStrategy");
-        //        console.logBytes32(h);
-        assertEq(ALMFLib.AAVE_MERKL_FARM_STRATEGY_STORAGE_LOCATION, h, "ALMFLib storage location");
-    }
-
-    function testALMFSonic() public universalTest {
+    function testALMFPlasma() public universalTest {
         _addStrategy(_addFarm());
     }
 
@@ -105,20 +99,20 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
     }
 
     function _addFarm() internal returns (uint farmId) {
-        address[] memory rewards = new address[](2);
-        rewards[0] = SonicConstantsLib.TOKEN_USDC;
-        rewards[1] = SonicConstantsLib.TOKEN_USDT;
+        address[] memory rewards = new address[](1);
+        rewards[0] = PlasmaConstantsLib.TOKEN_USDT0;
+        // todo rewards[1] = PlasmaConstantsLib.TOKEN_WXPL;
 
         IFactory.Farm[] memory farms = new IFactory.Farm[](1);
-        farms[0] = SonicFarmMakerLib._makeAaveLeverageMerklFarm(
+        farms[0] = PlasmaFarmMakerLib._makeAaveLeverageMerklFarm(
             ATOKEN_WETH,
-            ATOKEN_USDC,
-            SonicConstantsLib.BEETS_VAULT,
+            ATOKEN_USDT,
+            POOL_WXPL_USDT0,
             rewards,
             49_00, // min target ltv
             50_97, // max target ltv
-            0 // beets v2 flash loan kind
-        ); //68
+            uint(ILeverageLendingStrategy.FlashLoanKind.UniswapV3_2)
+        );
 
         vm.startPrank(platform.multisig());
         factory.addFarms(farms);
@@ -143,27 +137,13 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
         // check deposit-wait 30 days-hardwork-withdraw results
         _testDepositWaitHardworkWithdraw();
 
-        // check flash loan vault of various kinds
-        _testDepositWithdrawUsingFlashLoan(
-            SonicConstantsLib.BEETS_VAULT, ILeverageLendingStrategy.FlashLoanKind.Default_0
-        );
-        _testDepositWithdrawUsingFlashLoan(
-            SonicConstantsLib.BEETS_VAULT_V3, ILeverageLendingStrategy.FlashLoanKind.BalancerV3_1
-        );
-        _testDepositWithdrawUsingFlashLoan(
-            SonicConstantsLib.POOL_SHADOW_CL_USDC_USDT, ILeverageLendingStrategy.FlashLoanKind.UniswapV3_2
-        );
-        _testDepositWithdrawUsingFlashLoan(
-            SonicConstantsLib.POOL_ALGEBRA_WS_USDC, ILeverageLendingStrategy.FlashLoanKind.AlgebraV4_3
-        );
-
         vm.revertToState(snapshot);
     }
 
     function _preHardWork() internal override {
         // emulate merkl rewards
-        deal(SonicConstantsLib.TOKEN_USDC, currentStrategy, 1e6);
-        deal(SonicConstantsLib.TOKEN_USDT, currentStrategy, 1e6);
+        deal(PlasmaConstantsLib.TOKEN_USDT0, currentStrategy, 1e6);
+        deal(PlasmaConstantsLib.TOKEN_WXPL, currentStrategy, 1e18);
     }
 
     //endregion --------------------------------------- Universal test
@@ -183,7 +163,7 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
 
         // --------------------------------------------- Hardwork 1
         _skip(1 days, 0);
-        deal(SonicConstantsLib.TOKEN_USDT, currentStrategy, 100e6);
+        deal(PlasmaConstantsLib.TOKEN_USDT0, currentStrategy, 100e6);
 
         vm.prank(platform.multisig());
         IVault(strategy.vault()).doHardWork();
@@ -192,7 +172,7 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
 
         // --------------------------------------------- Hardwork 2
         _skip(1 days, 0);
-        deal(SonicConstantsLib.TOKEN_USDT, currentStrategy, 300e6);
+        deal(PlasmaConstantsLib.TOKEN_USDT0, currentStrategy, 300e6);
 
         vm.prank(platform.multisig());
         IVault(strategy.vault()).doHardWork();
@@ -300,7 +280,7 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
         _setUpFlashLoanVault(flashLoanVault, kind_);
 
         uint amount = 1e18;
-        State[] memory states = _depositWithdraw(amount, SonicConstantsLib.TOKEN_USDC, 0, 0, false);
+        State[] memory states = _depositWithdraw(amount, PlasmaConstantsLib.TOKEN_USDT0, 0, 0, false);
         vm.revertToState(snapshot);
 
         assertApproxEqRel(
@@ -317,17 +297,17 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
 
         // --------------------------------------------- Deposit+withdraw without hardwork
         uint snapshot = vm.snapshotState();
-        State[] memory statesInstant = _depositWithdraw(amount, SonicConstantsLib.TOKEN_USDC, 0, 0, true);
+        State[] memory statesInstant = _depositWithdraw(amount, PlasmaConstantsLib.TOKEN_USDT0, 0, 0, true);
         vm.revertToState(snapshot);
 
         // --------------------------------------------- Deposit, wait, [no rewards], hardwork, withdraw
         snapshot = vm.snapshotState();
-        State[] memory statesHW1 = _depositWithdraw(amount, SonicConstantsLib.TOKEN_USDC, 0, 1 days, true);
+        State[] memory statesHW1 = _depositWithdraw(amount, PlasmaConstantsLib.TOKEN_USDT0, 0, 1 days, true);
         vm.revertToState(snapshot);
 
         // --------------------------------------------- Deposit, wait, rewards, hardwork, withdraw
         snapshot = vm.snapshotState();
-        State[] memory statesHW2 = _depositWithdraw(amount, SonicConstantsLib.TOKEN_USDC, 100e6, 1 days, true);
+        State[] memory statesHW2 = _depositWithdraw(amount, PlasmaConstantsLib.TOKEN_USDT0, 100e6, 1 days, true);
         vm.revertToState(snapshot);
 
         // --------------------------------------------- Get WETH price
@@ -660,7 +640,7 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
 
     function _getWethPrice8() internal view returns (uint) {
         return IAavePriceOracle(IAaveAddressProvider(IPool(POOL).ADDRESSES_PROVIDER()).getPriceOracle())
-            .getAssetPrice(SonicConstantsLib.TOKEN_WETH);
+            .getAssetPrice(PlasmaConstantsLib.TOKEN_WETH);
     }
 
     //endregion --------------------------------------- Helper functions

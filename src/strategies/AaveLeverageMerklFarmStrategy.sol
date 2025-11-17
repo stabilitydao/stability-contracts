@@ -90,7 +90,6 @@ contract AaveLeverageMerklFarmStrategy is
             params.borrowAsset,
             farm.nums[2]
         );
-
     }
 
     //endregion ----------------------------------- Initialization and restricted actions
@@ -337,7 +336,9 @@ contract AaveLeverageMerklFarmStrategy is
     /// @inheritdoc StrategyBase
     function _compound() internal override(LeverageLendingBase, StrategyBase) {
         address _platform = platform();
-        return ALMFLib.compound(_platform, _getLeverageLendingBaseStorage(), _getStrategyBaseStorage(), _getFarm(_platform, farmId()));
+        return ALMFLib.compound(
+            _platform, _getLeverageLendingBaseStorage(), _getStrategyBaseStorage(), _getFarm(_platform, farmId())
+        );
     }
 
     /// @inheritdoc StrategyBase
@@ -399,7 +400,9 @@ contract AaveLeverageMerklFarmStrategy is
         address[] memory rewardAssets_,
         uint[] memory rewardAmounts_
     ) internal override(FarmingStrategyBase, StrategyBase, LeverageLendingBase) returns (uint earnedExchangeAsset) {
-        return ALMFLib.liquidateRewards(platform(), exchangeAsset, rewardAssets_, rewardAmounts_, customPriceImpactTolerance());
+        return ALMFLib.liquidateRewards(
+            platform(), exchangeAsset, rewardAssets_, rewardAmounts_, customPriceImpactTolerance()
+        );
     }
 
     /// @inheritdoc IFarmingStrategy

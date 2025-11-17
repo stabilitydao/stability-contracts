@@ -16,6 +16,7 @@ import {StrategyDeveloperLib} from "../src/strategies/libs/StrategyDeveloperLib.
 import {CVault} from "../src/core/vaults/CVault.sol";
 import {VaultTypeLib} from "../src/core/libs/VaultTypeLib.sol";
 import {PriceReader, IPriceReader} from "../src/core/PriceReader.sol";
+import {AaveLeverageMerklFarmStrategy} from "../src/strategies/AaveLeverageMerklFarmStrategy.sol";
 
 /// @dev Ethereum network [chainId: 1] data library
 ///   EEEEEEEEEE   TTTTTTTTTT  HHH    HHH   EEEEEEEEEE   RRRRRRRR    EEEEEEEEEE   UU     UU   M       M
@@ -136,6 +137,7 @@ library EthereumLib {
 
         //region ----- Deploy strategy logics -----
         factory.setStrategyImplementation(StrategyIdLib.COMPOUND_FARM, address(new CompoundFarmStrategy()));
+        factory.setStrategyImplementation(StrategyIdLib.AAVE_LEVERAGE_MERKL_FARM, address(new AaveLeverageMerklFarmStrategy()));
         LogDeployLib.logDeployStrategies(platform, showLog);
         //endregion
 
@@ -197,6 +199,41 @@ library EthereumLib {
         farm.addresses[1] = COMPOUND_COMET_REWARDS;
         farm.nums = new uint[](0);
         farm.ticks = new int24[](0);
+        return farm;
+    }
+
+    /// @notice Creates Aave Leverage Merkl Farm configuration
+    /// @param aTokenCollateral Address of aToken used as collateral
+    /// @param aTokenBorrow Address of aToken used as borrowed asset
+    /// @param flashLoanVault Address of the vault used for flash loans
+    /// @param rewardAssets Array of reward token addresses
+    /// @param minTargetLtv Minimum target loan-to-value ratio (LTV) for leverage management, 85_00 = 0.85
+    /// @param maxTargetLtv Maximum target loan-to-value ratio (LTV) for leverage management, 85_00 = 0.85
+    /// @param flashLoanKind Type of flash loan to be used (see ILeverageLendingStrategy.FlashLoanKind)
+    function _makeAaveLeverageMerklFarm(
+        address aTokenCollateral,
+        address aTokenBorrow,
+        address flashLoanVault,
+        address[] memory rewardAssets,
+        uint minTargetLtv,
+        uint maxTargetLtv,
+        uint flashLoanKind
+    ) internal pure returns (IFactory.Farm memory) {
+        IFactory.Farm memory farm;
+        farm.status = 0;
+        farm.strategyLogicId = StrategyIdLib.AAVE_LEVERAGE_MERKL_FARM;
+        farm.rewardAssets = rewardAssets;
+
+        farm.addresses = new address[](3);
+        farm.addresses[0] = aTokenCollateral;
+        farm.addresses[1] = aTokenBorrow;
+        farm.addresses[2] = flashLoanVault;
+
+        farm.nums = new uint[](3);
+        farm.nums[0] = minTargetLtv;
+        farm.nums[1] = maxTargetLtv;
+        farm.nums[2] = flashLoanKind;
+
         return farm;
     }
 

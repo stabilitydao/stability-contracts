@@ -10,19 +10,17 @@ import {IFactory} from "../../src/interfaces/IFactory.sol";
 import {IStabilityVault} from "../../src/interfaces/IStabilityVault.sol";
 import {IStrategy} from "../../src/interfaces/IStrategy.sol";
 import {IVault} from "../../src/interfaces/IVault.sol";
-import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
-import {SonicFarmMakerLib} from "../../chains/sonic/SonicFarmMakerLib.sol";
-import {SonicSetup} from "../base/chains/SonicSetup.sol";
+import {EthereumLib} from "../../chains/EthereumLib.sol";
+import {EthereumSetup} from "../base/chains/EthereumSetup.sol";
 import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
 import {UniversalTest} from "../base/UniversalTest.sol";
 import {PriceReader} from "../../src/core/PriceReader.sol";
 import {IAaveAddressProvider} from "../../src/integrations/aave/IAaveAddressProvider.sol";
 import {IAavePriceOracle} from "../../src/integrations/aave/IAavePriceOracle.sol";
 import {IPool} from "../../src/integrations/aave/IPool.sol";
-import {ALMFLib} from "../../src/strategies/libs/ALMFLib.sol";
 import {console} from "forge-std/console.sol";
 
-contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
+contract ALMFStrategyEthereumTest is EthereumSetup, UniversalTest {
     uint public constant REVERT_NO = 0;
     uint public constant REVERT_NOT_ENOUGH_LIQUIDITY = 1;
     uint public constant REVERT_INSUFFICIENT_BALANCE = 2;
@@ -53,14 +51,14 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
         uint[] revenueAmounts;
     }
 
-    uint internal constant FORK_BLOCK = 55057575; // Nov-13-2025 02:19:01 AM +UTC
+    uint internal constant FORK_BLOCK = 23819383; // Nov-17-2025 02:07:23 PM +UTC
 
-    address internal constant POOL = 0x5362dBb1e601abF3a4c14c22ffEdA64042E5eAA3;
-    address internal constant ATOKEN_USDC = 0x578Ee1ca3a8E1b54554Da1Bf7C583506C4CD11c6;
-    address internal constant ATOKEN_WETH = 0xe18Ab82c81E7Eecff32B8A82B1b7d2d23F1EcE96;
+    address internal constant POOL = 0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2;
+    address internal constant ATOKEN_USDC = 0x98C23E9d8f34FEFb1B7BD6a91B7FF122F4e16F5c;
+    address internal constant ATOKEN_WBTC = 0x5Ee5bf7ae06D1Be5997A1A72006FE6C607eC6DE8;
 
     constructor() {
-        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL"), FORK_BLOCK));
+        vm.selectFork(vm.createFork(vm.envString("ETHEREUM_RPC_URL"), FORK_BLOCK));
 
         allowZeroApr = true;
         duration1 = 0.1 hours;
@@ -80,15 +78,7 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
     }
 
     //region --------------------------------------- Universal test
-    function testStorage() public pure {
-        bytes32 h = keccak256(abi.encode(uint(keccak256("erc7201:stability.AaveLeverageMerklFarmStrategy")) - 1))
-            & ~bytes32(uint(0xff));
-        //        console.log("erc7201:stability.AaveLeverageMerklFarmStrategy");
-        //        console.logBytes32(h);
-        assertEq(ALMFLib.AAVE_MERKL_FARM_STRATEGY_STORAGE_LOCATION, h, "ALMFLib storage location");
-    }
-
-    function testALMFSonic() public universalTest {
+    function testALMFEthereum() public universalTest {
         _addStrategy(_addFarm());
     }
 
@@ -105,20 +95,20 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
     }
 
     function _addFarm() internal returns (uint farmId) {
-        address[] memory rewards = new address[](2);
-        rewards[0] = SonicConstantsLib.TOKEN_USDC;
-        rewards[1] = SonicConstantsLib.TOKEN_USDT;
+        address[] memory rewards = new address[](1);
+        rewards[0] = EthereumLib.TOKEN_USDC;
+        // todo rewards[1] = EthereumLib.TOKEN_WXPL;
 
         IFactory.Farm[] memory farms = new IFactory.Farm[](1);
-        farms[0] = SonicFarmMakerLib._makeAaveLeverageMerklFarm(
-            ATOKEN_WETH,
+        farms[0] = EthereumLib._makeAaveLeverageMerklFarm(
+            ATOKEN_WBTC,
             ATOKEN_USDC,
-            SonicConstantsLib.BEETS_VAULT,
+            EthereumLib.POOL_UNISWAPV3_USDC_WETH_500,
             rewards,
             49_00, // min target ltv
             50_97, // max target ltv
-            0 // beets v2 flash loan kind
-        ); //68
+            uint(ILeverageLendingStrategy.FlashLoanKind.UniswapV3_2)
+        );
 
         vm.startPrank(platform.multisig());
         factory.addFarms(farms);
@@ -143,27 +133,13 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
         // check deposit-wait 30 days-hardwork-withdraw results
         _testDepositWaitHardworkWithdraw();
 
-        // check flash loan vault of various kinds
-        _testDepositWithdrawUsingFlashLoan(
-            SonicConstantsLib.BEETS_VAULT, ILeverageLendingStrategy.FlashLoanKind.Default_0
-        );
-        _testDepositWithdrawUsingFlashLoan(
-            SonicConstantsLib.BEETS_VAULT_V3, ILeverageLendingStrategy.FlashLoanKind.BalancerV3_1
-        );
-        _testDepositWithdrawUsingFlashLoan(
-            SonicConstantsLib.POOL_SHADOW_CL_USDC_USDT, ILeverageLendingStrategy.FlashLoanKind.UniswapV3_2
-        );
-        _testDepositWithdrawUsingFlashLoan(
-            SonicConstantsLib.POOL_ALGEBRA_WS_USDC, ILeverageLendingStrategy.FlashLoanKind.AlgebraV4_3
-        );
-
         vm.revertToState(snapshot);
     }
 
     function _preHardWork() internal override {
         // emulate merkl rewards
-        deal(SonicConstantsLib.TOKEN_USDC, currentStrategy, 1e6);
-        deal(SonicConstantsLib.TOKEN_USDT, currentStrategy, 1e6);
+        deal(EthereumLib.TOKEN_USDC, currentStrategy, 1e6);
+        deal(EthereumLib.TOKEN_WETH, currentStrategy, 1e18);
     }
 
     //endregion --------------------------------------- Universal test
@@ -183,7 +159,7 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
 
         // --------------------------------------------- Hardwork 1
         _skip(1 days, 0);
-        deal(SonicConstantsLib.TOKEN_USDT, currentStrategy, 100e6);
+        deal(EthereumLib.TOKEN_USDC, currentStrategy, 100e6);
 
         vm.prank(platform.multisig());
         IVault(strategy.vault()).doHardWork();
@@ -192,7 +168,7 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
 
         // --------------------------------------------- Hardwork 2
         _skip(1 days, 0);
-        deal(SonicConstantsLib.TOKEN_USDT, currentStrategy, 300e6);
+        deal(EthereumLib.TOKEN_USDC, currentStrategy, 300e6);
 
         vm.prank(platform.multisig());
         IVault(strategy.vault()).doHardWork();
@@ -300,7 +276,7 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
         _setUpFlashLoanVault(flashLoanVault, kind_);
 
         uint amount = 1e18;
-        State[] memory states = _depositWithdraw(amount, SonicConstantsLib.TOKEN_USDC, 0, 0, false);
+        State[] memory states = _depositWithdraw(amount, EthereumLib.TOKEN_USDC, 0, 0, false);
         vm.revertToState(snapshot);
 
         assertApproxEqRel(
@@ -317,17 +293,17 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
 
         // --------------------------------------------- Deposit+withdraw without hardwork
         uint snapshot = vm.snapshotState();
-        State[] memory statesInstant = _depositWithdraw(amount, SonicConstantsLib.TOKEN_USDC, 0, 0, true);
+        State[] memory statesInstant = _depositWithdraw(amount, EthereumLib.TOKEN_USDC, 0, 0, true);
         vm.revertToState(snapshot);
 
         // --------------------------------------------- Deposit, wait, [no rewards], hardwork, withdraw
         snapshot = vm.snapshotState();
-        State[] memory statesHW1 = _depositWithdraw(amount, SonicConstantsLib.TOKEN_USDC, 0, 1 days, true);
+        State[] memory statesHW1 = _depositWithdraw(amount, EthereumLib.TOKEN_USDC, 0, 1 days, true);
         vm.revertToState(snapshot);
 
         // --------------------------------------------- Deposit, wait, rewards, hardwork, withdraw
         snapshot = vm.snapshotState();
-        State[] memory statesHW2 = _depositWithdraw(amount, SonicConstantsLib.TOKEN_USDC, 100e6, 1 days, true);
+        State[] memory statesHW2 = _depositWithdraw(amount, EthereumLib.TOKEN_USDC, 100e6, 1 days, true);
         vm.revertToState(snapshot);
 
         // --------------------------------------------- Get WETH price
@@ -660,7 +636,7 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
 
     function _getWethPrice8() internal view returns (uint) {
         return IAavePriceOracle(IAaveAddressProvider(IPool(POOL).ADDRESSES_PROVIDER()).getPriceOracle())
-            .getAssetPrice(SonicConstantsLib.TOKEN_WETH);
+            .getAssetPrice(EthereumLib.TOKEN_WETH);
     }
 
     //endregion --------------------------------------- Helper functions

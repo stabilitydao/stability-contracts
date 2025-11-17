@@ -28,7 +28,8 @@ library ALMFLib {
     using SafeERC20 for IERC20;
 
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.AaveLeverageMerklFarmStrategy")) - 1)) & ~bytes32(uint256(0xff));
-    bytes32 internal constant AAVE_MERKL_FARM_STRATEGY_STORAGE_LOCATION = 0x735fb8abe13487f936dfcaad40428cb37101f887b7e375bd6616c095d1050600;
+    bytes32 internal constant AAVE_MERKL_FARM_STRATEGY_STORAGE_LOCATION =
+        0x735fb8abe13487f936dfcaad40428cb37101f887b7e375bd6616c095d1050600;
 
     uint public constant FARM_ADDRESS_LENDING_VAULT_INDEX = 0;
     uint public constant FARM_ADDRESS_BORROWING_VAULT_INDEX = 1;
@@ -609,7 +610,8 @@ library ALMFLib {
 
     /// @notice Get current state: collateral and debt in base asset (USD, 18 decimals)
     function _getState(address pool_) internal view returns (ALMFCalcLib.State memory state) {
-        (uint totalCollateralBase, uint totalDebtBase,,, uint maxLtv, uint healthFactor) = IPool(pool_).getUserAccountData(address(this));
+        (uint totalCollateralBase, uint totalDebtBase,,, uint maxLtv, uint healthFactor) =
+            IPool(pool_).getUserAccountData(address(this));
 
         state = ALMFCalcLib.State({
             collateralBase: totalCollateralBase * 1e10,
@@ -683,7 +685,9 @@ library ALMFLib {
         targetLeveragePercent = targetLeverage * ALMFCalcLib.INTERNAL_PRECISION / maxLeverage;
     }
 
-    function total(ILeverageLendingStrategy.LeverageLendingBaseStorage storage $) internal view returns (uint totalValue) {
+    function total(
+        ILeverageLendingStrategy.LeverageLendingBaseStorage storage $
+    ) internal view returns (uint totalValue) {
         totalValue = calcTotal(_getState(IAToken($.lendingVault).POOL()));
     }
 
@@ -757,7 +761,9 @@ library ALMFLib {
 
     //region ------------------------------------- Real tvl
 
-    function realTvl(ILeverageLendingStrategy.LeverageLendingBaseStorage storage $) public view returns (uint tvl, bool trusted) {
+    function realTvl(
+        ILeverageLendingStrategy.LeverageLendingBaseStorage storage $
+    ) public view returns (uint tvl, bool trusted) {
         return _realTvl(_getState(IAToken($.lendingVault).POOL()));
     }
 
@@ -778,6 +784,7 @@ library ALMFLib {
         }
         return (sharePrice, trusted);
     }
+
     //endregion ------------------------------------- Real tvl
 
     //region ------------------------------------- Revenue
@@ -804,13 +811,13 @@ library ALMFLib {
         IStrategy.StrategyBaseStorage storage $base,
         address vault_
     )
-    external
-    returns (
-        address[] memory __assets,
-        uint[] memory __amounts,
-        address[] memory __rewardAssets,
-        uint[] memory __rewardAmounts
-    )
+        external
+        returns (
+            address[] memory __assets,
+            uint[] memory __amounts,
+            address[] memory __rewardAssets,
+            uint[] memory __rewardAmounts
+        )
     {
         (uint newPrice,) = _realSharePrice($, vault_);
         uint oldPrice = $a.lastSharePrice;
@@ -865,8 +872,8 @@ library ALMFLib {
         if (newPrice > oldPrice && oldPrice != 0) {
             uint _totalSupply = IVault(vault_).totalSupply();
             uint price8 = IAavePriceOracle(
-                IAaveAddressProvider(IPool(IAToken($.lendingVault).POOL()).ADDRESSES_PROVIDER()).getPriceOracle()
-            ).getAssetPrice(assets[0]);
+                    IAaveAddressProvider(IPool(IAToken($.lendingVault).POOL()).ADDRESSES_PROVIDER()).getPriceOracle()
+                ).getAssetPrice(assets[0]);
 
             // share price already takes into account accumulated interest
             uint amountUSD18 = _totalSupply * (newPrice - oldPrice) / 1e18;
@@ -881,7 +888,9 @@ library ALMFLib {
         uint[] memory rewardAmounts_,
         uint priceImpactTolerance
     ) external returns (uint earnedExchangeAsset) {
-        return StrategyLib.liquidateRewards(platform_, exchangeAsset, rewardAssets_, rewardAmounts_, priceImpactTolerance);
+        return StrategyLib.liquidateRewards(
+            platform_, exchangeAsset, rewardAssets_, rewardAmounts_, priceImpactTolerance
+        );
     }
 
     function compound(
@@ -903,6 +912,7 @@ library ALMFLib {
         // so, we set it twice: here (new value) and in _claimRevenue (old value)
         $base.total = total($);
     }
+
     //endregion ------------------------------------- Revenue
 
     //region ------------------------------------- Internal utils
