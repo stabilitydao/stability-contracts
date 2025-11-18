@@ -1,4 +1,4 @@
-forge fmt --check 2>&1 | grep -oP '^Diff in \K.*\.sol' | xargs -r forge fmt// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
 import {IControllable} from "../../src/interfaces/IControllable.sol";
@@ -406,10 +406,6 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
     /// @notice ar != 0, ad != 0
     function _testDepositWithPartialDirectRepay() internal {
         (State memory state0, State memory state1) = _testDepositWithDirectRepay([uint(1e18), 0.3e18]);
-
-        uint priceCollateral8 = _getWethPrice8();
-        uint priceDebt8 = IAavePriceOracle(IAaveAddressProvider(IPool(POOL).ADDRESSES_PROVIDER()).getPriceOracle()).getAssetPrice(SonicConstantsLib.TOKEN_USDC);
-        uint amountToRepay = 1e18 * priceCollateral8 * 1e6 / priceDebt8 / 1e18;
 
         assertGt(state1.collateralAmount, state0.collateralAmount, "collateral is increased");
         assertApproxEqRel(state1.leverage, state1.targetLeverage, 1e16, "leverage should be equal to target");
