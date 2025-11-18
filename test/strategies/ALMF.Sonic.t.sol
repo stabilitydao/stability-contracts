@@ -16,6 +16,7 @@ import {SonicSetup} from "../base/chains/SonicSetup.sol";
 import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
 import {UniversalTest} from "../base/UniversalTest.sol";
 import {PriceReader} from "../../src/core/PriceReader.sol";
+import {AaveLeverageMerklFarmStrategy} from "../../src/strategies/AaveLeverageMerklFarmStrategy.sol";
 import {IAaveAddressProvider} from "../../src/integrations/aave/IAaveAddressProvider.sol";
 import {IAavePriceOracle} from "../../src/integrations/aave/IAavePriceOracle.sol";
 import {IPool} from "../../src/integrations/aave/IPool.sol";
@@ -129,6 +130,16 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
     function _preDeposit() internal override {
         // ---------------------------------- Make additional tests
         uint snapshot = vm.snapshotState();
+
+        // thresholds
+        vm.expectRevert(IControllable.NotOperator.selector);
+        vm.prank(makeAddr("1"));
+        AaveLeverageMerklFarmStrategy(currentStrategy).setThreshold(SonicConstantsLib.TOKEN_WETH, 1e12);
+
+        vm.prank(platform.multisig());
+        AaveLeverageMerklFarmStrategy(currentStrategy).setThreshold(SonicConstantsLib.TOKEN_WETH, 1e12);
+        vm.prank(platform.multisig());
+        AaveLeverageMerklFarmStrategy(currentStrategy).setThreshold(SonicConstantsLib.TOKEN_USDC, 1e6);
 
         // initial supply
         _tryToDepositToVault(IStrategy(currentStrategy).vault(), 0.1e18, REVERT_NO, makeAddr("initial supplier"));
@@ -353,7 +364,7 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
         );
         assertApproxEqRel(
             statesHW2[INDEX_AFTER_WITHDRAW_4].userBalanceAsset,
-            100e18 * wethPrice / 1e18 + statesInstant[INDEX_AFTER_WITHDRAW_4].userBalanceAsset,
+            100e18 / wethPrice * 1e8 + statesInstant[INDEX_AFTER_WITHDRAW_4].userBalanceAsset,
             3e16, //  < 3%
             "user received almost all rewards"
         );

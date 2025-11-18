@@ -10,6 +10,10 @@ library ALMFCalcLib {
     /// @dev 100_00 is 100%
     uint public constant INTERNAL_PRECISION = 100_00;
 
+    /// @notice Alpha = (1 + f) / (1 - s) coeff in calcWithdrawAmounts calculations.
+    /// It's always 1 because withdraw is calculated in assumption that all fees are covered by user (= 0 in calc)
+    uint internal constant ALPHA = INTERNAL_PRECISION;
+
     /// @notice Static data required to make deposit/withdraw calculations
     struct StaticData {
         address platform;
@@ -113,11 +117,10 @@ library ALMFCalcLib {
 
         uint ltvAdj = leverageToLtv(leverageAdj);
 
-        uint alpha = INTERNAL_PRECISION; // todo optimize
-        uint beta = ltvAdj;
+        uint beta = ALPHA * ltvAdj / INTERNAL_PRECISION;
 
         int c1 =
-            (int(INTERNAL_PRECISION * valueToWithdraw) + int(alpha * state.debtBase) - int(beta * state.collateralBase))
+            (int(INTERNAL_PRECISION * valueToWithdraw) + int(ALPHA * state.debtBase) - int(beta * state.collateralBase))
                 / int(INTERNAL_PRECISION - beta);
 
         int f =

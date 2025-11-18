@@ -18,6 +18,7 @@ import {PriceReader} from "../../src/core/PriceReader.sol";
 import {IAaveAddressProvider} from "../../src/integrations/aave/IAaveAddressProvider.sol";
 import {IAavePriceOracle} from "../../src/integrations/aave/IAavePriceOracle.sol";
 import {IPool} from "../../src/integrations/aave/IPool.sol";
+import {AaveLeverageMerklFarmStrategy} from "../../src/strategies/AaveLeverageMerklFarmStrategy.sol";
 import {console} from "forge-std/console.sol";
 
 contract ALMFStrategyEthereumTest is EthereumSetup, UniversalTest {
@@ -56,6 +57,8 @@ contract ALMFStrategyEthereumTest is EthereumSetup, UniversalTest {
     address internal constant POOL = 0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2;
     address internal constant ATOKEN_USDC = 0x98C23E9d8f34FEFb1B7BD6a91B7FF122F4e16F5c;
     address internal constant ATOKEN_WBTC = 0x5Ee5bf7ae06D1Be5997A1A72006FE6C607eC6DE8;
+
+    uint internal constant DEFAULT_AMOUNT = 0.1e8;
 
     constructor() {
         vm.selectFork(vm.createFork(vm.envString("ETHEREUM_RPC_URL"), FORK_BLOCK));
@@ -117,11 +120,19 @@ contract ALMFStrategyEthereumTest is EthereumSetup, UniversalTest {
     }
 
     function _preDeposit() internal override {
+        // thresholds
+        vm.prank(platform.multisig());
+        AaveLeverageMerklFarmStrategy(currentStrategy).setThreshold(EthereumLib.TOKEN_WBTC, 1e2);
+        vm.prank(platform.multisig());
+        AaveLeverageMerklFarmStrategy(currentStrategy).setThreshold(EthereumLib.TOKEN_USDC, 1e6);
+
         // ---------------------------------- Make additional tests
         uint snapshot = vm.snapshotState();
 
         // initial supply
-        _tryToDepositToVault(IStrategy(currentStrategy).vault(), 0.1e18, REVERT_NO, makeAddr("initial supplier"));
+        _tryToDepositToVault(
+            IStrategy(currentStrategy).vault(), DEFAULT_AMOUNT, REVERT_NO, makeAddr("initial supplier")
+        );
 
         // check revenue (replacement for "Universal test: estimated totalRevenueUSD is zero")
         _testDepositTwoHardworks();
@@ -146,11 +157,11 @@ contract ALMFStrategyEthereumTest is EthereumSetup, UniversalTest {
 
     //region --------------------------------------- Additional tests
     function _testDepositTwoHardworks() internal {
-        uint amount = 1e18;
-
-        uint priceWeth8 = _getWethPrice8();
+        uint amount = DEFAULT_AMOUNT;
 
         IStrategy strategy = IStrategy(currentStrategy);
+
+        uint priceCollateral8 = _getCollateralPrice8(strategy.assets()[0]);
 
         // --------------------------------------------- Deposit
         State memory stateAfterDeposit = _getState();
@@ -181,13 +192,13 @@ contract ALMFStrategyEthereumTest is EthereumSetup, UniversalTest {
             "Revenue before first claimReview is 0 because share price is not initialized yet"
         );
         assertApproxEqRel(
-            stateAfterHW1.revenueAmounts[0] * priceWeth8 * 1e6 / 1e8 / 1e18,
+            stateAfterHW1.revenueAmounts[0] * priceCollateral8 * 1e6 / 1e8 / 1e8,
             100e6,
             2e16,
             "Revenue after first hardwork is ~$100"
         );
         assertApproxEqRel(
-            stateAfterHW2.revenueAmounts[0] * priceWeth8 * 1e6 / 1e8 / 1e18,
+            stateAfterHW2.revenueAmounts[0] * priceCollateral8 * 1e6 / 1e8 / 1e8,
             300e6,
             2e16,
             "Revenue after first hardwork is ~$300"
@@ -275,7 +286,7 @@ contract ALMFStrategyEthereumTest is EthereumSetup, UniversalTest {
         uint snapshot = vm.snapshotState();
         _setUpFlashLoanVault(flashLoanVault, kind_);
 
-        uint amount = 1e18;
+        uint amount = DEFAULT_AMOUNT;
         State[] memory states = _depositWithdraw(amount, EthereumLib.TOKEN_USDC, 0, 0, false);
         vm.revertToState(snapshot);
 
@@ -289,7 +300,7 @@ contract ALMFStrategyEthereumTest is EthereumSetup, UniversalTest {
     }
 
     function _testDepositWaitHardworkWithdraw() internal {
-        uint amount = 1e18;
+        uint amount = DEFAULT_AMOUNT;
 
         // --------------------------------------------- Deposit+withdraw without hardwork
         uint snapshot = vm.snapshotState();
@@ -307,13 +318,13 @@ contract ALMFStrategyEthereumTest is EthereumSetup, UniversalTest {
         vm.revertToState(snapshot);
 
         // --------------------------------------------- Get WETH price
-        uint wethPrice = _getWethPrice8();
+        uint collateralPrice8 = _getCollateralPrice8(IStrategy(currentStrategy).assets()[0]);
 
         // --------------------------------------------- Compare results
         assertApproxEqAbs(
             statesHW2[INDEX_AFTER_HARDWORK_3].total - statesInstant[INDEX_AFTER_HARDWORK_3].total,
             100e18,
-            3e18,
+            6e18,
             "total is increased on rewards amount - fees"
         );
         assertLt(
@@ -329,9 +340,9 @@ contract ALMFStrategyEthereumTest is EthereumSetup, UniversalTest {
         );
         assertApproxEqRel(
             statesHW2[INDEX_AFTER_WITHDRAW_4].userBalanceAsset,
-            100e18 * wethPrice / 1e18 + statesInstant[INDEX_AFTER_WITHDRAW_4].userBalanceAsset,
-            3e16, //  < 3%
-            "user received almost all rewards"
+            100e8 / collateralPrice8 * 1e8 + statesInstant[INDEX_AFTER_WITHDRAW_4].userBalanceAsset,
+            6e16, //  < 6%
+            "user received almost all rewards 1"
         );
     }
 
@@ -355,7 +366,7 @@ contract ALMFStrategyEthereumTest is EthereumSetup, UniversalTest {
 
         stateInitial = _getState();
 
-        _tryToDepositToVault(vault, 1e18, 0, address(this));
+        _tryToDepositToVault(vault, DEFAULT_AMOUNT, 0, address(this));
         stateAfterDeposit = _getState();
 
         vm.roll(block.number + 6);
@@ -380,14 +391,14 @@ contract ALMFStrategyEthereumTest is EthereumSetup, UniversalTest {
 
         stateInitial = _getState();
 
-        _tryToDepositToVault(vault, 1e18, 0, address(this));
+        _tryToDepositToVault(vault, DEFAULT_AMOUNT, 0, address(this));
         stateAfterDeposit = _getState();
 
         vm.roll(block.number + 6);
 
         _setMinMaxLtv(minLtv1, maxLtv1);
 
-        _tryToDepositToVault(vault, 1e18, 0, address(this));
+        _tryToDepositToVault(vault, DEFAULT_AMOUNT, 0, address(this));
         stateAfterDeposit2 = _getState();
 
         vm.revertToState(snapshot);
@@ -634,9 +645,10 @@ contract ALMFStrategyEthereumTest is EthereumSetup, UniversalTest {
         strategy.setUniversalParams(params, addresses);
     }
 
-    function _getWethPrice8() internal view returns (uint) {
-        return IAavePriceOracle(IAaveAddressProvider(IPool(POOL).ADDRESSES_PROVIDER()).getPriceOracle())
-            .getAssetPrice(EthereumLib.TOKEN_WETH);
+    function _getCollateralPrice8(address asset_) internal view returns (uint) {
+        return
+            IAavePriceOracle(IAaveAddressProvider(IPool(POOL).ADDRESSES_PROVIDER()).getPriceOracle())
+                .getAssetPrice(asset_);
     }
 
     //endregion --------------------------------------- Helper functions

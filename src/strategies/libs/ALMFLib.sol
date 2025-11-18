@@ -38,13 +38,20 @@ library ALMFLib {
     uint public constant INTEREST_RATE_MODE_VARIABLE = 2;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
-    /*                          STORAGE                           */
+    /*                          DATA TYPES                        */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @custom:storage-location erc7201:stability.AaveLeverageMerklFarmStrategy
     struct AlmfStrategyStorage {
+        /// @notice Last share price used to calculate profit and loss = total() / vault.totalSupply()
+        /// @dev This value is initialized at first claim revenue (not at first deposit)
         uint lastSharePrice;
+
+        /// @notice Deposit threshold. Amounts less than the threshold are deposited directly without leverage
+        mapping(address asset => uint) thresholds;
     }
+
+    event SetThreshold(address asset, uint value);
 
     //region ------------------------------------- Flash loan
     /// @notice token Borrow asset
@@ -297,11 +304,12 @@ library ALMFLib {
 
         uint valueWas = ALMFCalcLib.collateralToBase(StrategyLib.balance(data.collateralAsset), data) + calcTotal(state);
 
-        if (amount > 1e12) {
-            // todo threshold for small deposits
+        uint threshold = _getStorage().thresholds[data.collateralAsset];
+        if (amount > threshold) {
             _deposit(platform_, $, data, amount, state);
         } else {
-            // todo supply without leverage, don't leave amount on balance
+            // tiny amounts are supplied without leverage
+            IPool(IAToken(data.lendingVault).POOL()).supply(data.collateralAsset, amount, address(this), 0);
         }
 
         state = _getState(data); // refresh state after deposit
@@ -310,7 +318,6 @@ library ALMFLib {
         if (valueNow > valueWas) {
             value = ALMFCalcLib.collateralToBase(amount, data) + (valueNow - valueWas);
         } else {
-            // todo deposit 1 decimal, amount base is 3431, valueWas - valueNow 5912220594977
             value = ALMFCalcLib.collateralToBase(amount, data) - (valueWas - valueNow);
         }
 
@@ -334,9 +341,8 @@ library ALMFLib {
                 state.debtBase,
                 data.swapFee18
             );
-            bool repayRequired = ar != 0; // todo  > threshold;
+            bool repayRequired = ar > _getStorage().thresholds[data.borrowAsset];
             if (repayRequired) {
-                // todo  > threshold
                 // restore leverage using direct repay
                 _directRepay(platform_, data, ar);
             }
@@ -467,10 +473,9 @@ library ALMFLib {
         }
 
         _ensureLtvValid(state);
-        _getState(data); // todo remove
     }
 
-    /// @notice Get required amount to withdraw on balance
+    /// @notice Withdraw required amount on balance as collateral asset
     /// @param value Value to withdraw in base asset (USD, 18 decimals)
     function _withdrawRequiredAmountOnBalance(
         ILeverageLendingStrategy.LeverageLendingBaseStorage storage $,
@@ -481,7 +486,7 @@ library ALMFLib {
         if (0 == state.debtBase) {
             // zero debt, positive supply - we can just withdraw missed amount from the lending pool
 
-            // collateral amount on balance
+            // collateral amount on balance in base asset
             uint collateralBalanceBase = ALMFCalcLib.collateralToBase(StrategyLib.balance(data.collateralAsset), data);
 
             // collateral amount required to withdraw from lending pool
@@ -496,7 +501,7 @@ library ALMFLib {
         }
     }
 
-    /// @notice Default withdraw procedure (leverage is a bit decreased)
+    /// @notice Withdraw required amount of collateral on balance using flash loan
     function _withdrawUsingFlash(
         ILeverageLendingStrategy.LeverageLendingBaseStorage storage $,
         ALMFCalcLib.StaticData memory data,
@@ -516,6 +521,12 @@ library ALMFLib {
         }
 
         (uint flashAmount, uint collateralToWithdraw) = ALMFCalcLib.calcWithdrawAmounts(value, leverage, data, state);
+
+        if (value == state.collateralBase - state.debtBase) {
+            // full withdraw (emergency)
+            // we can use flashAmount calculated above but need to override collateralToWithdraw to withdraw fully
+            collateralToWithdraw = totalCollateral(data.lendingVault);
+        }
 
         if (flashAmount == 0) {
             // special case: don't use flash, just withdraw required amount from aave and send it to the user
@@ -914,6 +925,16 @@ library ALMFLib {
     }
 
     //endregion ------------------------------------- Revenue
+
+    //region ----------------------------------- Additional functionality
+    /// @notice Set threshold for the asset
+    function setThreshold(address asset_, uint threshold_) external {
+        _getStorage().thresholds[asset_] = threshold_;
+
+        emit SetThreshold(asset_, threshold_);
+    }
+
+    //endregion ----------------------------------- Additional functionality
 
     //region ------------------------------------- Internal utils
     function _getFlashLoanAmounts(

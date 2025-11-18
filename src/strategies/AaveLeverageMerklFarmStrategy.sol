@@ -245,6 +245,19 @@ contract AaveLeverageMerklFarmStrategy is
 
     //endregion ----------------------------------- View functions
 
+    //region ----------------------------------- Additional functionality
+    /// @notice Get current threshold for the asset
+    function threshold(address asset_) internal view returns (uint) {
+        return ALMFLib._getStorage().thresholds[asset_];
+    }
+
+    /// @notice Set threshold for the asset
+    function setThreshold(address asset_, uint threshold_) external onlyOperator {
+        ALMFLib.setThreshold(asset_, threshold_);
+    }
+
+    //endregion ----------------------------------- Additional functionality
+
     //region ----------------------------------- ILeverageLendingStrategy
     /// @inheritdoc ILeverageLendingStrategy
     function realTvl() public view returns (uint tvl, bool trusted) {

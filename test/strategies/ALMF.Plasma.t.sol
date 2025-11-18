@@ -19,6 +19,7 @@ import {PriceReader} from "../../src/core/PriceReader.sol";
 import {IAaveAddressProvider} from "../../src/integrations/aave/IAaveAddressProvider.sol";
 import {IAavePriceOracle} from "../../src/integrations/aave/IAavePriceOracle.sol";
 import {IPool} from "../../src/integrations/aave/IPool.sol";
+import {AaveLeverageMerklFarmStrategy} from "../../src/strategies/AaveLeverageMerklFarmStrategy.sol";
 import {console} from "forge-std/console.sol";
 
 contract ALMFStrategyPlasmaTest is PlasmaSetup, UniversalTest {
@@ -123,6 +124,12 @@ contract ALMFStrategyPlasmaTest is PlasmaSetup, UniversalTest {
     function _preDeposit() internal override {
         // ---------------------------------- Make additional tests
         uint snapshot = vm.snapshotState();
+
+        // thresholds
+        vm.prank(platform.multisig());
+        AaveLeverageMerklFarmStrategy(currentStrategy).setThreshold(PlasmaConstantsLib.TOKEN_WETH, 1e12);
+        vm.prank(platform.multisig());
+        AaveLeverageMerklFarmStrategy(currentStrategy).setThreshold(PlasmaConstantsLib.TOKEN_USDT0, 1e6);
 
         // initial supply
         _tryToDepositToVault(IStrategy(currentStrategy).vault(), 0.1e18, REVERT_NO, makeAddr("initial supplier"));
@@ -333,7 +340,7 @@ contract ALMFStrategyPlasmaTest is PlasmaSetup, UniversalTest {
         );
         assertApproxEqRel(
             statesHW2[INDEX_AFTER_WITHDRAW_4].userBalanceAsset,
-            100e18 * wethPrice / 1e18 + statesInstant[INDEX_AFTER_WITHDRAW_4].userBalanceAsset,
+            100e18 / wethPrice * 1e8 + statesInstant[INDEX_AFTER_WITHDRAW_4].userBalanceAsset,
             3e16, //  < 3%
             "user received almost all rewards"
         );
