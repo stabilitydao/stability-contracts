@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+forge fmt --check 2>&1 | grep -oP '^Diff in \K.*\.sol' | xargs -r forge fmt// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
 import {IControllable} from "../../src/interfaces/IControllable.sol";
@@ -33,6 +33,14 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
     uint internal constant INDEX_AFTER_WAIT_2 = 2;
     uint internal constant INDEX_AFTER_HARDWORK_3 = 3;
     uint internal constant INDEX_AFTER_WITHDRAW_4 = 4;
+
+    uint internal constant INDEX_D1 = 0;
+    uint internal constant INDEX_D2 = 1;
+    uint internal constant INDEX_W1 = 2;
+    uint internal constant INDEX_W2 = 3;
+
+    uint internal constant DEFAULT_MIN_LTV = 49_00;
+    uint internal constant DEFAULT_MAX_LTV = 50_97;
 
     struct State {
         uint ltv;
@@ -116,8 +124,8 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
             ATOKEN_USDC,
             SonicConstantsLib.BEETS_VAULT,
             rewards,
-            49_00, // min target ltv
-            50_97, // max target ltv
+            DEFAULT_MIN_LTV, // min target ltv
+            DEFAULT_MAX_LTV, // max target ltv
             0 // beets v2 flash loan kind
         ); //68
 
@@ -140,6 +148,13 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
         AaveLeverageMerklFarmStrategy(currentStrategy).setThreshold(SonicConstantsLib.TOKEN_WETH, 1e12);
         vm.prank(platform.multisig());
         AaveLeverageMerklFarmStrategy(currentStrategy).setThreshold(SonicConstantsLib.TOKEN_USDC, 1e6);
+
+        assertEq(AaveLeverageMerklFarmStrategy(currentStrategy).threshold(SonicConstantsLib.TOKEN_WETH), 1e12);
+        assertEq(AaveLeverageMerklFarmStrategy(currentStrategy).threshold(SonicConstantsLib.TOKEN_USDC), 1e6);
+
+        _testDepositWithPartialDirectRepay();
+
+        _testDepositWithFullDirectRepay();
 
         // initial supply
         _tryToDepositToVault(IStrategy(currentStrategy).vault(), 0.1e18, REVERT_NO, makeAddr("initial supplier"));
@@ -167,6 +182,7 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
         _testDepositWithdrawUsingFlashLoan(
             SonicConstantsLib.POOL_ALGEBRA_WS_USDC, ILeverageLendingStrategy.FlashLoanKind.AlgebraV4_3
         );
+
 
         vm.revertToState(snapshot);
     }
@@ -375,6 +391,30 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
         assertEq(IStrategy(currentStrategy).maxWithdrawAssets(0).length, 0, "any amount can be withdrawn");
     }
 
+    /// @notice ar != 0, ad == 0
+    function _testDepositWithFullDirectRepay() internal {
+        (State memory state0, State memory state1) = _testDepositWithDirectRepay([uint(1e18), 0.1e18]);
+
+        uint priceCollateral8 = _getWethPrice8();
+        uint priceDebt8 = IAavePriceOracle(IAaveAddressProvider(IPool(POOL).ADDRESSES_PROVIDER()).getPriceOracle()).getAssetPrice(SonicConstantsLib.TOKEN_USDC);
+        uint amountToRepay = 0.1e18 * priceCollateral8 * 1e6 / priceDebt8 / 1e18;
+
+        assertEq(state1.collateralAmount, state0.collateralAmount, "collateral should not change");
+        assertApproxEqRel(state1.debtAmount, state0.debtAmount - amountToRepay, 1e16, "debt should be reduced on the deposited value (1% can be loss on swap)");
+    }
+
+    /// @notice ar != 0, ad != 0
+    function _testDepositWithPartialDirectRepay() internal {
+        (State memory state0, State memory state1) = _testDepositWithDirectRepay([uint(1e18), 0.3e18]);
+
+        uint priceCollateral8 = _getWethPrice8();
+        uint priceDebt8 = IAavePriceOracle(IAaveAddressProvider(IPool(POOL).ADDRESSES_PROVIDER()).getPriceOracle()).getAssetPrice(SonicConstantsLib.TOKEN_USDC);
+        uint amountToRepay = 1e18 * priceCollateral8 * 1e6 / priceDebt8 / 1e18;
+
+        assertGt(state1.collateralAmount, state0.collateralAmount, "collateral is increased");
+        assertApproxEqRel(state1.leverage, state1.targetLeverage, 1e16, "leverage should be equal to target");
+    }
+
     //endregion --------------------------------------- Additional tests
 
     //region --------------------------------------- Test implementations
@@ -472,6 +512,24 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
 
         assertLt(states[0].total, states[1].total, "Total should increase after deposit");
         assertEq(depositedAssets, amount, "Deposited amount should be equal to amountsToDeposit");
+    }
+
+    function _testDepositWithDirectRepay(uint[2] memory amounts) internal returns (State memory state0, State memory state1) {
+        uint snapshot = vm.snapshotState();
+
+        // ---------- Special case: 100% direct repay is required on the second deposit
+        _tryToDepositToVault(IStrategy(currentStrategy).vault(), amounts[0], REVERT_NO, address(this));
+        state0 = _getState();
+//        _printState(state0);
+
+        _setMinMaxLtv(4100, 4200);
+        _tryToDepositToVault(IStrategy(currentStrategy).vault(), amounts[1], REVERT_NO, address(this));
+        state1 = _getState();
+//        _printState(state1);
+
+        vm.revertToState(snapshot);
+
+        return (state0, state1);
     }
 
     //endregion --------------------------------------- Test implementations

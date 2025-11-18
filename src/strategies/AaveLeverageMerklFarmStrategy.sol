@@ -219,7 +219,9 @@ contract AaveLeverageMerklFarmStrategy is
 
     /// @inheritdoc IStrategy
     /// @dev Assume that all amount can be withdrawn always for simplicity. Implement later.
-    function maxWithdrawAssets(uint /*mode*/) public pure override returns (uint[] memory amounts) {
+    function maxWithdrawAssets(
+        uint /*mode*/
+    ) public pure override returns (uint[] memory amounts) {
         // for simplicity of v.1.0: any amount can be withdrawn
         return amounts;
     }
@@ -239,7 +241,7 @@ contract AaveLeverageMerklFarmStrategy is
 
     //region ----------------------------------- Additional functionality
     /// @notice Get current threshold for the asset
-    function threshold(address asset_) internal view returns (uint) {
+    function threshold(address asset_) external view returns (uint) {
         return ALMFLib._getStorage().thresholds[asset_];
     }
 

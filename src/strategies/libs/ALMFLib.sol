@@ -333,24 +333,24 @@ library ALMFLib {
     ) internal {
         uint leverage = ALMFCalcLib.getLeverage(state.collateralBase, state.debtBase);
         if (leverage > data.maxTargetLeverage) {
-            (uint ar, uint ad) = ALMFCalcLib.splitDepositAmount(
-                amountToDeposit,
+            (uint amountDepositBase, uint amountRepayBase) = ALMFCalcLib.splitDepositAmount(
+                ALMFCalcLib.collateralToBase(amountToDeposit, data),
                 (data.minTargetLeverage + data.maxTargetLeverage) / 2,
                 state.collateralBase,
                 state.debtBase,
                 data.swapFee18
             );
-            bool repayRequired = ar > _getStorage().thresholds[data.borrowAsset];
+            bool repayRequired = amountRepayBase > _getStorage().thresholds[data.borrowAsset];
             if (repayRequired) {
                 // restore leverage using direct repay
-                _directRepay(platform_, data, ar);
+                _directRepay(platform_, data, ALMFCalcLib.baseToCollateral(amountRepayBase, data));
             }
-            if (ad != 0) {
+            if (amountDepositBase != 0) {
                 if (repayRequired) {
                     state = _getState(data); // refresh state after direct repay
                 }
                 // deposit remain amount with leverage
-                _depositWithFlash($, data, ad, state);
+                _depositWithFlash($, data, ALMFCalcLib.baseToCollateral(amountDepositBase, data), state);
             }
         } else {
             _depositWithFlash($, data, amountToDeposit, state);
@@ -673,6 +673,10 @@ library ALMFLib {
         uint collateralAmountBase;
         uint debtAmountBase;
         (collateralAmountBase, debtAmountBase,,, maxLtv,) = pool.getUserAccountData(address(this));
+
+        // convert from aave base (decimals USD, 1e8) to our base asset (USD, 18 decimals)
+        collateralAmountBase *= 1e10;
+        debtAmountBase *= 1e10;
 
         // Current amount of collateral asset (strategy asset)
         collateralAmount = ALMFCalcLib.baseToCollateral(collateralAmountBase, data);

@@ -69,13 +69,13 @@ contract ALMFCalcLibTest is Test {
 
         // ----------------- zero F
         (flashAmount, collateralToWithdraw) =
-        ALMFCalcLib.calcWithdrawAmounts(100e18, 20000, data, state(1000e18, 450e18));
+            ALMFCalcLib.calcWithdrawAmounts(100e18, 20000, data, state(1000e18, 450e18));
         assertEq(flashAmount, 0, "6.F");
         assertEq(collateralToWithdraw, 100e18, "6.C1");
 
         // ----------------- very large debt
         (flashAmount, collateralToWithdraw) =
-        ALMFCalcLib.calcWithdrawAmounts(100e18, 20000, data, state(1000e18, 900e18));
+            ALMFCalcLib.calcWithdrawAmounts(100e18, 20000, data, state(1000e18, 900e18));
         assertEq(flashAmount, 900e6, "6.F");
         assertEq(collateralToWithdraw, 1000e18, "6.C1");
     }
