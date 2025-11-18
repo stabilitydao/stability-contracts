@@ -62,7 +62,7 @@ contract AaveLeverageMerklFarmStrategy is
             revert IFarmingStrategy.BadFarm();
         }
 
-        // slither-disable-next-line unused-return
+        // slither-disable-next-line uninitialized-local
         LeverageLendingStrategyBaseInitParams memory params;
 
         params.platform = addresses[0];
@@ -166,8 +166,8 @@ contract AaveLeverageMerklFarmStrategy is
     }
 
     /// @inheritdoc IStrategy
-    function getSpecificName() external view override returns (string memory, bool) {
-        return ALMFLib2.getSpecificName(_getLeverageLendingBaseStorage(), _getFarm());
+    function getSpecificName() external view override returns (string memory name, bool showInVaultSymbol) {
+        (name, showInVaultSymbol) = ALMFLib2.getSpecificName(_getLeverageLendingBaseStorage(), _getFarm());
     }
 
     /// @inheritdoc IStrategy
@@ -187,7 +187,7 @@ contract AaveLeverageMerklFarmStrategy is
         view
         returns (string[] memory variants, address[] memory addresses, uint[] memory nums, int24[] memory ticks)
     {
-        return ALMFLib2.initVariants(platform_);
+        (variants, addresses, nums, ticks) = ALMFLib2.initVariants(platform_);
     }
 
     /// @inheritdoc IStrategy
@@ -204,7 +204,7 @@ contract AaveLeverageMerklFarmStrategy is
     {
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
         ALMFLib.AlmfStrategyStorage storage $a = ALMFLib._getStorage();
-        return ALMFLib.getRevenue($, $a.lastSharePrice, vault());
+        (assets_, amounts) = ALMFLib.getRevenue($, $a.lastSharePrice, vault());
     }
 
     /// @inheritdoc IStrategy
@@ -219,17 +219,9 @@ contract AaveLeverageMerklFarmStrategy is
 
     /// @inheritdoc IStrategy
     /// @dev Assume that all amount can be withdrawn always for simplicity. Implement later.
-    function maxWithdrawAssets(uint mode) public pure override returns (uint[] memory amounts) {
-        mode; // hide warning
-
+    function maxWithdrawAssets(uint /*mode*/) public pure override returns (uint[] memory amounts) {
         // for simplicity of v.1.0: any amount can be withdrawn
         return amounts;
-    }
-
-    /// @inheritdoc StrategyBase
-    function _previewDepositUnderlying(uint amount) internal pure override returns (uint[] memory amountsConsumed) {
-        amountsConsumed = new uint[](1);
-        amountsConsumed[0] = amount;
     }
 
     /// @inheritdoc IStrategy
@@ -262,12 +254,12 @@ contract AaveLeverageMerklFarmStrategy is
     /// @inheritdoc ILeverageLendingStrategy
     function realTvl() public view returns (uint tvl, bool trusted) {
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
-        return ALMFLib.realTvl($);
+        (tvl, trusted) = ALMFLib.realTvl($);
     }
 
     function _realSharePrice() internal view override returns (uint sharePrice, bool trusted) {
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
-        return ALMFLib._realSharePrice($, vault());
+        (sharePrice, trusted) = ALMFLib._realSharePrice($, vault());
     }
 
     /// @inheritdoc ILeverageLendingStrategy
@@ -289,7 +281,7 @@ contract AaveLeverageMerklFarmStrategy is
     /// @inheritdoc ILeverageLendingStrategy
     function getSupplyAndBorrowAprs() external view returns (uint supplyApr, uint borrowApr) {
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
-        return ALMFLib._getDepositAndBorrowAprs($.lendingVault, $.collateralAsset, $.borrowAsset);
+        (supplyApr, borrowApr) = ALMFLib._getDepositAndBorrowAprs($.lendingVault, $.collateralAsset, $.borrowAsset);
     }
 
     function _rebalanceDebt(uint newLtv) internal override returns (uint resultLtv) {
@@ -343,7 +335,7 @@ contract AaveLeverageMerklFarmStrategy is
         FarmingStrategyBaseStorage storage $f = _getFarmingStrategyBaseStorage();
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
 
-        return ALMFLib.claimRevenue($, $a, $f, $base, vault());
+        (__assets, __amounts, __rewardAssets, __rewardAmounts) = ALMFLib.claimRevenue($, $a, $f, $base, vault());
     }
 
     /// @inheritdoc StrategyBase

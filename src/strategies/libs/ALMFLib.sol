@@ -5,7 +5,6 @@ import {ALMFCalcLib} from "./ALMFCalcLib.sol";
 import {ConstantsLib} from "../../core/libs/ConstantsLib.sol";
 import {IAToken} from "../../integrations/aave/IAToken.sol";
 import {IAaveAddressProvider} from "../../integrations/aave/IAaveAddressProvider.sol";
-import {IAaveDataProvider} from "../../integrations/aave/IAaveDataProvider.sol";
 import {IAavePriceOracle} from "../../integrations/aave/IAavePriceOracle.sol";
 import {IControllable} from "../../interfaces/IControllable.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
@@ -376,7 +375,7 @@ library ALMFLib {
         address pool = IAToken(data.borrowingVault).POOL();
         uint amountToRepay = StrategyLib.balance(data.borrowAsset) - borrowBalanceBefore;
         if (amountToRepay != 0) {
-            IERC20(data.borrowAsset).approve(pool, amountToRepay);
+            IERC20(data.borrowAsset).forceApprove(pool, amountToRepay);
             IPool(pool).repay(data.borrowAsset, amountToRepay, INTEREST_RATE_MODE_VARIABLE, address(this));
         }
     }
@@ -413,6 +412,7 @@ library ALMFLib {
         uint num = targetLeverage * (state.collateralBase + amountBase - state.debtBase)
             - (state.collateralBase + amountBase) * ALMFCalcLib.INTERNAL_PRECISION;
 
+        // assume here that den > 0; it's safer to revert in other case
         flashAmount = ALMFCalcLib._baseToBorrow(num / den, data.priceB18, data.decimalsB);
 
         //        console.log("_getDepositFlashAmount.targetLeverage", targetLeverage);
@@ -487,11 +487,14 @@ library ALMFLib {
             // zero debt, positive supply - we can just withdraw missed amount from the lending pool
 
             // collateral amount on balance in base asset
-            uint collateralBalanceBase = ALMFCalcLib.collateralToBase(StrategyLib.balance(data.collateralAsset), data);
+            uint balance = StrategyLib.balance(data.collateralAsset);
+            uint collateralBalanceBase = ALMFCalcLib.collateralToBase(balance, data);
 
             // collateral amount required to withdraw from lending pool
-            uint amountToWithdraw =
-                Math.min(value > collateralBalanceBase ? value - collateralBalanceBase : 0, state.collateralBase);
+            uint amountToWithdraw = Math.min(
+                ALMFCalcLib.baseToCollateral(value > collateralBalanceBase ? value - collateralBalanceBase : 0, data),
+                balance
+            );
 
             if (amountToWithdraw != 0) {
                 IPool(IAToken(data.lendingVault).POOL()).withdraw(data.collateralAsset, amountToWithdraw, address(this));
@@ -643,13 +646,6 @@ library ALMFLib {
         return _getState(IAaveAddressProvider(data.addressProvider).getPool());
     }
 
-    /// @notice Get maximum LTV for the collateral asset in AAVE, INTERNAL_PRECISION
-    function _getMaxLtv(ALMFCalcLib.StaticData memory data) internal view returns (uint maxLtv) {
-        IAaveDataProvider dataProvider =
-            IAaveDataProvider(IAaveAddressProvider(data.addressProvider).getPoolDataProvider());
-        (, maxLtv,,,,,,,,) = dataProvider.getReserveConfigurationData(data.collateralAsset);
-    }
-
     function totalCollateral(address lendingVault) public view returns (uint) {
         return IAToken(lendingVault).balanceOf(address(this));
     }
@@ -670,7 +666,7 @@ library ALMFLib {
             uint targetLeveragePercent
         )
     {
-        ALMFCalcLib.StaticData memory data = _getStaticData(platform, $, farm);
+        ALMFCalcLib.StaticData memory data = _getStaticData(platform, $, farm); // todo it can be optimized
         IPool pool = IPool(IAToken(data.lendingVault).POOL());
 
         // Maximum LTV with 4 decimals
@@ -945,17 +941,6 @@ library ALMFLib {
         flashAssets[0] = borrowAsset;
         flashAmounts = new uint[](1);
         flashAmounts[0] = borrowAmount;
-    }
-
-    function _getLeverageLendingAddresses(
-        ILeverageLendingStrategy.LeverageLendingBaseStorage storage $
-    ) internal view returns (ILeverageLendingStrategy.LeverageLendingAddresses memory) {
-        return ILeverageLendingStrategy.LeverageLendingAddresses({
-            collateralAsset: $.collateralAsset,
-            borrowAsset: $.borrowAsset,
-            lendingVault: $.lendingVault,
-            borrowingVault: $.borrowingVault
-        });
     }
 
     function _ensureLtvValid(ALMFCalcLib.State memory state) internal pure {

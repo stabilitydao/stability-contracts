@@ -61,11 +61,23 @@ contract ALMFCalcLibTest is Test {
         assertApproxEqRel(flashAmount, 899.91e6, 1e18 / 100, "5.F");
         assertApproxEqRel(collateralToWithdraw, 999.9e18, 1e18 / 100, "5.C1");
 
-        // ----------------- special case: negative F
+        // ----------------- negative F
         (flashAmount, collateralToWithdraw) =
             ALMFCalcLib.calcWithdrawAmounts(100e18, 19400, data, state(1000e18, 200e18));
         assertEq(flashAmount, 0, "6.F");
         assertEq(collateralToWithdraw, 100e18, "6.C1");
+
+        // ----------------- zero F
+        (flashAmount, collateralToWithdraw) =
+        ALMFCalcLib.calcWithdrawAmounts(100e18, 20000, data, state(1000e18, 450e18));
+        assertEq(flashAmount, 0, "6.F");
+        assertEq(collateralToWithdraw, 100e18, "6.C1");
+
+        // ----------------- very large debt
+        (flashAmount, collateralToWithdraw) =
+        ALMFCalcLib.calcWithdrawAmounts(100e18, 20000, data, state(1000e18, 900e18));
+        assertEq(flashAmount, 900e6, "6.F");
+        assertEq(collateralToWithdraw, 1000e18, "6.C1");
     }
 
     function testGetLimitedAmount() public pure {
