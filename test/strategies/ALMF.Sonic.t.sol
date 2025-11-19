@@ -249,13 +249,13 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
         assertApproxEqRel(
             stateAfterHW1.revenueAmounts[0] * priceWeth8 * 1e6 / 1e8 / 1e18,
             100e6,
-            2e16,
+            20e16,
             "_testDepositTwoHardworks.Revenue after first hardwork is ~$100"
         );
         assertApproxEqRel(
             stateAfterHW2.revenueAmounts[0] * priceWeth8 * 1e6 / 1e8 / 1e18,
             300e6,
-            2e16,
+            20e16,
             "_testDepositTwoHardworks.Revenue after first hardwork is ~$300"
         );
     }

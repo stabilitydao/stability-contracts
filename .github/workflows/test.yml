@@ -27,6 +27,18 @@ jobs:
         with:
           version: stable
 
+      # Restore Foundry RPC cache to avoid hitting paid RPC endpoints on every CI run.
+      # This cache stores responses from all networks (Ethereum, Arbitrum, Base, etc.)
+      # and allows forge to reuse previously fetched block/state data.
+      # Without this step, every CI run would re-query RPC providers from scratch,
+      # quickly exhausting rate limits on paid RPC keys.
+      - name: Restore RPC cache
+        uses: actions/cache@v3
+        with:
+          path: ~/.foundry/cache/rpc
+          key: rpc-cache
+          restore-keys: rpc-cache
+
       - name: Run forge build
         run: |
           forge --version

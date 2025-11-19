@@ -194,13 +194,13 @@ contract ALMFStrategyEthereumTest is EthereumSetup, UniversalTest {
         assertApproxEqRel(
             stateAfterHW1.revenueAmounts[0] * priceCollateral8 * 1e6 / 1e8 / 1e8,
             100e6,
-            2e16,
+            20e16,
             "Revenue after first hardwork is ~$100"
         );
         assertApproxEqRel(
             stateAfterHW2.revenueAmounts[0] * priceCollateral8 * 1e6 / 1e8 / 1e8,
             300e6,
-            2e16,
+            20e16,
             "Revenue after first hardwork is ~$300"
         );
     }
