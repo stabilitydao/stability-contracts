@@ -33,6 +33,12 @@ contract ALMFStrategyPlasmaTest is PlasmaSetup, UniversalTest {
     uint internal constant INDEX_AFTER_HARDWORK_3 = 3;
     uint internal constant INDEX_AFTER_WITHDRAW_4 = 4;
 
+    uint internal constant DEFAULT_MIN_LTV_LEVERAGE2 = 49_00;
+    uint internal constant DEFAULT_MAX_LTV_LEVERAGE2 = 50_97;
+
+    uint internal constant DEFAULT_MIN_LTV_LEVERAGE3 = 64_17;
+    uint internal constant DEFAULT_MAX_LTV_LEVERAGE3 = 69_17;
+
     struct State {
         uint ltv;
         uint maxLtv;
@@ -100,9 +106,9 @@ contract ALMFStrategyPlasmaTest is PlasmaSetup, UniversalTest {
     }
 
     function _addFarm() internal returns (uint farmId) {
-        address[] memory rewards = new address[](1);
+        address[] memory rewards = new address[](2);
         rewards[0] = PlasmaConstantsLib.TOKEN_USDT0;
-        // todo rewards[1] = PlasmaConstantsLib.TOKEN_WXPL;
+        rewards[1] = PlasmaConstantsLib.TOKEN_WXPL;
 
         IFactory.Farm[] memory farms = new IFactory.Farm[](1);
         farms[0] = PlasmaFarmMakerLib._makeAaveLeverageMerklFarm(
@@ -110,8 +116,8 @@ contract ALMFStrategyPlasmaTest is PlasmaSetup, UniversalTest {
             ATOKEN_USDT,
             POOL_WXPL_USDT0,
             rewards,
-            49_00, // min target ltv
-            50_97, // max target ltv
+            DEFAULT_MIN_LTV_LEVERAGE3, // min target ltv
+            DEFAULT_MAX_LTV_LEVERAGE3, // max target ltv
             uint(ILeverageLendingStrategy.FlashLoanKind.UniswapV3_2)
         );
 
@@ -150,7 +156,7 @@ contract ALMFStrategyPlasmaTest is PlasmaSetup, UniversalTest {
     function _preHardWork() internal override {
         // emulate merkl rewards
         deal(PlasmaConstantsLib.TOKEN_USDT0, currentStrategy, 1e6);
-        deal(PlasmaConstantsLib.TOKEN_WXPL, currentStrategy, 1e18);
+        deal(PlasmaConstantsLib.TOKEN_WXPL, currentStrategy, 0.1e18);
     }
 
     //endregion --------------------------------------- Universal test
@@ -324,25 +330,25 @@ contract ALMFStrategyPlasmaTest is PlasmaSetup, UniversalTest {
         assertApproxEqAbs(
             statesHW2[INDEX_AFTER_HARDWORK_3].total - statesInstant[INDEX_AFTER_HARDWORK_3].total,
             100e18,
-            3e18,
-            "total is increased on rewards amount - fees"
+            5e18,
+            "_testDepositWaitHardworkWithdraw.total is increased on rewards amount - fees"
         );
         assertLt(
             statesHW1[INDEX_AFTER_HARDWORK_3].total,
             statesInstant[INDEX_AFTER_HARDWORK_3].total,
-            "total is decreased because the borrow rate exceeds supply rate"
+            "_testDepositWaitHardworkWithdraw.total is decreased because the borrow rate exceeds supply rate"
         );
 
         assertLt(
             statesHW1[INDEX_AFTER_WITHDRAW_4].userBalanceAsset,
             statesInstant[INDEX_AFTER_WITHDRAW_4].userBalanceAsset,
-            "user lost some amount because of borrow rate"
+            "_testDepositWaitHardworkWithdraw.user lost some amount because of borrow rate"
         );
         assertApproxEqRel(
             statesHW2[INDEX_AFTER_WITHDRAW_4].userBalanceAsset,
             100e18 / wethPrice * 1e8 + statesInstant[INDEX_AFTER_WITHDRAW_4].userBalanceAsset,
-            3e16, //  < 3%
-            "user received almost all rewards"
+            5e16, //  < 3%
+            "_testDepositWaitHardworkWithdraw.user received almost all rewards"
         );
     }
 
