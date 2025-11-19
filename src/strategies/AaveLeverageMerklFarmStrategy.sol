@@ -390,7 +390,7 @@ contract AaveLeverageMerklFarmStrategy is
         override
         returns (uint[] memory amountsConsumed, uint value)
     {
-        return ALMFLib.previewDepositValue(_getLeverageLendingBaseStorage(), amountsMax);
+        (amountsConsumed, value) = ALMFLib.previewDepositValue(_getLeverageLendingBaseStorage(), amountsMax);
     }
 
     //endregion ----------------------------------- Strategy base

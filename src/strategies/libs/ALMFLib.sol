@@ -205,10 +205,16 @@ library ALMFLib {
         // ensure that all rewards are still exist on the balance
         require(tokenBalance0 == IERC20(token).balanceOf(address(this)), IControllable.IncorrectBalance());
 
-        (,,,, uint ltv,) = IPool(IAToken($.lendingVault).POOL()).getUserAccountData(address(this));
-        emit ILeverageLendingStrategy.LeverageLendingHealth(ltv, ALMFCalcLib.ltvToLeverage(ltv));
+        _emitLeverageLendingHealth($);
 
         $.tempAction = ILeverageLendingStrategy.CurrentAction.None;
+    }
+
+    function _emitLeverageLendingHealth(ILeverageLendingStrategy.LeverageLendingBaseStorage storage $) internal {
+        (uint collateralAmountBase, uint debtAmountBase,,,,) =
+            IPool(IAToken($.lendingVault).POOL()).getUserAccountData(address(this));
+        uint ltv = ALMFCalcLib.getLtv(collateralAmountBase, debtAmountBase);
+        emit ILeverageLendingStrategy.LeverageLendingHealth(ltv, ALMFCalcLib.ltvToLeverage(ltv));
     }
 
     function receiveFlashLoanBalancerV2(
