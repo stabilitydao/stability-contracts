@@ -588,4 +588,7 @@ interface IBVault {
         uint[] memory amounts,
         bytes memory userData
     ) external;
+
+    /// @dev Returns the current protocol fee module.
+    function getProtocolFeesCollector() external view returns (address);
 }

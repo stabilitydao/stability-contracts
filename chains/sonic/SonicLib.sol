@@ -46,6 +46,7 @@ import {IPriceAggregator} from "../../src/interfaces/IPriceAggregator.sol";
 import {EulerMerklFarmStrategy} from "../../src/strategies/EulerMerklFarmStrategy.sol";
 import {SiloManagedMerklFarmStrategy} from "../../src/strategies/SiloManagedMerklFarmStrategy.sol";
 import {SiloMerklFarmStrategy} from "../../src/strategies/SiloMerklFarmStrategy.sol";
+import {AaveLeverageMerklFarmStrategy} from "../../src/strategies/AaveLeverageMerklFarmStrategy.sol";
 
 /// @dev Sonic network [chainId: 146] data library
 //   _____             _
@@ -245,6 +246,7 @@ library SonicLib {
         factory.setStrategyImplementation(StrategyIdLib.COMPOUND_V2, address(new CompoundV2Strategy()));
         factory.setStrategyImplementation(StrategyIdLib.SILO_MANAGED_MERKL_FARM, address(new SiloManagedMerklFarmStrategy()));
         factory.setStrategyImplementation(StrategyIdLib.SILO_MERKL_FARM, address(new SiloMerklFarmStrategy()));
+        factory.setStrategyImplementation(StrategyIdLib.AAVE_LEVERAGE_MERKL_FARM, address(new AaveLeverageMerklFarmStrategy()));
         LogDeployLib.logDeployStrategies(platform, showLog);
         //endregion
 

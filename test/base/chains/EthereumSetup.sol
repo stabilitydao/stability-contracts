@@ -10,10 +10,10 @@ import {DeployCore} from "../../../script/base/DeployCore.sol";
 abstract contract EthereumSetup is ChainSetup, DeployCore {
     bool public showDeployLog;
 
-    uint internal constant FORK_BLOCK = 21680000; // Jan-22-2025 12:22:23 PM
+    uint internal constant FORK_BLOCK_DEFAULT = 21680000; // Jan-22-2025 12:22:23 PM
 
     constructor() {
-        vm.selectFork(vm.createFork(vm.envString("ETHEREUM_RPC_URL"), FORK_BLOCK));
+        vm.selectFork(vm.createFork(vm.envString("ETHEREUM_RPC_URL"), FORK_BLOCK_DEFAULT));
     }
 
     function testSetupStub() external {}
