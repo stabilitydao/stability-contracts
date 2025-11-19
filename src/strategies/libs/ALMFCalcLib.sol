@@ -171,6 +171,31 @@ library ALMFCalcLib {
         return Math.min(amount, optionalLimit);
     }
 
+    /// @notice Adjust leverage towards target range using leverage coefficient k if necessary: L_adj = L + k (TL - L)
+    /// @param leverage Current leverage, INTERNAL_PRECISION
+    /// @param minTargetLeverage Minimum target leverage, INTERNAL_PRECISION
+    /// @param maxTargetLeverage Maximum target leverage, INTERNAL_PRECISION
+    /// @param k Coefficient for adjustment [0...INTERNAL_PRECISION)
+    /// @return leverageAdj Adjusted leverage, INTERNAL_PRECISION
+    function adjustLeverage(
+        uint leverage,
+        uint minTargetLeverage,
+        uint maxTargetLeverage,
+        uint k
+    ) internal pure returns (uint leverageAdj) {
+        // calculate target leverage as average value
+        uint targetLeverage = (minTargetLeverage + maxTargetLeverage) / 2;
+
+        // calculate adjusted leverage
+        if (leverage < minTargetLeverage) {
+            leverageAdj = leverage + k * (targetLeverage - leverage) / ALMFCalcLib.INTERNAL_PRECISION;
+        } else if (leverage > maxTargetLeverage) {
+            leverageAdj = leverage - k * (leverage - targetLeverage) / ALMFCalcLib.INTERNAL_PRECISION;
+        } else {
+            leverageAdj = leverage;
+        }
+    }
+
     //endregion ------------------------------------- Withdraw logic
 
     //region ------------------------------------- State

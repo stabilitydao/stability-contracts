@@ -184,6 +184,38 @@ contract ALMFCalcLibTest is Test {
         assertTrue(r <= someAmount, "round-trip recovered <= original");
     }
 
+    // solidity
+    function testAdjustLeverage() public pure {
+        // inside range -> no change
+        uint res = ALMFCalcLib.adjustLeverage(10000, 9000, 11000, 2000);
+        assertEq(res, 10000, "1.within range");
+
+        // below min -> increase by k * (target - leverage) / INTERNAL_PRECISION
+        // target = (9000 + 11000) / 2 = 10000
+        // diff = 10000 - 8000 = 2000
+        // add = 5000 * 2000 / 10000 = 1000
+        // result = 8000 + 1000 = 9000
+        res = ALMFCalcLib.adjustLeverage(8000, 9000, 11000, 5000);
+        assertEq(res, 9000, "2.below min");
+
+        // above max -> decrease by k * (leverage - target) / INTERNAL_PRECISION
+        // target = 10000, diff = 12000 - 10000 = 2000, sub = 5000 * 2000 / 10000 = 1000
+        // result = 12000 - 1000 = 11000
+        res = ALMFCalcLib.adjustLeverage(12000, 9000, 11000, 5000);
+        assertEq(res, 11000, "3.above max");
+
+        // k = 0 -> no adjustment even when outside range
+        res = ALMFCalcLib.adjustLeverage(7000, 9000, 11000, 0);
+        assertEq(res, 7000, "4.k zero");
+
+        // fractional division (flooring) case
+        // target = 10000, diff = 10000 - 8001 = 1999
+        // add = floor(3333 * 1999 / 10000) = 666
+        // result = 8001 + 666 = 8667
+        res = ALMFCalcLib.adjustLeverage(8001, 9000, 11000, 3333);
+        assertEq(res, 8667, "5.fractional");
+    }
+
     //region -------------------------------------- Internal logic
     function state(uint collateralBase, uint debtBase) internal pure returns (ALMFCalcLib.State memory) {
         ALMFCalcLib.State memory _state;

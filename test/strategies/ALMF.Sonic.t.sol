@@ -21,6 +21,7 @@ import {IAaveAddressProvider} from "../../src/integrations/aave/IAaveAddressProv
 import {IAavePriceOracle} from "../../src/integrations/aave/IAavePriceOracle.sol";
 import {IPool} from "../../src/integrations/aave/IPool.sol";
 import {ALMFLib} from "../../src/strategies/libs/ALMFLib.sol";
+import {IFlashLoanRecipient} from "../../src/integrations/balancer/IFlashLoanRecipient.sol";
 import {console} from "forge-std/console.sol";
 
 contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
@@ -53,7 +54,8 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
         uint debtAmount;
         uint total;
         uint sharePrice;
-        uint strategyBalanceAsset;
+        uint strategyBalanceCollateralAsset;
+        uint strategyBalanceBorrowAsset;
         uint userBalanceAsset;
         uint realTvl;
         uint realSharePrice;
@@ -139,7 +141,11 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
         // ---------------------------------- Make additional tests
         uint snapshot = vm.snapshotState();
 
-        // thresholds
+        // --------- bad paths
+        vm.expectRevert(IControllable.IncorrectMsgSender.selector);
+        IFlashLoanRecipient(currentStrategy).receiveFlashLoan(new address[](1), new uint[](1), new uint[](1), "");
+
+        // --------- thresholds
         vm.expectRevert(IControllable.NotOperator.selector);
         vm.prank(makeAddr("1"));
         AaveLeverageMerklFarmStrategy(currentStrategy).setThreshold(SonicConstantsLib.TOKEN_WETH, 1e12);
@@ -152,24 +158,34 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
         assertEq(AaveLeverageMerklFarmStrategy(currentStrategy).threshold(SonicConstantsLib.TOKEN_WETH), 1e12);
         assertEq(AaveLeverageMerklFarmStrategy(currentStrategy).threshold(SonicConstantsLib.TOKEN_USDC), 1e6);
 
-        _testDepositWithPartialDirectRepay();
+        // --------- any tests with zero initial supply
+        _testWithdrawWithZeroDebt();
 
-        _testDepositWithFullDirectRepay();
-
-        // initial supply
+        // --------- initial supply
         _tryToDepositToVault(IStrategy(currentStrategy).vault(), 0.1e18, REVERT_NO, makeAddr("initial supplier"));
+
+        // --------- various deposit - withdraw tests
+        _testDepositWithdrawWithRewardsOnBalance();
+
+        // check direct deposit of small amount without leverage
+        _testDepositAmountLessThanThreshold();
+
+        // check deposit with direct repay before depositing with the leverage
+        _testDepositWithPartialDirectRepay();
+        _testDepositWithFullDirectRepay();
 
         // check revenue (replacement for "Universal test: estimated totalRevenueUSD is zero")
         _testDepositTwoHardworks();
 
+        // check deposit-wait 30 days-hardwork-withdraw results
+        _testDepositWaitHardworkWithdraw();
+
+        // --------- Target LTV
         // set TL, deposit, change TL, withdraw/deposit => leverage was changed toward new TL
         _testDepositChangeLtvWithdraw();
         _testDepositChangeLtvDeposit();
 
-        // check deposit-wait 30 days-hardwork-withdraw results
-        _testDepositWaitHardworkWithdraw();
-
-        // check flash loan vault of various kinds
+        // --------- check flash loan vault of various kinds
         _testDepositWithdrawUsingFlashLoan(
             SonicConstantsLib.BEETS_VAULT, ILeverageLendingStrategy.FlashLoanKind.Default_0
         );
@@ -182,7 +198,6 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
         _testDepositWithdrawUsingFlashLoan(
             SonicConstantsLib.POOL_ALGEBRA_WS_USDC, ILeverageLendingStrategy.FlashLoanKind.AlgebraV4_3
         );
-
 
         vm.revertToState(snapshot);
     }
@@ -229,19 +244,19 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
         assertEq(
             stateAfterDeposit.revenueAmounts[0],
             0,
-            "Revenue before first claimReview is 0 because share price is not initialized yet"
+            "_testDepositTwoHardworks.Revenue before first claimReview is 0 because share price is not initialized yet"
         );
         assertApproxEqRel(
             stateAfterHW1.revenueAmounts[0] * priceWeth8 * 1e6 / 1e8 / 1e18,
             100e6,
             2e16,
-            "Revenue after first hardwork is ~$100"
+            "_testDepositTwoHardworks.Revenue after first hardwork is ~$100"
         );
         assertApproxEqRel(
             stateAfterHW2.revenueAmounts[0] * priceWeth8 * 1e6 / 1e8 / 1e18,
             300e6,
             2e16,
-            "Revenue after first hardwork is ~$300"
+            "_testDepositTwoHardworks.Revenue after first hardwork is ~$300"
         );
     }
 
@@ -254,14 +269,18 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
                 stateAfterDeposit.leverage,
                 stateAfterDeposit.targetLeverage,
                 1e16,
-                "Leverage after deposit should be equal to target 111"
+                "_testDepositChangeLtvWithdraw.Leverage after deposit should be equal to target 111"
             );
             assertLt(
                 stateAfterDeposit.leverage,
                 stateAfterWithdraw.targetLeverage,
-                "leverage before withdraw less than target"
+                "_testDepositChangeLtvWithdraw.leverage before withdraw less than target"
             );
-            assertGt(stateAfterWithdraw.leverage, stateAfterDeposit.leverage, "withdraw increased the leverage");
+            assertGt(
+                stateAfterWithdraw.leverage,
+                stateAfterDeposit.leverage,
+                "_testDepositChangeLtvWithdraw.withdraw increased the leverage"
+            );
         }
         {
             (, State memory stateAfterDeposit, State memory stateAfterWithdraw) =
@@ -271,14 +290,18 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
                 stateAfterDeposit.leverage,
                 stateAfterDeposit.targetLeverage,
                 1e16,
-                "Leverage after deposit should be equal to target 222"
+                "_testDepositChangeLtvWithdraw.Leverage after deposit should be equal to target 222"
             );
             assertGt(
                 stateAfterDeposit.leverage,
                 stateAfterWithdraw.targetLeverage,
-                "leverage before withdraw greater than target"
+                "_testDepositChangeLtvWithdraw.leverage before withdraw greater than target"
             );
-            assertLt(stateAfterWithdraw.leverage, stateAfterDeposit.leverage, "withdraw decreased the leverage");
+            assertLt(
+                stateAfterWithdraw.leverage,
+                stateAfterDeposit.leverage,
+                "_testDepositChangeLtvWithdraw.withdraw decreased the leverage"
+            );
         }
     }
 
@@ -291,14 +314,18 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
                 stateAfterDeposit.leverage,
                 stateAfterDeposit.targetLeverage,
                 1e16,
-                "Leverage after deposit should be equal to target 333"
+                "_testDepositChangeLtvDeposit.Leverage after deposit should be equal to target 333"
             );
             assertLt(
                 stateAfterDeposit.leverage,
                 stateAfterDeposit2.targetLeverage,
-                "leverage before withdraw less than target"
+                "_testDepositChangeLtvDeposit.leverage before withdraw less than target"
             );
-            assertGt(stateAfterDeposit2.leverage, stateAfterDeposit.leverage, "deposit2 increased the leverage");
+            assertGt(
+                stateAfterDeposit2.leverage,
+                stateAfterDeposit.leverage,
+                "_testDepositChangeLtvDeposit.deposit2 increased the leverage"
+            );
         }
         {
             (, State memory stateAfterDeposit, State memory stateAfterDeposit2) =
@@ -308,14 +335,18 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
                 stateAfterDeposit.leverage,
                 stateAfterDeposit.targetLeverage,
                 1e16,
-                "Leverage after deposit should be equal to target 444"
+                "_testDepositChangeLtvDeposit.Leverage after deposit should be equal to target 444"
             );
             assertGt(
                 stateAfterDeposit.leverage,
                 stateAfterDeposit2.targetLeverage,
-                "leverage before deposit2 greater than target"
+                "_testDepositChangeLtvDeposit.leverage before deposit2 greater than target"
             );
-            assertLt(stateAfterDeposit2.leverage, stateAfterDeposit.leverage, "deposit2 decreased the leverage");
+            assertLt(
+                stateAfterDeposit2.leverage,
+                stateAfterDeposit.leverage,
+                "_testDepositChangeLtvDeposit.deposit2 decreased the leverage"
+            );
         }
     }
 
@@ -326,6 +357,14 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
         uint snapshot = vm.snapshotState();
         _setUpFlashLoanVault(flashLoanVault, kind_);
 
+        if (kind_ == ILeverageLendingStrategy.FlashLoanKind.BalancerV3_1) {
+            uint snapshot2 = vm.snapshotState();
+            _tryToDepositToVault(
+                IStrategy(currentStrategy).vault(), 100_000e18, REVERT_INSUFFICIENT_BALANCE, address(this)
+            );
+            vm.revertToState(snapshot2);
+        }
+
         uint amount = 1e18;
         State[] memory states = _depositWithdraw(amount, SonicConstantsLib.TOKEN_USDC, 0, 0, false);
         vm.revertToState(snapshot);
@@ -334,9 +373,14 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
             states[INDEX_AFTER_WITHDRAW_4].total,
             states[INDEX_INIT_0].total,
             states[INDEX_INIT_0].total / 100_000,
-            "Total should return back to prev value"
+            "_testDepositWithdrawUsingFlashLoan.Total should return back to prev value"
         );
-        assertApproxEqRel(states[4].userBalanceAsset, amount, amount / 50, "User shouldn't loss more than 2%");
+        assertApproxEqRel(
+            states[4].userBalanceAsset,
+            amount,
+            amount / 50,
+            "_testDepositWithdrawUsingFlashLoan.User shouldn't loss more than 2%"
+        );
     }
 
     function _testDepositWaitHardworkWithdraw() internal {
@@ -365,50 +409,232 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
             statesHW2[INDEX_AFTER_HARDWORK_3].total - statesInstant[INDEX_AFTER_HARDWORK_3].total,
             100e18,
             3e18,
-            "total is increased on rewards amount - fees"
+            "_testDepositWaitHardworkWithdraw.total is increased on rewards amount - fees"
         );
         assertLt(
             statesHW1[INDEX_AFTER_HARDWORK_3].total,
             statesInstant[INDEX_AFTER_HARDWORK_3].total,
-            "total is decreased because the borrow rate exceeds supply rate"
+            "_testDepositWaitHardworkWithdraw.total is decreased because the borrow rate exceeds supply rate"
         );
 
         assertLt(
             statesHW1[INDEX_AFTER_WITHDRAW_4].userBalanceAsset,
             statesInstant[INDEX_AFTER_WITHDRAW_4].userBalanceAsset,
-            "user lost some amount because of borrow rate"
+            "_testDepositWaitHardworkWithdraw.user lost some amount because of borrow rate"
         );
         assertApproxEqRel(
             statesHW2[INDEX_AFTER_WITHDRAW_4].userBalanceAsset,
             100e18 / wethPrice * 1e8 + statesInstant[INDEX_AFTER_WITHDRAW_4].userBalanceAsset,
             3e16, //  < 3%
-            "user received almost all rewards"
+            "_testDepositWaitHardworkWithdraw.user received almost all rewards"
         );
     }
 
     function _testMaxDepositAndMaxWithdraw() internal view {
-        assertEq(IStrategy(currentStrategy).maxDepositAssets().length, 0, "any amount can be deposited");
-        assertEq(IStrategy(currentStrategy).maxWithdrawAssets(0).length, 0, "any amount can be withdrawn");
+        assertEq(
+            IStrategy(currentStrategy).maxDepositAssets().length,
+            0,
+            "_testMaxDepositAndMaxWithdraw.any amount can be deposited"
+        );
+        assertEq(
+            IStrategy(currentStrategy).maxWithdrawAssets(0).length,
+            0,
+            "_testMaxDepositAndMaxWithdraw.any amount can be withdrawn"
+        );
     }
 
     /// @notice ar != 0, ad == 0
     function _testDepositWithFullDirectRepay() internal {
-        (State memory state0, State memory state1) = _testDepositWithDirectRepay([uint(1e18), 0.1e18]);
+        uint snapshot = vm.snapshotState();
+        (State memory state0, State memory state1, State memory state2) =
+            _testDepositWithDirectRepay([uint(1e18), 0.1e18]);
 
         uint priceCollateral8 = _getWethPrice8();
-        uint priceDebt8 = IAavePriceOracle(IAaveAddressProvider(IPool(POOL).ADDRESSES_PROVIDER()).getPriceOracle()).getAssetPrice(SonicConstantsLib.TOKEN_USDC);
+        uint priceDebt8 = IAavePriceOracle(IAaveAddressProvider(IPool(POOL).ADDRESSES_PROVIDER()).getPriceOracle())
+            .getAssetPrice(SonicConstantsLib.TOKEN_USDC);
         uint amountToRepay = 0.1e18 * priceCollateral8 * 1e6 / priceDebt8 / 1e18;
 
-        assertEq(state1.collateralAmount, state0.collateralAmount, "collateral should not change");
-        assertApproxEqRel(state1.debtAmount, state0.debtAmount - amountToRepay, 1e16, "debt should be reduced on the deposited value (1% can be loss on swap)");
+        assertEq(
+            state1.collateralAmount,
+            state0.collateralAmount,
+            "_testDepositWithFullDirectRepay.collateral should not change"
+        );
+        assertApproxEqRel(
+            state1.debtAmount,
+            state0.debtAmount - amountToRepay,
+            1e16,
+            "_testDepositWithFullDirectRepay.debt should be reduced on the deposited value (1% can be loss on swap)"
+        );
+
+        assertApproxEqRel(
+            state2.userBalanceAsset,
+            state0.userBalanceAsset + 1e18 + 0.1e18,
+            1e16,
+            "_testDepositWithFullDirectRepay.user received deposited amounts back"
+        );
+        vm.revertToState(snapshot);
     }
 
     /// @notice ar != 0, ad != 0
     function _testDepositWithPartialDirectRepay() internal {
-        (State memory state0, State memory state1) = _testDepositWithDirectRepay([uint(1e18), 0.3e18]);
+        uint snapshot = vm.snapshotState();
+        (State memory state0, State memory state1, State memory state2) =
+            _testDepositWithDirectRepay([uint(1e18), 0.3e18]);
 
-        assertGt(state1.collateralAmount, state0.collateralAmount, "collateral is increased");
-        assertApproxEqRel(state1.leverage, state1.targetLeverage, 1e16, "leverage should be equal to target");
+        assertGt(
+            state1.collateralAmount,
+            state0.collateralAmount,
+            "_testDepositWithPartialDirectRepay.collateral is increased"
+        );
+        assertApproxEqRel(
+            state1.leverage,
+            state1.targetLeverage,
+            1e16,
+            "_testDepositWithPartialDirectRepay.leverage should be equal to target"
+        );
+
+        assertApproxEqRel(
+            state2.userBalanceAsset,
+            state0.userBalanceAsset + 1e18 + 0.3e18,
+            1e16,
+            "_testDepositWithPartialDirectRepay.user received deposited amounts back"
+        );
+        vm.revertToState(snapshot);
+    }
+
+    /// @dev Improve coverage of _withdrawRequiredAmountOnBalance
+    function _testWithdrawWithZeroDebt() internal {
+        uint snapshot = vm.snapshotState();
+
+        address vault = IStrategy(currentStrategy).vault();
+        uint amount = 0.1e18;
+
+        // ---------- Set the threshold higher than the amount
+        vm.prank(platform.multisig());
+        AaveLeverageMerklFarmStrategy(currentStrategy).setThreshold(SonicConstantsLib.TOKEN_WETH, 2 * amount);
+
+        // ---------- Deposit
+        State memory state0 = _getState();
+        _tryToDepositToVault(vault, amount, REVERT_NO, address(this));
+        State memory state1 = _getState();
+
+        // ---------- Withdraw all
+        _tryToWithdrawFromVault(vault, IStabilityVault(vault).balanceOf(address(this)));
+        State memory state2 = _getState();
+
+        //        _printState(state0);
+        //        _printState(state1);
+        //        _printState(state2);
+
+        // ---------- Check results
+        assertGt(state1.collateralAmount, state0.collateralAmount, "_testWithdrawWithZeroDebt.collateral is increased");
+        assertEq(
+            state1.debtAmount,
+            state0.debtAmount,
+            "_testWithdrawWithZeroDebt.debt is NOT increased (there was direct supply)"
+        );
+
+        assertGt(state2.realTvl, 0, "_testWithdrawWithZeroDebt.result tvl is not 0 (initial shares)");
+        assertApproxEqRel(
+            state2.userBalanceAsset,
+            state0.userBalanceAsset + amount,
+            1e16,
+            "_testWithdrawWithZeroDebt.user received deposited amounts back (without initial shares)"
+        );
+
+        vm.revertToState(snapshot);
+    }
+
+    function _testDepositAmountLessThanThreshold() internal {
+        uint snapshot = vm.snapshotState();
+
+        address vault = IStrategy(currentStrategy).vault();
+        uint amount = 0.01e18;
+
+        // ---------- Set the threshold higher than the amount
+        vm.prank(platform.multisig());
+        AaveLeverageMerklFarmStrategy(currentStrategy).setThreshold(SonicConstantsLib.TOKEN_WETH, 2 * amount);
+
+        // ---------- Deposit and withdraw
+        State memory state0 = _getState();
+        _tryToDepositToVault(vault, amount, REVERT_NO, address(this));
+        State memory state1 = _getState();
+        _tryToWithdrawFromVault(vault, IStabilityVault(vault).balanceOf(address(this)) * 9999 / 10000);
+        //State memory state15 = _getState();
+        _tryToWithdrawFromVault(vault, IStabilityVault(vault).balanceOf(address(this)));
+        State memory state2 = _getState();
+
+        //        _printState(state0);
+        //        _printState(state1);
+        //        _printState(state15);
+        //        _printState(state2);
+
+        // ---------- Check results
+        assertGt(
+            state1.collateralAmount,
+            state0.collateralAmount,
+            "_testDepositAmountLessThanThreshold.collateral is increased after direct deposit without leverage"
+        );
+        assertEq(
+            state1.debtAmount,
+            state0.debtAmount,
+            "_testDepositAmountLessThanThreshold.debt is NOT changed after direct deposit without leverage"
+        );
+
+        assertApproxEqRel(
+            state2.realTvl, state0.realTvl, 1e10, "_testDepositAmountLessThanThreshold.result tvl should not change"
+        );
+        assertApproxEqRel(
+            state2.userBalanceAsset,
+            state0.userBalanceAsset + amount,
+            1e16,
+            "_testDepositAmountLessThanThreshold.user received deposited amounts back"
+        );
+
+        vm.revertToState(snapshot);
+    }
+
+    function _testDepositWithdrawWithRewardsOnBalance() internal {
+        uint snapshot = vm.snapshotState();
+        uint amount = 1e18;
+
+        // -------- Put rewards on strategy balance
+        deal(SonicConstantsLib.TOKEN_USDC, currentStrategy, 171e6);
+
+        // -------- Deposit
+        State memory state0 = _getState();
+        IStrategy strategy = IStrategy(currentStrategy);
+        _tryToDepositToVault(strategy.vault(), amount, REVERT_NO, address(this));
+        vm.roll(block.number + 6);
+
+        // -------- Withdraw all
+        _tryToWithdrawFromVault(strategy.vault(), IStabilityVault(strategy.vault()).balanceOf(address(this)));
+        State memory state2 = _getState();
+        vm.roll(block.number + 6);
+
+        vm.revertToState(snapshot);
+
+        //        _printState(state0);
+        //        _printState(state1);
+        //        _printState(state2);
+
+        assertApproxEqRel(
+            state2.realTvl,
+            state0.realTvl,
+            1e10,
+            "_testDepositWithdrawWithRewardsOnBalance.result tvl should not change"
+        );
+        assertApproxEqRel(
+            state2.userBalanceAsset,
+            state0.userBalanceAsset + amount,
+            1.1e16,
+            "_testDepositWithdrawWithRewardsOnBalance.user received deposited amounts back"
+        );
+        assertEq(
+            state2.strategyBalanceBorrowAsset,
+            state0.strategyBalanceBorrowAsset,
+            "_testDepositWithdrawWithRewardsOnBalance.Rewards should stay on strategy balance"
+        );
     }
 
     //endregion --------------------------------------- Additional tests
@@ -510,22 +736,27 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
         assertEq(depositedAssets, amount, "Deposited amount should be equal to amountsToDeposit");
     }
 
-    function _testDepositWithDirectRepay(uint[2] memory amounts) internal returns (State memory state0, State memory state1) {
-        uint snapshot = vm.snapshotState();
+    function _testDepositWithDirectRepay(uint[2] memory amounts)
+        internal
+        returns (State memory state0, State memory state1, State memory state2)
+    {
+        address vault = IStrategy(currentStrategy).vault();
 
         // ---------- Special case: 100% direct repay is required on the second deposit
-        _tryToDepositToVault(IStrategy(currentStrategy).vault(), amounts[0], REVERT_NO, address(this));
+        _tryToDepositToVault(vault, amounts[0], REVERT_NO, address(this));
         state0 = _getState();
-//        _printState(state0);
+        //        _printState(state0);
 
         _setMinMaxLtv(4100, 4200);
-        _tryToDepositToVault(IStrategy(currentStrategy).vault(), amounts[1], REVERT_NO, address(this));
+        _tryToDepositToVault(vault, amounts[1], REVERT_NO, address(this));
         state1 = _getState();
-//        _printState(state1);
+        //        _printState(state1);
 
-        vm.revertToState(snapshot);
+        // ---------- Withdraw all
+        _tryToWithdrawFromVault(vault, IStabilityVault(vault).balanceOf(address(this)));
+        state2 = _getState();
 
-        return (state0, state1);
+        return (state0, state1, state2);
     }
 
     //endregion --------------------------------------- Test implementations
@@ -561,6 +792,8 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
         vm.prank(user);
         IStabilityVault(vault).depositAssets(assets, amountsToDeposit, 0, user);
 
+        vm.roll(block.number + 6);
+
         return (amountsToDeposit[0], IVault(vault).balanceOf(user) - balanceBefore);
     }
 
@@ -571,6 +804,8 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
 
         vm.prank(address(this));
         IStabilityVault(vault).withdrawAssets(_assets, values, new uint[](1));
+
+        vm.roll(block.number + 6);
 
         return IERC20(_assets[0]).balanceOf(address(this)) - balanceBefore;
     }
@@ -629,8 +864,9 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
         state.total = IStrategy(currentStrategy).total();
         state.maxLeverage = 100_00 * 1e4 / (1e4 - state.maxLtv);
         state.targetLeverage = state.maxLeverage * state.targetLeveragePercent / 100_00;
-        state.strategyBalanceAsset =
+        state.strategyBalanceCollateralAsset =
             IERC20(IStrategy(address(strategy)).assets()[0]).balanceOf(address(currentStrategy));
+        state.strategyBalanceBorrowAsset = IERC20(SonicConstantsLib.TOKEN_USDC).balanceOf(address(currentStrategy));
         state.userBalanceAsset = IERC20(IStrategy(address(strategy)).assets()[0]).balanceOf(address(address(this)));
         (state.realTvl,) = strategy.realTvl();
         (state.realSharePrice,) = strategy.realSharePrice();
@@ -655,7 +891,8 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
         console.log("realTvl", state.realTvl);
         console.log("realSharePrice", state.realSharePrice);
         console.log("vaultBalance", state.vaultBalance);
-        console.log("strategyBalanceAsset", state.strategyBalanceAsset);
+        console.log("strategyBalanceCollateralAsset", state.strategyBalanceCollateralAsset);
+        console.log("strategyBalanceBorrowAsset", state.strategyBalanceBorrowAsset);
         console.log("userBalanceAsset", state.userBalanceAsset);
         for (uint i = 0; i < state.revenueAssets.length; i++) {
             console.log("revenueAsset", i, state.revenueAssets[i], state.revenueAmounts[i]);

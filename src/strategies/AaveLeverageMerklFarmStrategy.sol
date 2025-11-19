@@ -266,7 +266,7 @@ contract AaveLeverageMerklFarmStrategy is
 
     /// @inheritdoc ILeverageLendingStrategy
     function health()
-        public
+        external
         view
         returns (
             uint ltv,
@@ -277,7 +277,8 @@ contract AaveLeverageMerklFarmStrategy is
             uint targetLeveragePercent
         )
     {
-        return ALMFLib.health(platform(), _getLeverageLendingBaseStorage(), _getFarm());
+        (ltv, maxLtv, leverage, collateralAmount, debtAmount, targetLeveragePercent) =
+            ALMFLib.health(platform(), _getLeverageLendingBaseStorage(), _getFarm());
     }
 
     /// @inheritdoc ILeverageLendingStrategy
@@ -359,7 +360,7 @@ contract AaveLeverageMerklFarmStrategy is
             uint[] memory /*amountsConsumed*/
         )
     {
-        revert("no underlying"); // todo do we need to support it?
+        revert("no underlying");
     }
 
     /// @inheritdoc StrategyBase
@@ -368,7 +369,7 @@ contract AaveLeverageMerklFarmStrategy is
         /*amount*/
         address /*receiver*/
     ) internal pure override {
-        revert("no underlying"); // todo do we need to support it?
+        revert("no underlying");
     }
 
     /// @inheritdoc IStrategy
@@ -385,13 +386,11 @@ contract AaveLeverageMerklFarmStrategy is
     /// @inheritdoc StrategyBase
     function _previewDepositAssets(uint[] memory amountsMax)
         internal
-        pure
+        view
         override
         returns (uint[] memory amountsConsumed, uint value)
     {
-        amountsConsumed = new uint[](1);
-        amountsConsumed[0] = amountsMax[0];
-        value = amountsMax[0]; // todo this value is incorrect
+        return ALMFLib.previewDepositValue(_getLeverageLendingBaseStorage(), amountsMax);
     }
 
     //endregion ----------------------------------- Strategy base
