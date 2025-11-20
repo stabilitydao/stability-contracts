@@ -37,8 +37,14 @@ library PlasmaConstantsLib {
     address public constant EULER_MERKL_USDT0_RE7 = 0xa5EeD1615cd883dD6883ca3a385F525e3bEB4E79;
 
     // AAVE
+    address public constant AAVE_V3_ADDRESS_PROVIDER = 0x061D8e131F26512348ee5FA42e2DF1bA9d6505E9;
+    address public constant AAVE_V3_POOL_DATA_PROVIDER = 0xf2D6E38B407e31E7E7e4a16E6769728b76c7419F;
     address public constant AAVE_V3_POOL = 0x925a2A7214Ed92428B5b1B090F80b25700095e12;
     address public constant AAVE_V3_POOL_USDT0 = 0x5D72a9d9A9510Cd8cBdBA12aC62593A58930a948;
+    address public constant AAVE_V3_POOL_WETH = 0xf1aB7f60128924d69f6d7dE25A20eF70bBd43d07;
+    address public constant AAVE_V3_POOL_SYRUP_USDT = 0xD4eE376C40EdC83832aAaFc18fC0272660F5e90b;
+    address public constant AAVE_V3_POOL_WEETH = 0xAf1a7a488c8348b41d5860C04162af7d3D38A996;
+    address public constant AAVE_V3_POOL_USDE = 0x7519403E12111ff6b710877Fcd821D0c12CAF43A;
 
     // DEX
     address internal constant OKU_TRADE_POOL_USDT0_WETH = 0xCe4Ac514CA6a9db357CcCc105B7848d7fd37445d;

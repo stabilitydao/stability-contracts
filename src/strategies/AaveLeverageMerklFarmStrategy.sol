@@ -88,7 +88,7 @@ contract AaveLeverageMerklFarmStrategy is
             params.lendingVault,
             params.collateralAsset,
             params.borrowAsset,
-            farm.nums[2]
+            farm
         );
     }
 

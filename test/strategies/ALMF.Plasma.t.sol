@@ -11,7 +11,6 @@ import {IStabilityVault} from "../../src/interfaces/IStabilityVault.sol";
 import {IStrategy} from "../../src/interfaces/IStrategy.sol";
 import {IVault} from "../../src/interfaces/IVault.sol";
 import {PlasmaConstantsLib} from "../../chains/plasma/PlasmaConstantsLib.sol";
-import {PlasmaFarmMakerLib} from "../../chains/plasma/PlasmaFarmMakerLib.sol";
 import {PlasmaSetup} from "../base/chains/PlasmaSetup.sol";
 import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
 import {UniversalTest} from "../base/UniversalTest.sol";
@@ -19,8 +18,10 @@ import {PriceReader} from "../../src/core/PriceReader.sol";
 import {IAaveAddressProvider} from "../../src/integrations/aave/IAaveAddressProvider.sol";
 import {IAavePriceOracle} from "../../src/integrations/aave/IAavePriceOracle.sol";
 import {IPool} from "../../src/integrations/aave/IPool.sol";
+import {IAaveDataProvider} from "../../src/integrations/aave/IAaveDataProvider.sol";
 import {AaveLeverageMerklFarmStrategy} from "../../src/strategies/AaveLeverageMerklFarmStrategy.sol";
 import {console} from "forge-std/console.sol";
+import {SharedFarmMakerLib} from "../../chains/shared/SharedFarmMarketLib.sol";
 
 contract ALMFStrategyPlasmaTest is PlasmaSetup, UniversalTest {
     uint public constant REVERT_NO = 0;
@@ -61,11 +62,6 @@ contract ALMFStrategyPlasmaTest is PlasmaSetup, UniversalTest {
 
     uint internal constant FORK_BLOCK = 6452516; // Nov-17-2025 12:36:59 UTC
 
-    address internal constant ADDRESS_PROVIDER = 0x061D8e131F26512348ee5FA42e2DF1bA9d6505E9;
-    address internal constant POOL_DATA_PROVIDER = 0xf2D6E38B407e31E7E7e4a16E6769728b76c7419F;
-    address internal constant POOL = 0x925a2A7214Ed92428B5b1B090F80b25700095e12;
-    address internal constant ATOKEN_USDT = 0x5D72a9d9A9510Cd8cBdBA12aC62593A58930a948;
-    address internal constant ATOKEN_WETH = 0xf1aB7f60128924d69f6d7dE25A20eF70bBd43d07;
     address internal constant POOL_WXPL_USDT0 = 0x8603C67B7Cc056ef6981a9C709854c53b699Fa66;
 
     constructor() {
@@ -111,14 +107,15 @@ contract ALMFStrategyPlasmaTest is PlasmaSetup, UniversalTest {
         rewards[1] = PlasmaConstantsLib.TOKEN_WXPL;
 
         IFactory.Farm[] memory farms = new IFactory.Farm[](1);
-        farms[0] = PlasmaFarmMakerLib._makeAaveLeverageMerklFarm(
-            ATOKEN_WETH,
-            ATOKEN_USDT,
+        farms[0] = SharedFarmMakerLib._makeAaveLeverageMerklFarm(
+            PlasmaConstantsLib.AAVE_V3_POOL_WETH,
+            PlasmaConstantsLib.AAVE_V3_POOL_USDT0,
             POOL_WXPL_USDT0,
             rewards,
             DEFAULT_MIN_LTV_LEVERAGE3, // min target ltv
             DEFAULT_MAX_LTV_LEVERAGE3, // max target ltv
-            uint(ILeverageLendingStrategy.FlashLoanKind.UniswapV3_2)
+            uint(ILeverageLendingStrategy.FlashLoanKind.UniswapV3_2),
+            0 // eMode is not used
         );
 
         vm.startPrank(platform.multisig());
@@ -652,9 +649,19 @@ contract ALMFStrategyPlasmaTest is PlasmaSetup, UniversalTest {
     }
 
     function _getWethPrice8() internal view returns (uint) {
-        return IAavePriceOracle(IAaveAddressProvider(IPool(POOL).ADDRESSES_PROVIDER()).getPriceOracle())
+        return IAavePriceOracle(IAaveAddressProvider(IPool(PlasmaConstantsLib.AAVE_V3_POOL).ADDRESSES_PROVIDER()).getPriceOracle())
             .getAssetPrice(PlasmaConstantsLib.TOKEN_WETH);
     }
+
+//    function displayAssetsData() internal view {
+//        IAaveDataProvider.TokenData[] memory tokens = IAaveDataProvider(PlasmaConstantsLib.AAVE_V3_POOL_DATA_PROVIDER).getAllReservesTokens();
+//        for (uint i = 0; i < tokens.length; i++) {
+//            IPool.ReserveConfigurationMap memory data = IPool(PlasmaConstantsLib.AAVE_V3_POOL).getReserveData(tokens[i].tokenAddress).configuration;
+//            uint256 eModeCategoryId = (data.data >> 168) & 0xFF;
+//            console.log(tokens[i].symbol, tokens[i].tokenAddress, eModeCategoryId);
+//            console.log(data.data);
+//        }
+//    }
 
     //endregion --------------------------------------- Helper functions
 }

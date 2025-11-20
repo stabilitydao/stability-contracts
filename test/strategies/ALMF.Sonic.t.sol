@@ -11,7 +11,6 @@ import {IStabilityVault} from "../../src/interfaces/IStabilityVault.sol";
 import {IStrategy} from "../../src/interfaces/IStrategy.sol";
 import {IVault} from "../../src/interfaces/IVault.sol";
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
-import {SonicFarmMakerLib} from "../../chains/sonic/SonicFarmMakerLib.sol";
 import {SonicSetup} from "../base/chains/SonicSetup.sol";
 import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
 import {UniversalTest} from "../base/UniversalTest.sol";
@@ -23,6 +22,7 @@ import {IPool} from "../../src/integrations/aave/IPool.sol";
 import {ALMFLib} from "../../src/strategies/libs/ALMFLib.sol";
 import {IFlashLoanRecipient} from "../../src/integrations/balancer/IFlashLoanRecipient.sol";
 import {console} from "forge-std/console.sol";
+import {SharedFarmMakerLib} from "../../chains/shared/SharedFarmMarketLib.sol";
 
 contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
     uint public constant REVERT_NO = 0;
@@ -121,14 +121,15 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
         rewards[1] = SonicConstantsLib.TOKEN_USDT;
 
         IFactory.Farm[] memory farms = new IFactory.Farm[](1);
-        farms[0] = SonicFarmMakerLib._makeAaveLeverageMerklFarm(
+        farms[0] = SharedFarmMakerLib._makeAaveLeverageMerklFarm(
             ATOKEN_WETH,
             ATOKEN_USDC,
             SonicConstantsLib.BEETS_VAULT,
             rewards,
             DEFAULT_MIN_LTV, // min target ltv
             DEFAULT_MAX_LTV, // max target ltv
-            0 // beets v2 flash loan kind
+            0, // beets v2 flash loan kind
+            0 // eMode is not used
         ); //68
 
         vm.startPrank(platform.multisig());

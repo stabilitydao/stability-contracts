@@ -1,17 +1,18 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {IPriceReader} from "../../interfaces/IPriceReader.sol";
+import {IPool} from "../../integrations/aave/IPool.sol";
 import {IAToken} from "../../integrations/aave/IAToken.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IFactory} from "../../interfaces/IFactory.sol";
 import {ILeverageLendingStrategy} from "../../interfaces/ILeverageLendingStrategy.sol";
 import {IPlatform} from "../../interfaces/IPlatform.sol";
-import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
+import {IPriceReader} from "../../interfaces/IPriceReader.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {SharedLib} from "./SharedLib.sol";
 import {StrategyIdLib} from "./StrategyIdLib.sol";
+import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 
 /// @notice Several standalone functions were moved here to reduce size of ALMFLib
 library ALMFLib2 {
@@ -92,7 +93,7 @@ library ALMFLib2 {
         address lendingVault_,
         address collateralAsset_,
         address borrowAsset_,
-        uint flashLoanKind_
+        IFactory.Farm memory farm
     ) external {
         address pool = IAToken(lendingVault_).POOL();
         IERC20(collateralAsset_).forceApprove(pool, type(uint).max);
@@ -101,6 +102,15 @@ library ALMFLib2 {
         address swapper = IPlatform(platform_).swapper();
         IERC20(collateralAsset_).forceApprove(swapper, type(uint).max);
         IERC20(borrowAsset_).forceApprove(swapper, type(uint).max);
+
+        // ------------------------------ Enable E-Mode for the user account in AAVE if necessary
+        uint8 eModeCategoryId = uint8(farm.nums[3]);
+        if (eModeCategoryId != 0) {
+            // E-mode is activated once here
+            // Assume here that collateral and borrow assets are always the same in belong to the given E-category
+            // E-mode is never reset because the strategy doesn't use any other borrow assets
+            IPool(pool).setUserEMode(eModeCategoryId);
+        }
 
         // ------------------------------ Set up all params in use
         //        // Multiplier of flash amount for borrow on deposit. Default is 100_00 = 100%
@@ -127,7 +137,7 @@ library ALMFLib2 {
         //        // withdrawParam2 allows to disable withdraw through increasing ltv if leverage is near to target
         //        $.withdrawParam2 = 100_00;
 
-        $.flashLoanKind = flashLoanKind_;
+        $.flashLoanKind = farm.nums[2];
     }
 
     //endregion ------------------------------------- Init vars, desc

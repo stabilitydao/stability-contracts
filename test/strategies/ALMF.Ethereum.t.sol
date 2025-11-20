@@ -20,6 +20,7 @@ import {IAavePriceOracle} from "../../src/integrations/aave/IAavePriceOracle.sol
 import {IPool} from "../../src/integrations/aave/IPool.sol";
 import {AaveLeverageMerklFarmStrategy} from "../../src/strategies/AaveLeverageMerklFarmStrategy.sol";
 import {console} from "forge-std/console.sol";
+import {SharedFarmMakerLib} from "../../chains/shared/SharedFarmMarketLib.sol";
 
 contract ALMFStrategyEthereumTest is EthereumSetup, UniversalTest {
     uint public constant REVERT_NO = 0;
@@ -103,14 +104,15 @@ contract ALMFStrategyEthereumTest is EthereumSetup, UniversalTest {
         // todo rewards[1] = EthereumLib.TOKEN_WXPL;
 
         IFactory.Farm[] memory farms = new IFactory.Farm[](1);
-        farms[0] = EthereumLib._makeAaveLeverageMerklFarm(
+        farms[0] = SharedFarmMakerLib._makeAaveLeverageMerklFarm(
             ATOKEN_WBTC,
             ATOKEN_USDC,
             EthereumLib.POOL_UNISWAPV3_USDC_WETH_500,
             rewards,
             49_00, // min target ltv
             50_97, // max target ltv
-            uint(ILeverageLendingStrategy.FlashLoanKind.UniswapV3_2)
+            uint(ILeverageLendingStrategy.FlashLoanKind.UniswapV3_2),
+            0 // eMode is not used
         );
 
         vm.startPrank(platform.multisig());
