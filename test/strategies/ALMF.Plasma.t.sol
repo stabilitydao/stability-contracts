@@ -109,9 +109,9 @@ contract ALMFStrategyPlasmaTest is PlasmaSetup, UniversalTest {
         farmSusdeUsdt9 = _addFarmSusdeUsdt9();
         farmWeethUsdt2 = _addFarmWeethUsdt2NoRewards();
 
-//todo        _addStrategy(farmIdWethUsdt3);
-//todo need adapter for aave?      _addStrategy(farmWeethWeth10);
+        _addStrategy(farmIdWethUsdt3);
         _addStrategy(farmSusdeUsdt9);
+//todo need adapter for aave?      _addStrategy(farmWeethWeth10);
 //todo fix route        _addStrategy(farmWeethUsdt2);
     }
 
@@ -200,10 +200,15 @@ contract ALMFStrategyPlasmaTest is PlasmaSetup, UniversalTest {
         // ---------------- Additional tests
         uint snapshot = vm.snapshotState();
 
+        _tryToDepositToVault(IStrategy(currentStrategy).vault(), 100e18, REVERT_NO, address(this));
+
         IAavePool32.EModeCategoryLegacy memory eModeData = IAavePool32(PlasmaConstantsLib.AAVE_V3_POOL).getEModeCategoryData(E_MODE_CATEGORY_ID_SUSDE_STABLECOINS);
 
         (, uint maxLtv, , , , ) = AaveLeverageMerklFarmStrategy(currentStrategy).health();
         assertEq(maxLtv, eModeData.ltv, "max ltv for e-mode matches");
+
+        // see https://app.aave.com/reserve-overview/?underlyingAsset=0x211cc4dd073734da055fbf44a2b4667d5e5fe5d2&marketName=proto_plasma_v3
+        assertEq(maxLtv, 90_00, "max ltv is 90%");
 
         vm.revertToState(snapshot);
     }
