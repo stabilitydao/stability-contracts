@@ -58,7 +58,7 @@ contract AaveLeverageMerklFarmStrategy is
             revert IControllable.IncorrectInitParams();
         }
         IFactory.Farm memory farm = _getFarm(addresses[0], nums[0]);
-        if (farm.addresses.length != 3 || farm.nums.length != 3 || farm.ticks.length != 0) {
+        if (farm.addresses.length != 3 || farm.nums.length != 4 || farm.ticks.length != 0) {
             revert IFarmingStrategy.BadFarm();
         }
 

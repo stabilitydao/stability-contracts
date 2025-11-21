@@ -59,6 +59,8 @@ library PlasmaLib {
         IBalancerAdapter(IPlatform(platform).ammAdapter(keccak256(bytes(AmmAdapterIdLib.BALANCER_V3_RECLAMM))).proxy)
         .setupHelpers(PlasmaConstantsLib.BALANCER_V3_ROUTER);
         DeployAdapterLib.deployAmmAdapter(platform, AmmAdapterIdLib.UNISWAPV3);
+        IBalancerAdapter(DeployAdapterLib.deployAmmAdapter(platform, AmmAdapterIdLib.BALANCER_V3_STABLE)).setupHelpers(PlasmaConstantsLib.BALANCER_V3_ROUTER);
+        DeployAdapterLib.deployAmmAdapter(platform, AmmAdapterIdLib.CURVE);
         //endregion -- Deploy AMM adapters ----
 
         //region ----- Setup Swapper -----
@@ -83,7 +85,7 @@ library PlasmaLib {
     }
 
     function routes() public pure returns (ISwapper.AddPoolData[] memory pools) {
-        pools = new ISwapper.AddPoolData[](3);
+        pools = new ISwapper.AddPoolData[](5);
         uint i;
         pools[i++] = _makePoolData(
             PlasmaConstantsLib.POOL_BALANCER_V3_RECLAMM_WXPL_USDT0,
@@ -98,9 +100,21 @@ library PlasmaLib {
             PlasmaConstantsLib.TOKEN_USDT0
         );
         pools[i++] = _makePoolData(
-            PlasmaConstantsLib.OKU_TRADE_POOL_USDT0_WETH,
+            PlasmaConstantsLib.POOL_OKU_TRADE_USDT0_WETH,
             AmmAdapterIdLib.UNISWAPV3,
             PlasmaConstantsLib.TOKEN_WETH,
+            PlasmaConstantsLib.TOKEN_USDT0
+        );
+        pools[i++] = _makePoolData(
+            PlasmaConstantsLib.POOL_BALANCER_V3_STABLE_WETH_WEETH,
+            AmmAdapterIdLib.BALANCER_V3_STABLE,
+            PlasmaConstantsLib.TOKEN_WEETH,
+            PlasmaConstantsLib.TOKEN_WAPLAWETH // todo remove (?)
+        );
+        pools[i++] = _makePoolData(
+            PlasmaConstantsLib.POOL_CURVE_SUSDE_USDT0,
+            AmmAdapterIdLib.CURVE,
+            PlasmaConstantsLib.TOKEN_SUSDE,
             PlasmaConstantsLib.TOKEN_USDT0
         );
     }

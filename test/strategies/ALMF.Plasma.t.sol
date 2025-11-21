@@ -18,10 +18,12 @@ import {PriceReader} from "../../src/core/PriceReader.sol";
 import {IAaveAddressProvider} from "../../src/integrations/aave/IAaveAddressProvider.sol";
 import {IAavePriceOracle} from "../../src/integrations/aave/IAavePriceOracle.sol";
 import {IPool} from "../../src/integrations/aave/IPool.sol";
-import {IAaveDataProvider} from "../../src/integrations/aave/IAaveDataProvider.sol";
+import {FixedPointMathLib} from "../../lib/solady/src/utils/FixedPointMathLib.sol";
+// import {IAaveDataProvider} from "../../src/integrations/aave/IAaveDataProvider.sol";
 import {AaveLeverageMerklFarmStrategy} from "../../src/strategies/AaveLeverageMerklFarmStrategy.sol";
 import {console} from "forge-std/console.sol";
 import {SharedFarmMakerLib} from "../../chains/shared/SharedFarmMarketLib.sol";
+import {IAavePool32} from "../../src/integrations/aave32/IPool32.sol";
 
 contract ALMFStrategyPlasmaTest is PlasmaSetup, UniversalTest {
     uint public constant REVERT_NO = 0;
@@ -34,11 +36,17 @@ contract ALMFStrategyPlasmaTest is PlasmaSetup, UniversalTest {
     uint internal constant INDEX_AFTER_HARDWORK_3 = 3;
     uint internal constant INDEX_AFTER_WITHDRAW_4 = 4;
 
-    uint internal constant DEFAULT_MIN_LTV_LEVERAGE2 = 49_00;
-    uint internal constant DEFAULT_MAX_LTV_LEVERAGE2 = 50_97;
+    uint internal constant DEFAULT_TARGET_LEVERAGE_2 = 2_0000; // 2x
+    uint internal constant DEFAULT_LTV1_MINUS_LTV0_2 = 500; // 5.00%
 
-    uint internal constant DEFAULT_MIN_LTV_LEVERAGE3 = 64_17;
-    uint internal constant DEFAULT_MAX_LTV_LEVERAGE3 = 69_17;
+    uint internal constant DEFAULT_TARGET_LEVERAGE_3 = 3_0000; // 3x
+    uint internal constant DEFAULT_LTV1_MINUS_LTV0_3 = 300; // 3.00%
+
+    uint internal constant DEFAULT_TARGET_LEVERAGE_9 = 9_0000; // 9x
+    uint internal constant DEFAULT_LTV1_MINUS_LTV0_9 = 15; // 0.15%
+
+    uint internal constant DEFAULT_TARGET_LEVERAGE_10 = 10_0000; // 10x
+    uint internal constant DEFAULT_LTV1_MINUS_LTV0_10 = 10; // 0.10%
 
     struct State {
         uint ltv;
@@ -60,9 +68,19 @@ contract ALMFStrategyPlasmaTest is PlasmaSetup, UniversalTest {
         uint[] revenueAmounts;
     }
 
+    uint8 internal constant E_MODE_CATEGORY_ID_NOT_USED = 0;
+    uint8 internal constant E_MODE_CATEGORY_ID_USDE_STABLECOINS = 1;
+    uint8 internal constant E_MODE_CATEGORY_ID_SUSDE_STABLECOINS = 2;
+    uint8 internal constant E_MODE_CATEGORY_ID_WEETH_WETH = 3;
+    uint8 internal constant E_MODE_CATEGORY_ID_WEETH_STABLECOINS = 4;
+
     uint internal constant FORK_BLOCK = 6452516; // Nov-17-2025 12:36:59 UTC
 
-    address internal constant POOL_WXPL_USDT0 = 0x8603C67B7Cc056ef6981a9C709854c53b699Fa66;
+    /// @notice Farm Id of the farm WETH-USDT0, leverage 3
+    uint internal farmIdWethUsdt3;
+    uint internal farmWeethWeth10;
+    uint internal farmSusdeUsdt9;
+    uint internal farmWeethUsdt2;
 
     constructor() {
         vm.selectFork(vm.createFork(vm.envString("PLASMA_RPC_URL"), FORK_BLOCK));
@@ -81,12 +99,20 @@ contract ALMFStrategyPlasmaTest is PlasmaSetup, UniversalTest {
         // And make all checks in additional tests instead.
         allowZeroTotalRevenueUSD = true;
 
-        // _upgradePlatform(platform.multisig(), IPlatform(PLATFORM).priceReader());
+        // _upgradePlatform(platform.multisig(), IPlatform(platform).priceReader());
     }
 
     //region --------------------------------------- Universal test
     function testALMFPlasma() public universalTest {
-        _addStrategy(_addFarm());
+        farmIdWethUsdt3 = _addFarmWethUsdt3NoEMode();
+        farmWeethWeth10 = _addFarmWeethWeth10();
+        farmSusdeUsdt9 = _addFarmSusdeUsdt9();
+        farmWeethUsdt2 = _addFarmWeethUsdt2NoRewards();
+
+//todo        _addStrategy(farmIdWethUsdt3);
+//todo need adapter for aave?      _addStrategy(farmWeethWeth10);
+        _addStrategy(farmSusdeUsdt9);
+//todo fix route        _addStrategy(farmWeethUsdt2);
     }
 
     function _addStrategy(uint farmId) internal {
@@ -101,33 +127,43 @@ contract ALMFStrategyPlasmaTest is PlasmaSetup, UniversalTest {
         );
     }
 
-    function _addFarm() internal returns (uint farmId) {
-        address[] memory rewards = new address[](2);
-        rewards[0] = PlasmaConstantsLib.TOKEN_USDT0;
-        rewards[1] = PlasmaConstantsLib.TOKEN_WXPL;
+    function _preDeposit() internal override {
+        uint farmId = IFarmingStrategy(currentStrategy).farmId();
+        if (farmId == farmIdWethUsdt3) {
+            console.log("FARM WETH-USDT0 leverage 3");
+            _preDepositForFarmWethUsdt3();
+        } else if (farmId == farmWeethWeth10) {
+            console.log("FARM WEETH-WETH leverage 10");
+            // _preDepositForFarmWeethWeth10();
+        } else if (farmId == farmSusdeUsdt9) {
+            console.log("FARM SUSDE-USDT leverage 9");
+            _preDepositForFarmSusdeUsdt9();
+        } else if (farmId == farmWeethUsdt2) {
+            console.log("FARM WEETH-USDT leverage 2 no rewards");
+            // _preDepositForFarmWeethUsdt2NoRewards();
+        }
 
-        IFactory.Farm[] memory farms = new IFactory.Farm[](1);
-        farms[0] = SharedFarmMakerLib._makeAaveLeverageMerklFarm(
-            PlasmaConstantsLib.AAVE_V3_POOL_WETH,
-            PlasmaConstantsLib.AAVE_V3_POOL_USDT0,
-            POOL_WXPL_USDT0,
-            rewards,
-            DEFAULT_MIN_LTV_LEVERAGE3, // min target ltv
-            DEFAULT_MAX_LTV_LEVERAGE3, // max target ltv
-            uint(ILeverageLendingStrategy.FlashLoanKind.UniswapV3_2),
-            0 // eMode is not used
-        );
-
-        vm.startPrank(platform.multisig());
-        factory.addFarms(farms);
-
-        return factory.farmsLength() - 1;
     }
 
-    function _preDeposit() internal override {
-        // ---------------------------------- Make additional tests
-        uint snapshot = vm.snapshotState();
+    function _preHardWork() internal override {
+        // emulate merkl rewards
+        uint farmId = IFarmingStrategy(currentStrategy).farmId();
+        if (farmId == farmIdWethUsdt3) {
+            _preHardWorkForFarmWethUsdt3();
+        } else if (farmId == farmWeethWeth10) {
+            // _preHardWorkForFarmWeethWeth10();
+        } else if (farmId == farmSusdeUsdt9) {
+            _preHardWorkForFarmSusdeUsdt9();
+        } else if (farmId == farmWeethUsdt2) {
+            // _preHardWorkForFarmWeethUsdt2NoRewards();
+        }
+    }
 
+    //endregion --------------------------------------- Universal test
+
+    //region --------------------------------------- Universal test overrides for farms
+    function _preDepositForFarmWethUsdt3() internal {
+        uint snapshot = vm.snapshotState();
         // thresholds
         vm.prank(platform.multisig());
         AaveLeverageMerklFarmStrategy(currentStrategy).setThreshold(PlasmaConstantsLib.TOKEN_WETH, 1e12);
@@ -146,17 +182,176 @@ contract ALMFStrategyPlasmaTest is PlasmaSetup, UniversalTest {
 
         // check deposit-wait 30 days-hardwork-withdraw results
         _testDepositWaitHardworkWithdraw();
-
         vm.revertToState(snapshot);
     }
 
-    function _preHardWork() internal override {
-        // emulate merkl rewards
+    function _preHardWorkForFarmWethUsdt3() internal {
         deal(PlasmaConstantsLib.TOKEN_USDT0, currentStrategy, 1e6);
         deal(PlasmaConstantsLib.TOKEN_WXPL, currentStrategy, 0.1e18);
     }
 
-    //endregion --------------------------------------- Universal test
+    function _preDepositForFarmSusdeUsdt9() internal {
+        // ---------------- Setup thresholds required by universal test
+        vm.prank(platform.multisig());
+        AaveLeverageMerklFarmStrategy(currentStrategy).setThreshold(PlasmaConstantsLib.TOKEN_SUSDE, 1e12);
+        vm.prank(platform.multisig());
+        AaveLeverageMerklFarmStrategy(currentStrategy).setThreshold(PlasmaConstantsLib.TOKEN_USDT0, 1e6);
+
+        // ---------------- Additional tests
+        uint snapshot = vm.snapshotState();
+
+        IAavePool32.EModeCategoryLegacy memory eModeData = IAavePool32(PlasmaConstantsLib.AAVE_V3_POOL).getEModeCategoryData(E_MODE_CATEGORY_ID_SUSDE_STABLECOINS);
+
+        (, uint maxLtv, , , , ) = AaveLeverageMerklFarmStrategy(currentStrategy).health();
+        assertEq(maxLtv, eModeData.ltv, "max ltv for e-mode matches");
+
+        vm.revertToState(snapshot);
+    }
+
+    function _preHardWorkForFarmSusdeUsdt9() internal {
+        // todo add PlasmaConstantsLib.TOKEN_WAPLAUSDE;
+    }
+
+
+    //endregion --------------------------------------- Universal test overrides for farms
+
+    //region --------------------------------------- Farms
+    /// @notice WETH-USDT0, leverage 3
+    function _addFarmWethUsdt3NoEMode() internal returns (uint farmId) {
+        address[] memory rewards = new address[](2);
+        rewards[0] = PlasmaConstantsLib.TOKEN_USDT0;
+        rewards[1] = PlasmaConstantsLib.TOKEN_WXPL;
+
+        (uint minLtv, uint maxLtv) = getMinMaxLtv(DEFAULT_TARGET_LEVERAGE_3, DEFAULT_LTV1_MINUS_LTV0_3);
+
+        IFactory.Farm[] memory farms = new IFactory.Farm[](1);
+        farms[0] = SharedFarmMakerLib._makeAaveLeverageMerklFarm(
+            PlasmaConstantsLib.AAVE_V3_POOL_WETH,
+            PlasmaConstantsLib.AAVE_V3_POOL_USDT0,
+            PlasmaConstantsLib.POOL_WXPL_USDT0,
+            rewards,
+            minLtv,
+            maxLtv,
+            uint(ILeverageLendingStrategy.FlashLoanKind.UniswapV3_2),
+            E_MODE_CATEGORY_ID_NOT_USED
+        );
+
+        vm.startPrank(platform.multisig());
+        factory.addFarms(farms);
+
+        return factory.farmsLength() - 1;
+    }
+
+    function _addFarmWeethWeth10() internal returns (uint farmId) {
+        address[] memory rewards = new address[](1);
+        rewards[0] = PlasmaConstantsLib.TOKEN_WXPL;
+
+        (uint minLtv, uint maxLtv) = getMinMaxLtv(DEFAULT_TARGET_LEVERAGE_10, DEFAULT_LTV1_MINUS_LTV0_10);
+
+        IFactory.Farm[] memory farms = new IFactory.Farm[](1);
+        farms[0] = SharedFarmMakerLib._makeAaveLeverageMerklFarm(
+            PlasmaConstantsLib.AAVE_V3_POOL_WEETH,
+            PlasmaConstantsLib.AAVE_V3_POOL_WETH,
+            PlasmaConstantsLib.POOL_OKU_TRADE_USDT0_WETH,
+            rewards,
+            minLtv,
+            maxLtv,
+            uint(ILeverageLendingStrategy.FlashLoanKind.UniswapV3_2),
+            E_MODE_CATEGORY_ID_WEETH_WETH
+        );
+
+        vm.startPrank(platform.multisig());
+        factory.addFarms(farms);
+
+        return factory.farmsLength() - 1;
+    }
+
+    function _addFarmSusdeUsdt9() internal returns (uint farmId) {
+//        address[] memory rewards = new address[](1);
+//        rewards[0] = PlasmaConstantsLib.TOKEN_WAPLAUSDE;
+        address[] memory rewards;
+
+        (uint minLtv, uint maxLtv) = getMinMaxLtv(DEFAULT_TARGET_LEVERAGE_9, DEFAULT_LTV1_MINUS_LTV0_9);
+
+        IFactory.Farm[] memory farms = new IFactory.Farm[](1);
+        farms[0] = SharedFarmMakerLib._makeAaveLeverageMerklFarm(
+            PlasmaConstantsLib.AAVE_V3_POOL_SUSDE,
+            PlasmaConstantsLib.AAVE_V3_POOL_USDT0,
+            PlasmaConstantsLib.POOL_WXPL_USDT0,
+            rewards,
+            minLtv,
+            maxLtv,
+            uint(ILeverageLendingStrategy.FlashLoanKind.UniswapV3_2),
+            E_MODE_CATEGORY_ID_SUSDE_STABLECOINS
+        );
+
+        vm.startPrank(platform.multisig());
+        factory.addFarms(farms);
+
+        return factory.farmsLength() - 1;
+    }
+
+    function _addFarmSusdeUsde9() internal returns (uint farmId) {
+        address[] memory rewards = new address[](1);
+        rewards[0] = PlasmaConstantsLib.TOKEN_WAPLAUSDE;
+
+        (uint minLtv, uint maxLtv) = getMinMaxLtv(DEFAULT_TARGET_LEVERAGE_9, DEFAULT_LTV1_MINUS_LTV0_9);
+
+        IFactory.Farm[] memory farms = new IFactory.Farm[](1);
+        farms[0] = SharedFarmMakerLib._makeAaveLeverageMerklFarm(
+            PlasmaConstantsLib.AAVE_V3_POOL_SUSDE,
+            PlasmaConstantsLib.AAVE_V3_POOL_USDE,
+            PlasmaConstantsLib.POOL_WXPL_USDT0, // todo we need to get flash in USDe
+            rewards,
+            minLtv,
+            maxLtv,
+            uint(ILeverageLendingStrategy.FlashLoanKind.UniswapV3_2),
+            E_MODE_CATEGORY_ID_SUSDE_STABLECOINS
+        );
+
+        vm.startPrank(platform.multisig());
+        factory.addFarms(farms);
+
+        return factory.farmsLength() - 1;
+    }
+
+    /// @notice Test real farm but without rewards
+    function _addFarmWeethUsdt2NoRewards() internal returns (uint farmId) {
+        address[] memory rewards; // no rewards - for test purposes
+
+        (uint minLtv, uint maxLtv) = getMinMaxLtv(DEFAULT_TARGET_LEVERAGE_2, DEFAULT_LTV1_MINUS_LTV0_2);
+
+        IFactory.Farm[] memory farms = new IFactory.Farm[](1);
+        farms[0] = SharedFarmMakerLib._makeAaveLeverageMerklFarm(
+            PlasmaConstantsLib.AAVE_V3_POOL_WEETH,
+            PlasmaConstantsLib.AAVE_V3_POOL_USDT0,
+            PlasmaConstantsLib.POOL_WXPL_USDT0,
+            rewards,
+            minLtv,
+            maxLtv,
+            uint(ILeverageLendingStrategy.FlashLoanKind.UniswapV3_2),
+            E_MODE_CATEGORY_ID_WEETH_STABLECOINS
+        );
+
+        vm.startPrank(platform.multisig());
+        factory.addFarms(farms);
+
+        return factory.farmsLength() - 1;
+    }
+
+    //endregion --------------------------------------- Farms
+
+    //region --------------------------------------- Unit tests
+    function testGetMinMaxLtv() public pure {
+        (uint minLtv, uint maxLtv) = getMinMaxLtv(10_0000, 10);
+        assertEq(minLtv, 8995, "min ltv 10");
+        assertEq(maxLtv, 9005, "max ltv 10");
+
+        (minLtv, maxLtv) = getMinMaxLtv(3_0000, 500);
+        assertEq(minLtv, 6399, "min ltv 3");
+        assertEq(maxLtv, 6899, "max ltv 3");
+    }
+    //endregion --------------------------------------- Unit tests
 
     //region --------------------------------------- Additional tests
     function _testDepositTwoHardworks() internal {
@@ -598,6 +793,21 @@ contract ALMFStrategyPlasmaTest is PlasmaSetup, UniversalTest {
 
         vm.prank(platform.multisig());
         factory.updateFarm(farmId, farm);
+    }
+
+    function getMinMaxLtv(uint targetLeverage, uint delta) internal pure returns (uint minLtv, uint maxLtv) {
+        // a = (-1 + sqrt(1 + delta^2 TL^2)) / delta
+        // L0 = TL - a, L1 = TL + a
+        // LTVmin = 1 - 1/L0, LTVmax = 1 - 1/L1
+
+        delta = delta * 1e6;
+        targetLeverage = targetLeverage * 1e6;
+        uint a = uint((-int(1e10**2) + int(FixedPointMathLib.sqrt(1e10**4 + delta * delta * targetLeverage * targetLeverage))) / int(delta));
+        uint leverage0 = targetLeverage - a;
+        uint leverage1 = targetLeverage + a;
+
+        minLtv = 1e4 - 1e4*1e10 / leverage0;
+        maxLtv = 1e4 - 1e4*1e10 / leverage1;
     }
 
     //endregion --------------------------------------- Internal logic
