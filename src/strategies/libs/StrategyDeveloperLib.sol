@@ -107,6 +107,9 @@ library StrategyDeveloperLib {
         if (CommonLib.eq(strategyId, StrategyIdLib.SILO_MERKL_FARM)) {
             return 0xcd18A818f2eC5C21EEF6771183eD5641B15da247;
         }
+        if (CommonLib.eq(strategyId, StrategyIdLib.AAVE_LEVERAGE_MERKL_FARM)) {
+            return 0xD1807F5A04a7bd11C26aA14F076054f75d8C6255;
+        }
         return address(0);
     }
 }
