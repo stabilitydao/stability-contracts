@@ -2,7 +2,7 @@
 pragma solidity ^0.8.23;
 
 import {Swapper} from "../../src/core/Swapper.sol";
-import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
+// import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {AaveV3Adapter} from "../../src/adapters/AaveV3Adapter.sol";
 import {AmmAdapterIdLib} from "../../src/adapters/libs/AmmAdapterIdLib.sol";
 import {ERC4626Adapter} from "../../src/adapters/ERC4626Adapter.sol";
@@ -15,7 +15,7 @@ import {PlasmaConstantsLib} from "../../chains/plasma/PlasmaConstantsLib.sol";
 import {Proxy} from "../../src/core/proxy/Proxy.sol";
 import {Test} from "forge-std/Test.sol";
 import {UniswapV3Adapter} from "../../src/adapters/UniswapV3Adapter.sol";
-import {console} from "forge-std/console.sol";
+// import {console} from "forge-std/console.sol";
 
 contract AaveV3AdapterTest is Test {
     address public constant PLATFORM = PlasmaConstantsLib.PLATFORM;

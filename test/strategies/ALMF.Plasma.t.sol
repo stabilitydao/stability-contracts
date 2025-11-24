@@ -7,6 +7,7 @@ import {IFarmingStrategy} from "../../src/interfaces/IFarmingStrategy.sol";
 import {ILeverageLendingStrategy} from "../../src/interfaces/ILeverageLendingStrategy.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
 import {IFactory} from "../../src/interfaces/IFactory.sol";
+import {ISwapper} from "../../src/interfaces/ISwapper.sol";
 import {IStabilityVault} from "../../src/interfaces/IStabilityVault.sol";
 import {IStrategy} from "../../src/interfaces/IStrategy.sol";
 import {IVault} from "../../src/interfaces/IVault.sol";
@@ -19,6 +20,7 @@ import {IAaveAddressProvider} from "../../src/integrations/aave/IAaveAddressProv
 import {IAavePriceOracle} from "../../src/integrations/aave/IAavePriceOracle.sol";
 import {IPool} from "../../src/integrations/aave/IPool.sol";
 import {FixedPointMathLib} from "../../lib/solady/src/utils/FixedPointMathLib.sol";
+import {AmmAdapterIdLib} from "../../src/adapters/libs/AmmAdapterIdLib.sol";
 // import {IAaveDataProvider} from "../../src/integrations/aave/IAaveDataProvider.sol";
 import {AaveLeverageMerklFarmStrategy} from "../../src/strategies/AaveLeverageMerklFarmStrategy.sol";
 import {console} from "forge-std/console.sol";
@@ -74,7 +76,8 @@ contract ALMFStrategyPlasmaTest is PlasmaSetup, UniversalTest {
     uint8 internal constant E_MODE_CATEGORY_ID_WEETH_WETH = 3;
     uint8 internal constant E_MODE_CATEGORY_ID_WEETH_STABLECOINS = 4;
 
-    uint internal constant FORK_BLOCK = 6452516; // Nov-17-2025 12:36:59 UTC
+    // uint internal constant FORK_BLOCK = 6452516; // Nov-17-2025 12:36:59 UTC
+    uint internal constant FORK_BLOCK = 7041595; // Nov-24-2025 08:16:08 UTC
 
     /// @notice Farm Id of the farm WETH-USDT0, leverage 3
     uint internal farmIdWethUsdt3;
@@ -104,6 +107,8 @@ contract ALMFStrategyPlasmaTest is PlasmaSetup, UniversalTest {
 
     //region --------------------------------------- Universal test
     function testALMFPlasma() public universalTest {
+        _addRoutes();
+
         farmIdWethUsdt3 = _addFarmWethUsdt3NoEMode();
         farmWeethWeth10 = _addFarmWeethWeth10();
         farmSusdeUsdt9 = _addFarmSusdeUsdt9();
@@ -111,7 +116,7 @@ contract ALMFStrategyPlasmaTest is PlasmaSetup, UniversalTest {
 
         _addStrategy(farmIdWethUsdt3);
         _addStrategy(farmSusdeUsdt9);
-//todo need adapter for aave?      _addStrategy(farmWeethWeth10);
+        _addStrategy(farmWeethWeth10);
 //todo fix route        _addStrategy(farmWeethUsdt2);
     }
 
@@ -134,7 +139,7 @@ contract ALMFStrategyPlasmaTest is PlasmaSetup, UniversalTest {
             _preDepositForFarmWethUsdt3();
         } else if (farmId == farmWeethWeth10) {
             console.log("FARM WEETH-WETH leverage 10");
-            // _preDepositForFarmWeethWeth10();
+            _preDepositForFarmWeethWeth10();
         } else if (farmId == farmSusdeUsdt9) {
             console.log("FARM SUSDE-USDT leverage 9");
             _preDepositForFarmSusdeUsdt9();
@@ -151,7 +156,7 @@ contract ALMFStrategyPlasmaTest is PlasmaSetup, UniversalTest {
         if (farmId == farmIdWethUsdt3) {
             _preHardWorkForFarmWethUsdt3();
         } else if (farmId == farmWeethWeth10) {
-            // _preHardWorkForFarmWeethWeth10();
+            _preHardWorkForFarmWeethWeth10();
         } else if (farmId == farmSusdeUsdt9) {
             _preHardWorkForFarmSusdeUsdt9();
         } else if (farmId == farmWeethUsdt2) {
@@ -214,9 +219,35 @@ contract ALMFStrategyPlasmaTest is PlasmaSetup, UniversalTest {
     }
 
     function _preHardWorkForFarmSusdeUsdt9() internal {
-        // todo add PlasmaConstantsLib.TOKEN_WAPLAUSDE;
+        // !TODO: deal(PlasmaConstantsLib.TOKEN_WAPLAUSDE, currentStrategy, 100e18);
     }
 
+    function _preDepositForFarmWeethWeth10() internal {
+        // ---------------- thresholds
+        vm.prank(platform.multisig());
+        AaveLeverageMerklFarmStrategy(currentStrategy).setThreshold(PlasmaConstantsLib.TOKEN_WEETH, 1e12);
+        vm.prank(platform.multisig());
+        AaveLeverageMerklFarmStrategy(currentStrategy).setThreshold(PlasmaConstantsLib.TOKEN_WETH, 1e12);
+
+        // ---------------- Additional tests
+        uint snapshot = vm.snapshotState();
+
+        _tryToDepositToVault(IStrategy(currentStrategy).vault(), 1e18, REVERT_NO, address(this));
+
+        IAavePool32.EModeCategoryLegacy memory eModeData = IAavePool32(PlasmaConstantsLib.AAVE_V3_POOL).getEModeCategoryData(E_MODE_CATEGORY_ID_WEETH_WETH);
+
+        (, uint maxLtv, , , , ) = AaveLeverageMerklFarmStrategy(currentStrategy).health();
+        assertEq(maxLtv, eModeData.ltv, "max ltv for e-mode matches");
+
+        // see https://app.aave.com/reserve-overview/?underlyingAsset=0x211cc4dd073734da055fbf44a2b4667d5e5fe5d2&marketName=proto_plasma_v3
+        assertEq(maxLtv, 93_00, "max ltv is 93%");
+
+        vm.revertToState(snapshot);
+    }
+
+    function _preHardWorkForFarmWeethWeth10() internal {
+        deal(PlasmaConstantsLib.TOKEN_WXPL, currentStrategy, 10e18);
+    }
 
     //endregion --------------------------------------- Universal test overrides for farms
 
@@ -866,6 +897,25 @@ contract ALMFStrategyPlasmaTest is PlasmaSetup, UniversalTest {
     function _getWethPrice8() internal view returns (uint) {
         return IAavePriceOracle(IAaveAddressProvider(IPool(PlasmaConstantsLib.AAVE_V3_POOL).ADDRESSES_PROVIDER()).getPriceOracle())
             .getAssetPrice(PlasmaConstantsLib.TOKEN_WETH);
+    }
+
+    function _addRoutes() internal {
+        // add routes
+        ISwapper swapper = ISwapper(IPlatform(platform).swapper());
+        ISwapper.PoolData[] memory pools = new ISwapper.PoolData[](1);
+        pools[0] = ISwapper.PoolData({
+            pool: PlasmaConstantsLib.TOKEN_WAPLAWETH,
+            ammAdapter: (IPlatform(platform).ammAdapter(keccak256(bytes(AmmAdapterIdLib.ERC_4626)))).proxy,
+            tokenIn: PlasmaConstantsLib.TOKEN_WAPLAWETH,
+            tokenOut: PlasmaConstantsLib.TOKEN_WETH
+        });
+//        pools[1] = ISwapper.PoolData({
+//            pool: PlasmaConstantsLib.TOKEN_WAPLAUSDE,
+//            ammAdapter: (IPlatform(platform).ammAdapter(keccak256(bytes(AmmAdapterIdLib.ERC_4626)))).proxy,
+//            tokenIn: PlasmaConstantsLib.TOKEN_WAPLAUSDE,
+//            tokenOut: PlasmaConstantsLib.TOKEN_USDE
+//        });
+        swapper.addPools(pools, false);
     }
 
 //    function displayAssetsData() internal view {

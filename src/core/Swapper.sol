@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import {console} from "forge-std/console.sol";
 import {AmmAdapterIdLib} from "../adapters/libs/AmmAdapterIdLib.sol";
 import {IMetaVaultAmmAdapter} from "../interfaces/IMetaVaultAmmAdapter.sol";
 import {Controllable} from "./base/Controllable.sol";
@@ -32,7 +31,7 @@ contract Swapper is Controllable, ISwapper {
     //region ----- Constants -----
 
     /// @dev Version of Swapper implementation
-    string public constant VERSION = "1.3.1";
+    string public constant VERSION = "1.3.0";
 
     uint public constant ROUTE_LENGTH_MAX = 8;
 
@@ -66,7 +65,6 @@ contract Swapper is Controllable, ISwapper {
 
     /// @inheritdoc ISwapper
     function addPools(PoolData[] memory pools_, bool rewrite) external onlyOperator {
-        console.log("addPools");
         SwapperStorage storage $ = _getStorage();
         uint len = pools_.length;
         // nosemgrep
@@ -77,7 +75,6 @@ contract Swapper is Controllable, ISwapper {
                 revert AlreadyExist();
             }
             $.pools[pool.tokenIn] = pool;
-            console.log("Add pool", pool.tokenIn, pool.tokenOut, pool.pool);
             bool assetAdded = $._assets.add(pool.tokenIn);
             emit PoolAdded(pool, assetAdded);
         }
@@ -85,7 +82,6 @@ contract Swapper is Controllable, ISwapper {
 
     /// @inheritdoc ISwapper
     function addPools(AddPoolData[] memory pools_, bool rewrite) external onlyOperator {
-        console.log("addPools2");
         SwapperStorage storage $ = _getStorage();
         uint len = pools_.length;
         // nosemgrep
@@ -105,7 +101,6 @@ contract Swapper is Controllable, ISwapper {
                 revert AlreadyExist();
             }
             $.pools[poolData.tokenIn] = poolData;
-            console.log("Add poolData", poolData.tokenIn, poolData.tokenOut, poolData.pool);
             bool assetAdded = $._assets.add(poolData.tokenIn);
             emit PoolAdded(poolData, assetAdded);
         }
@@ -330,7 +325,6 @@ contract Swapper is Controllable, ISwapper {
         // find the best Pool for token IN
         PoolData memory poolDataIn = _getPoolData($, tokenIn, true);
         if (poolDataIn.pool == address(0)) {
-            console.log("tokenIn", tokenIn);
             return (_cutRoute(route, 0), "Swapper: Not found pool for tokenIn");
         }
 
@@ -354,7 +348,6 @@ contract Swapper is Controllable, ISwapper {
         // find the largest pool for token out
         PoolData memory poolDataOut = _getPoolData($, tokenOut, false);
         if (poolDataOut.pool == address(0)) {
-            console.log("tokenOut", tokenOut);
             return (_cutRoute(route, 0), "Swapper: Not found pool for tokenOut");
         }
 
@@ -630,7 +623,6 @@ contract Swapper is Controllable, ISwapper {
         bool isTokenIn
     ) internal view returns (PoolData memory poolData) {
         poolData = $.pools[token];
-        console.log("poolData", poolData.pool, poolData.tokenIn, poolData.ammAdapter);
 
         if (poolData.tokenIn == token) {
             if (isTokenIn) {
