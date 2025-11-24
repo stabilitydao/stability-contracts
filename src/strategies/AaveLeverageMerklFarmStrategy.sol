@@ -27,7 +27,7 @@ import {VaultTypeLib} from "../core/libs/VaultTypeLib.sol";
 /// @title Earns APR by lending assets on AAVE with leverage
 /// @dev ALMF strategy
 /// Changelog:
-///   1.0.0: initial release
+///   1.1.0: add support of e-mode
 /// @author omriss (https://github.com/omriss)
 contract AaveLeverageMerklFarmStrategy is
     FarmingStrategyBase,
@@ -45,7 +45,7 @@ contract AaveLeverageMerklFarmStrategy is
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.0";
+    string public constant VERSION = "1.1.0";
 
     //region ----------------------------------- Initialization and restricted actions
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -81,7 +81,7 @@ contract AaveLeverageMerklFarmStrategy is
         __LeverageLendingBase_init(params); // __StrategyBase_init is called inside
         __FarmingStrategyBase_init(addresses[0], nums[0]);
 
-        // set up params and approves
+        // set up params and approves, switch to e-mode
         ALMFLib2._postInit(
             _getLeverageLendingBaseStorage(),
             params.platform,

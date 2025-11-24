@@ -92,7 +92,6 @@ contract AaveV3AdapterTest is Test {
             vm.revertToState(snapshotId);
         }
 
-
         {
             uint snapshotId = vm.snapshotState();
             // ------------------------------- WETH => waPlaWETH
@@ -119,22 +118,38 @@ contract AaveV3AdapterTest is Test {
 
         assertEq(keccak256(bytes(adapter.ammAdapterId())), _hash, "hash");
 
-        uint price = adapter.getPrice(PlasmaConstantsLib.AAVE_V3_POOL_USDT0, PlasmaConstantsLib.AAVE_V3_POOL_USDT0, address(0), 1e6);
+        uint price = adapter.getPrice(
+            PlasmaConstantsLib.AAVE_V3_POOL_USDT0, PlasmaConstantsLib.AAVE_V3_POOL_USDT0, address(0), 1e6
+        );
         assertEq(price, 1e6, "getPrice atoken aUSDT0");
 
-        price = adapter.getPrice(PlasmaConstantsLib.AAVE_V3_POOL_WETH, PlasmaConstantsLib.AAVE_V3_POOL_WETH, address(0), 1e18);
+        price = adapter.getPrice(
+            PlasmaConstantsLib.AAVE_V3_POOL_WETH, PlasmaConstantsLib.AAVE_V3_POOL_WETH, address(0), 1e18
+        );
         assertEq(price, 1e18, "getPrice atoken aWETH");
 
-        price = adapter.getPrice(PlasmaConstantsLib.AAVE_V3_POOL_WETH, PlasmaConstantsLib.TOKEN_WETH, PlasmaConstantsLib.AAVE_V3_POOL_WETH, 1e18);
+        price = adapter.getPrice(
+            PlasmaConstantsLib.AAVE_V3_POOL_WETH,
+            PlasmaConstantsLib.TOKEN_WETH,
+            PlasmaConstantsLib.AAVE_V3_POOL_WETH,
+            1e18
+        );
         assertEq(price, 1e18, "getPrice WETH");
 
-        price = adapter.getPrice(PlasmaConstantsLib.AAVE_V3_POOL_WETH, PlasmaConstantsLib.AAVE_V3_POOL_WETH, address(0), 1e18);
+        price = adapter.getPrice(
+            PlasmaConstantsLib.AAVE_V3_POOL_WETH, PlasmaConstantsLib.AAVE_V3_POOL_WETH, address(0), 1e18
+        );
         assertEq(price, 1e18, "atoken=>0");
 
         price = adapter.getPrice(PlasmaConstantsLib.AAVE_V3_POOL_WETH, PlasmaConstantsLib.TOKEN_WETH, address(0), 1e18);
         assertEq(price, 0, "asset=>0");
 
-        price = adapter.getPrice(PlasmaConstantsLib.AAVE_V3_POOL_WETH, PlasmaConstantsLib.AAVE_V3_POOL_SUSDE, PlasmaConstantsLib.TOKEN_SUSDE, 1e18);
+        price = adapter.getPrice(
+            PlasmaConstantsLib.AAVE_V3_POOL_WETH,
+            PlasmaConstantsLib.AAVE_V3_POOL_SUSDE,
+            PlasmaConstantsLib.TOKEN_SUSDE,
+            1e18
+        );
         assertEq(price, 0, "atoken != pool");
 
         vm.expectRevert("Not supported");
@@ -158,6 +173,7 @@ contract AaveV3AdapterTest is Test {
         vm.expectRevert("Not supported");
         adapter.getTwaPrice(address(0), address(0), address(0), 0, 0);
     }
+
     //endregion ------------------ Tests
 
     //region ------------------ Helpers

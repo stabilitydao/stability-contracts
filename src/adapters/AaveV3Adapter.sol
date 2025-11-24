@@ -93,12 +93,7 @@ contract AaveV3Adapter is Controllable, IAmmAdapter {
 
     /// @inheritdoc IAmmAdapter
     /// @dev pool is the AToken address
-    function getPrice(
-        address pool,
-        address tokenIn,
-        address tokenOut,
-        uint amount
-    ) public pure returns (uint) {
+    function getPrice(address pool, address tokenIn, address tokenOut, uint amount) public pure returns (uint) {
         return tokenIn == pool || tokenOut == pool
             // atoken is rebase token, so 1:1 price
             ? amount
