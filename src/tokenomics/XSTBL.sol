@@ -12,6 +12,8 @@ import {IPlatform} from "../interfaces/IPlatform.sol";
 import {IRevenueRouter} from "../interfaces/IRevenueRouter.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IStabilityDAO} from "../interfaces/IStabilityDAO.sol";
+import {MessagingFee} from "@layerzerolabs/oapp-evm-upgradeable/contracts/oapp/OAppUpgradeable.sol";
+import {SendParam} from "@layerzerolabs/oft-evm/contracts/interfaces/IOFT.sol";
 
 /// @title xSTBL token
 /// Inspired by xRAM/xSHADOW from Ramses/Shadow codebase
@@ -19,6 +21,7 @@ import {IStabilityDAO} from "../interfaces/IStabilityDAO.sol";
 /// @author Jude (https://github.com/iammrjude)
 /// @author Omriss (https://github.com/omriss)
 /// Changelog:
+///  1.2.0: allow to send xSTBL via LayerZero bridge - #424
 ///  1.1.0: add possibility to change the slashing penalty value - #406
 ///  1.0.1: use SafeERC20.safeTransfer/safeTransferFrom instead of ERC20 transfer/transferFrom
 contract XSTBL is Controllable, ERC20Upgradeable, IXSTBL {
@@ -30,7 +33,7 @@ contract XSTBL is Controllable, ERC20Upgradeable, IXSTBL {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.1.0";
+    string public constant VERSION = "1.2.0";
 
     /// @inheritdoc IXSTBL
     uint public constant BASIS = 10_000;
@@ -223,6 +226,22 @@ contract XSTBL is Controllable, ERC20Upgradeable, IXSTBL {
     }
 
     /// @inheritdoc IXSTBL
+    function transferToBridge(address user_, uint amount_) external {
+        // todo bridge only
+
+        /// @dev cannot exit a 0 amount
+        require(amount_ != 0, IncorrectZeroArgument());
+
+        /// @dev burn the xSTBL from the caller's address
+        _burn(user_, amount_);
+
+        XstblStorage storage $ = _getXSTBLStorage();
+        IERC20($.STBL).safeTransfer(msg.sender, amount_);
+
+        emit MovedToBridge(user_, amount_);
+    }
+
+    /// @inheritdoc IXSTBL
     function createVest(uint amount_) external {
         /// @dev ensure not 0
         require(amount_ != 0, IncorrectZeroArgument());
@@ -298,7 +317,6 @@ contract XSTBL is Controllable, ERC20Upgradeable, IXSTBL {
             emit ExitVesting(msg.sender, vestID_, _amount, exitedAmount);
         }
     }
-
     //endregion ---------------------------- User actions
 
     //region ---------------------------- View functions

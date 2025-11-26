@@ -36,6 +36,7 @@ interface IXSTBL {
     event ExemptionFrom(address indexed candidate, bool status, bool success);
     event ExemptionTo(address indexed candidate, bool status, bool success);
     event Rebase(address indexed caller, uint amount);
+    event MovedToBridge(address indexed user, uint amount);
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      WRITE FUNCTIONS                       */
@@ -62,6 +63,11 @@ interface IXSTBL {
 
     /// @notice Function called by the RevenueRouter to send the rebases once a week
     function rebase() external;
+
+    /// @notice Burn given {amount} of xSTBL and transfer STBL to the SBTL-bridge.
+    /// The User will receive his xSTBL on the different chain in return.
+    /// @custom:restricted This function can only be called by STBL-bridge contract.
+    function transferToBridge(uint amount) external;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      VIEW FUNCTIONS                        */
