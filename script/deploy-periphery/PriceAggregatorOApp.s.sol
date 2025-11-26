@@ -24,10 +24,10 @@ contract DeployPriceAggregatorOApp is Script {
         PriceAggregatorOApp(address(proxy))
             .initialize(config.get("PLATFORM").toAddress(), config.get("TOKEN_STBL").toAddress());
 
+        vm.stopBroadcast();
+
         // @dev assume here that we deploy price oracle for STBL token
         configDeployed.set("PRICE_AGGREGATOR_OAPP_STBL", address(proxy));
-
-        vm.stopBroadcast();
     }
 
     function testDeployScript() external {}

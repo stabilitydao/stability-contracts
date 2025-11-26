@@ -21,9 +21,9 @@ contract DeployBridgedToken is Script {
         proxy.initProxy(address(new BridgedToken(config.get("LAYER_ZERO_V2_ENDPOINT").toAddress())));
         BridgedToken(address(proxy)).initialize(config.get("PLATFORM").toAddress(), "Stability STBL", "STBL");
 
-        configDeployed.set("BRIDGED_TOKEN_STBL", address(proxy));
-
         vm.stopBroadcast();
+
+        configDeployed.set("BRIDGED_TOKEN_STBL", address(proxy));
     }
 
     function testDeployScript() external {}

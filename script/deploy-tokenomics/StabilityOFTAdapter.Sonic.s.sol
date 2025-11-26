@@ -27,9 +27,9 @@ contract DeployStabilityOFTAdapterSonic is Script {
         );
         StabilityOFTAdapter(address(proxy)).initialize(config.get("PLATFORM").toAddress());
 
-        configDeployed.set("STABILITY_OFT_ADAPTER", address(proxy));
-
         vm.stopBroadcast();
+
+        configDeployed.set("STABILITY_OFT_ADAPTER", address(proxy));
     }
 
     function testDeployScript() external {}

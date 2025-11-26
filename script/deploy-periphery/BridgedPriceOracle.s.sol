@@ -23,10 +23,10 @@ contract DeployBridgedToken is Script {
         // @dev assume here that we deploy price oracle for STBL token
         BridgedPriceOracle(address(proxy)).initialize(config.get("PLATFORM").toAddress(), "STBL");
 
+        vm.stopBroadcast();
+
         // @dev assume here that we deploy price oracle for STBL token
         configDeployed.set("BRIDGED_PRICE_ORACLE_STBL", address(proxy));
-
-        vm.stopBroadcast();
     }
 
     function testDeployScript() external {}
