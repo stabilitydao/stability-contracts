@@ -44,7 +44,6 @@ contract BridgedTokenTest is Test {
     /// 100_000 => fee = 0.36 S
     uint128 private constant GAS_LIMIT = 60_000;
 
-
     StabilityOFTAdapter internal adapter;
     BridgedToken internal bridgedTokenAvalanche;
     BridgedToken internal bridgedTokenPlasma;

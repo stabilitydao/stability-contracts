@@ -74,13 +74,20 @@ library BridgeLib {
     struct ChainConfig {
         uint fork;
         address multisig;
+
+        /// @notice STBL-bridge
         address oapp;
+        address lzToken;
+        address xToken;
+
         uint32 endpointId;
         address endpoint;
         address sendLib;
         address receiveLib;
         address platform;
         address executor;
+
+        address xTokenBridge;
     }
 
 
@@ -120,7 +127,10 @@ library BridgeLib {
             sendLib: SonicConstantsLib.LAYER_ZERO_V2_SEND_ULN_302,
             receiveLib: SonicConstantsLib.LAYER_ZERO_V2_RECEIVE_ULN_302,
             platform: SonicConstantsLib.PLATFORM,
-            executor: SonicConstantsLib.LAYER_ZERO_V2_EXECUTOR
+            executor: SonicConstantsLib.LAYER_ZERO_V2_EXECUTOR,
+            lzToken: address(0),
+            xToken: SonicConstantsLib.TOKEN_XSTBL,
+            xTokenBridge: address(0)
         });
     }
 
@@ -135,7 +145,10 @@ library BridgeLib {
             sendLib: AvalancheConstantsLib.LAYER_ZERO_V2_SEND_ULN_302,
             receiveLib: AvalancheConstantsLib.LAYER_ZERO_V2_RECEIVE_ULN_302,
             platform: AvalancheConstantsLib.PLATFORM,
-            executor: AvalancheConstantsLib.LAYER_ZERO_V2_EXECUTOR
+            executor: AvalancheConstantsLib.LAYER_ZERO_V2_EXECUTOR,
+            lzToken: address(0),
+            xToken: address(0),
+            xTokenBridge: address(0)
         });
     }
 
@@ -150,7 +163,10 @@ library BridgeLib {
             sendLib: PlasmaConstantsLib.LAYER_ZERO_V2_SEND_ULN_302,
             receiveLib: PlasmaConstantsLib.LAYER_ZERO_V2_RECEIVE_ULN_302,
             platform: PlasmaConstantsLib.PLATFORM,
-            executor: PlasmaConstantsLib.LAYER_ZERO_V2_EXECUTOR
+            executor: PlasmaConstantsLib.LAYER_ZERO_V2_EXECUTOR,
+            lzToken: address(0),
+            xToken: address(0),
+            xTokenBridge: address(0)
         });
     }
 

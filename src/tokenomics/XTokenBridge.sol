@@ -31,7 +31,7 @@ contract XTokenBridge is Controllable, IXTokenBridge, ILayerZeroReceiver {
         /// @notice LayerZero Omnichain Fungible Token (OFT) bridge address
         address bridge;
 
-        /// @notice Optional: LayerZero ZRO token address to pay fees in ZRO
+        /// @notice Optional: LayerZero ZRO token address to pay fees in ZRO, see endpoint.lzToken()
         address lzToken;
 
         /// @notice xSTBL address
@@ -55,13 +55,13 @@ contract XTokenBridge is Controllable, IXTokenBridge, ILayerZeroReceiver {
     //region --------------------------------- Initializers
 
     /// @inheritdoc IXTokenBridge
-    function initialize(address platform_, address bridge_, address lzToken_, address xToken_) public initializer {
+    function initialize(address platform_, address bridge_, address xToken_) public initializer {
         __Controllable_init(platform_);
 
         XTokenBridgeStorage storage $ = _getStorage();
         $.bridge = bridge_;
-        $.lzToken = lzToken_;
         $.xToken = xToken_;
+        // lzToken is zero by default
     }
     //endregion --------------------------------- Initializers
 
@@ -117,9 +117,15 @@ contract XTokenBridge is Controllable, IXTokenBridge, ILayerZeroReceiver {
 
     //region --------------------------------- Actions
     /// @inheritdoc IXTokenBridge
-    function setXTokenBridge(uint32 dstEid_, address bridge_) external onlyOperator {
+    function setXTokenBridge(uint32 dstEid_, address bridge_) external onlyGovernanceOrMultisig {
         XTokenBridgeStorage storage $ = _getStorage();
         $.xTokenBridges[dstEid_] = bridge_;
+    }
+
+    /// @inheritdoc IXTokenBridge
+    function setLzToken(address lzToken_) external onlyOperator {
+        XTokenBridgeStorage storage $ = _getStorage();
+        $.lzToken = lzToken_;
     }
 
     /// @inheritdoc IXTokenBridge

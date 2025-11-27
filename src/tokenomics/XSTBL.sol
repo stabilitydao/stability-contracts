@@ -108,7 +108,7 @@ contract XSTBL is Controllable, ERC20Upgradeable, IXSTBL {
         require(_getXSTBLStorage().bridges[msg.sender], IncorrectMsgSender());
     }
 
-//endregion ---------------------------- Initialization
+    //endregion ---------------------------- Initialization
 
     //region ---------------------------- Restricted actions
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
