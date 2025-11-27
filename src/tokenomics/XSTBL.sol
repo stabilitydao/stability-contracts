@@ -12,8 +12,6 @@ import {IPlatform} from "../interfaces/IPlatform.sol";
 import {IRevenueRouter} from "../interfaces/IRevenueRouter.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IStabilityDAO} from "../interfaces/IStabilityDAO.sol";
-import {MessagingFee} from "@layerzerolabs/oapp-evm-upgradeable/contracts/oapp/OAppUpgradeable.sol";
-import {SendParam} from "@layerzerolabs/oft-evm/contracts/interfaces/IOFT.sol";
 
 /// @title xSTBL token
 /// Inspired by xRAM/xSHADOW from Ramses/Shadow codebase
@@ -21,7 +19,7 @@ import {SendParam} from "@layerzerolabs/oft-evm/contracts/interfaces/IOFT.sol";
 /// @author Jude (https://github.com/iammrjude)
 /// @author Omriss (https://github.com/omriss)
 /// Changelog:
-///  1.2.0: allow to send xSTBL via LayerZero bridge - #424
+///  1.2.0: add list of bridges, sendToBridge, receiveFromBridge - #424
 ///  1.1.0: add possibility to change the slashing penalty value - #406
 ///  1.0.1: use SafeERC20.safeTransfer/safeTransferFrom instead of ERC20 transfer/transferFrom
 contract XSTBL is Controllable, ERC20Upgradeable, IXSTBL {
@@ -74,6 +72,8 @@ contract XSTBL is Controllable, ERC20Upgradeable, IXSTBL {
         uint lastDistributedPeriod;
         /// @inheritdoc IXSTBL
         mapping(address => VestPosition[]) vestInfo;
+        /// @dev addresses that are allowed to call transferToBridge
+        mapping(address => bool) bridges;
     }
     //endregion ---------------------------- Data types
 
@@ -99,7 +99,16 @@ contract XSTBL is Controllable, ERC20Upgradeable, IXSTBL {
         $.exemptTo.add(xStaking_);
     }
 
-    //endregion ---------------------------- Initialization
+    modifier onlyBridge() {
+        _onlyBridge();
+        _;
+    }
+
+    function _onlyBridge() internal view {
+        require(_getXSTBLStorage().bridges[msg.sender], IncorrectMsgSender());
+    }
+
+//endregion ---------------------------- Initialization
 
     //region ---------------------------- Restricted actions
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -178,6 +187,11 @@ contract XSTBL is Controllable, ERC20Upgradeable, IXSTBL {
         }
     }
 
+    /// @inheritdoc IXSTBL
+    function setBridge(address bridge_, bool status_) external onlyGovernanceOrMultisig {
+        XstblStorage storage $ = _getXSTBLStorage();
+        $.bridges[bridge_] = status_;
+    }
     //endregion ---------------------------- Restricted actions
 
     //region ---------------------------- User actions
@@ -223,22 +237,6 @@ contract XSTBL is Controllable, ERC20Upgradeable, IXSTBL {
         emit InstantExit(msg.sender, exitAmount);
 
         return exitAmount;
-    }
-
-    /// @inheritdoc IXSTBL
-    function transferToBridge(address user_, uint amount_) external {
-        // todo bridge only
-
-        /// @dev cannot exit a 0 amount
-        require(amount_ != 0, IncorrectZeroArgument());
-
-        /// @dev burn the xSTBL from the caller's address
-        _burn(user_, amount_);
-
-        XstblStorage storage $ = _getXSTBLStorage();
-        IERC20($.STBL).safeTransfer(msg.sender, amount_);
-
-        emit MovedToBridge(user_, amount_);
     }
 
     /// @inheritdoc IXSTBL
@@ -319,6 +317,41 @@ contract XSTBL is Controllable, ERC20Upgradeable, IXSTBL {
     }
     //endregion ---------------------------- User actions
 
+    //region ---------------------------- Bridge actions
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                     BRIDGES ACTIONS                        */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    /// @inheritdoc IXSTBL
+    function sendToBridge(address user_, uint amount_) external onlyBridge {
+        XstblStorage storage $ = _getXSTBLStorage();
+        require(amount_ != 0 && user_ != address(0), IncorrectZeroArgument());
+
+        /// @dev burn the xSTBL from the caller's address
+        _burn(user_, amount_);
+
+        /// @dev Send STBL to
+        IERC20($.STBL).safeTransfer(msg.sender, amount_);
+
+        emit SendToBridge(user_, amount_);
+    }
+
+    /// @inheritdoc IXSTBL
+    function receiveFromBridge(address user_, uint amount_) external onlyBridge {
+        require(amount_ != 0 && user_ != address(0), IncorrectZeroArgument());
+
+        /// @dev transfer from the bridge to this address
+        // slither-disable-next-line unchecked-transfer
+        IERC20(STBL()).safeTransferFrom(msg.sender, address(this), amount_);
+
+        /// @dev mint the xSTBL to the user address
+        _mint(user_, amount_);
+
+        /// @dev emit an event for conversion
+        emit ReceiveFromBridge(user_, amount_);
+    }
+    //endregion ---------------------------- Bridge actions
+
     //region ---------------------------- View functions
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      VIEW FUNCTIONS                        */
@@ -376,6 +409,11 @@ contract XSTBL is Controllable, ERC20Upgradeable, IXSTBL {
     /// @inheritdoc IXSTBL
     function lastDistributedPeriod() external view returns (uint) {
         return _getXSTBLStorage().lastDistributedPeriod;
+    }
+
+    /// @inheritdoc IXSTBL
+    function isBridge(address bridge_) external view returns (bool) {
+        return _getXSTBLStorage().bridges[bridge_];
     }
     //endregion ---------------------------- View functions
 

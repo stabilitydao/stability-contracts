@@ -21,6 +21,7 @@ contract XSTBLTest is Test, MockSetup {
     IXSTBL public xStbl;
     IXStaking public xStaking;
 
+    //region --------------------- Tests
     function setUp() public {
         stbl = address(tokenA);
         Proxy xStakingProxy = new Proxy();
@@ -177,7 +178,101 @@ contract XSTBLTest is Test, MockSetup {
         assertEq(xStbl.SLASHING_PENALTY(), 50_00, "DEFAULT_SLASHING_PENALTY");
     }
 
-    // region --------------------- Helpers
+    function testSetBridge() public {
+        address multisig = platform.multisig();
+
+        assertEq(xStbl.isBridge(address(1)), false, "not bridge by default");
+
+        vm.expectRevert(IControllable.NotGovernanceAndNotMultisig.selector);
+        vm.prank(address(2));
+        xStbl.setBridge(address(1), true);
+
+        vm.prank(multisig);
+        xStbl.setBridge(address(1), true);
+
+        assertEq(xStbl.isBridge(address(1)), true, "expected bridge");
+
+        vm.prank(multisig);
+        xStbl.setBridge(address(1), false);
+
+        assertEq(xStbl.isBridge(address(1)), false, "bridge is cleared");
+    }
+
+    function testBridgeActions() public {
+        address multisig = platform.multisig();
+        address bridge = makeAddr("bridge");
+        address user = makeAddr("user");
+
+        vm.prank(multisig);
+        xStbl.setBridge(bridge, true);
+
+        // ---------------------- prepare xSTBL for the user
+        tokenA.mint(100e18);
+        tokenA.transfer(user, 100e18);
+
+        vm.prank(user);
+        IERC20(stbl).approve(address(xStbl), 100e18);
+
+        vm.prank(user);
+        xStbl.enter(100e18);
+
+        // ---------------------- send xSTBL to the bridge
+        {
+            vm.expectRevert(IControllable.IncorrectZeroArgument.selector);
+            vm.prank(bridge);
+            xStbl.sendToBridge(address(0), 1e18);
+
+            vm.expectRevert(IControllable.IncorrectZeroArgument.selector);
+            vm.prank(bridge);
+            xStbl.sendToBridge(user, 0);
+
+            vm.expectRevert(IControllable.IncorrectMsgSender.selector);
+            vm.prank(user);
+            xStbl.sendToBridge(bridge, 1e18);
+
+            assertEq(IERC20(address(xStbl)).balanceOf(user), 100e18, "user xSTBL balance before sendToBridge");
+            assertEq(IERC20(address(tokenA)).balanceOf(user), 0, "user STBL balance before sendToBridge");
+
+            vm.prank(bridge);
+            xStbl.sendToBridge(user, 40e18);
+        }
+
+        assertEq(IERC20(address(xStbl)).balanceOf(user), 60e18, "user xSTBL balance after sendToBridge");
+        assertEq(IERC20(address(tokenA)).balanceOf(address(xStbl)), 60e18, "locked STBL balance after sendToBridge");
+        assertEq(IERC20(address(tokenA)).balanceOf(user), 0, "user STBL balance after sendToBridge");
+        assertEq(IERC20(address(tokenA)).balanceOf(bridge), 40e18, "bridge STBL balance after sendToBridge");
+
+        // ---------------------- receive xSTBL from the bridge
+        {
+            vm.expectRevert(IControllable.IncorrectZeroArgument.selector);
+            vm.prank(bridge);
+            xStbl.receiveFromBridge(address(0), 1e18);
+
+            vm.expectRevert(IControllable.IncorrectZeroArgument.selector);
+            vm.prank(bridge);
+            xStbl.receiveFromBridge(user, 0);
+
+            vm.expectRevert(IControllable.IncorrectMsgSender.selector);
+            vm.prank(user);
+            xStbl.receiveFromBridge(bridge, 1e18);
+
+            vm.prank(bridge);
+            tokenA.approve(address(xStbl), 40e18);
+
+            vm.prank(bridge);
+            xStbl.receiveFromBridge(user, 40e18);
+        }
+
+        assertEq(IERC20(address(xStbl)).balanceOf(user), 100e18, "user xSTBL balance after receiveFromBridge");
+        assertEq(IERC20(address(tokenA)).balanceOf(address(xStbl)), 100e18, "locked STBL balance after receiveFromBridge");
+        assertEq(IERC20(address(tokenA)).balanceOf(user), 0, "user STBL balance after receiveFromBridge");
+        assertEq(IERC20(address(tokenA)).balanceOf(bridge), 0, "bridge STBL balance after receiveFromBridge");
+
+
+    }
+    //endregion --------------------- Tests
+
+    //region --------------------- Helpers
     function _setSlashingPenalty(IStabilityDAO daoToken, uint penalty_) internal {
         address multisig = platform.multisig();
 
@@ -203,5 +298,5 @@ contract XSTBLTest is Test, MockSetup {
         token.initialize(address(platform), address(xStbl), address(xStaking), p);
         return token;
     }
-    // endregion --------------------- Helpers
+    //endregion --------------------- Helpers
 }
