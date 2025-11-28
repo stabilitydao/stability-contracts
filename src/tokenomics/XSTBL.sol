@@ -19,6 +19,7 @@ import {IStabilityDAO} from "../interfaces/IStabilityDAO.sol";
 /// @author Jude (https://github.com/iammrjude)
 /// @author Omriss (https://github.com/omriss)
 /// Changelog:
+///  1.2.0: add list of bridges, sendToBridge, takeFromBridge - #424
 ///  1.1.0: add possibility to change the slashing penalty value - #406
 ///  1.0.1: use SafeERC20.safeTransfer/safeTransferFrom instead of ERC20 transfer/transferFrom
 contract XSTBL is Controllable, ERC20Upgradeable, IXSTBL {
@@ -30,7 +31,7 @@ contract XSTBL is Controllable, ERC20Upgradeable, IXSTBL {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.1.0";
+    string public constant VERSION = "1.2.0";
 
     /// @inheritdoc IXSTBL
     uint public constant BASIS = 10_000;
@@ -71,6 +72,8 @@ contract XSTBL is Controllable, ERC20Upgradeable, IXSTBL {
         uint lastDistributedPeriod;
         /// @inheritdoc IXSTBL
         mapping(address => VestPosition[]) vestInfo;
+        /// @dev addresses that are allowed to call transferToBridge
+        mapping(address => bool) bridges;
     }
     //endregion ---------------------------- Data types
 
@@ -94,6 +97,15 @@ contract XSTBL is Controllable, ERC20Upgradeable, IXSTBL {
 
         $.exempt.add(xStaking_);
         $.exemptTo.add(xStaking_);
+    }
+
+    modifier onlyBridge() {
+        _onlyBridge();
+        _;
+    }
+
+    function _onlyBridge() internal view {
+        require(_getXSTBLStorage().bridges[msg.sender], IncorrectMsgSender());
     }
 
     //endregion ---------------------------- Initialization
@@ -173,6 +185,12 @@ contract XSTBL is Controllable, ERC20Upgradeable, IXSTBL {
             /// @dev emit : (who, status, success)
             emit ExemptionTo(exemptee[i], exempt[i], success);
         }
+    }
+
+    /// @inheritdoc IXSTBL
+    function setBridge(address bridge_, bool status_) external onlyGovernanceOrMultisig {
+        XstblStorage storage $ = _getXSTBLStorage();
+        $.bridges[bridge_] = status_;
     }
 
     //endregion ---------------------------- Restricted actions
@@ -301,6 +319,42 @@ contract XSTBL is Controllable, ERC20Upgradeable, IXSTBL {
 
     //endregion ---------------------------- User actions
 
+    //region ---------------------------- Bridge actions
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                     BRIDGES ACTIONS                        */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    /// @inheritdoc IXSTBL
+    function sendToBridge(address user_, uint amount_) external onlyBridge {
+        XstblStorage storage $ = _getXSTBLStorage();
+        require(amount_ != 0 && user_ != address(0), IncorrectZeroArgument());
+
+        /// @dev burn the xSTBL from the caller's address
+        _burn(user_, amount_);
+
+        /// @dev Send STBL to
+        IERC20($.STBL).safeTransfer(msg.sender, amount_);
+
+        emit SendToBridge(user_, amount_);
+    }
+
+    /// @inheritdoc IXSTBL
+    function takeFromBridge(address user_, uint amount_) external onlyBridge {
+        require(amount_ != 0 && user_ != address(0), IncorrectZeroArgument());
+
+        /// @dev transfer from the bridge to this address
+        // slither-disable-next-line unchecked-transfer
+        IERC20(STBL()).safeTransferFrom(msg.sender, address(this), amount_);
+
+        /// @dev mint the xSTBL to the user address
+        _mint(user_, amount_);
+
+        /// @dev emit an event for conversion
+        emit ReceivedFromBridge(user_, amount_);
+    }
+
+    //endregion ---------------------------- Bridge actions
+
     //region ---------------------------- View functions
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      VIEW FUNCTIONS                        */
@@ -358,6 +412,11 @@ contract XSTBL is Controllable, ERC20Upgradeable, IXSTBL {
     /// @inheritdoc IXSTBL
     function lastDistributedPeriod() external view returns (uint) {
         return _getXSTBLStorage().lastDistributedPeriod;
+    }
+
+    /// @inheritdoc IXSTBL
+    function isBridge(address bridge_) external view returns (bool) {
+        return _getXSTBLStorage().bridges[bridge_];
     }
     //endregion ---------------------------- View functions
 

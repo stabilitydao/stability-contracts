@@ -36,6 +36,8 @@ interface IXSTBL {
     event ExemptionFrom(address indexed candidate, bool status, bool success);
     event ExemptionTo(address indexed candidate, bool status, bool success);
     event Rebase(address indexed caller, uint amount);
+    event SendToBridge(address indexed user, uint amount);
+    event ReceivedFromBridge(address indexed user, uint amount);
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      WRITE FUNCTIONS                       */
@@ -60,8 +62,22 @@ interface IXSTBL {
     /// @notice Set exemption status for to address
     function setExemptionTo(address[] calldata exemptee, bool[] calldata exempt) external;
 
+    /// @notice Set or unset an address as XTokenBridge contract
+    /// @param bridge_ Address of the bridge contract
+    /// @param status_ Allow/disallow the bridge to call bridge-related functions
+    function setBridge(address bridge_, bool status_) external;
+
     /// @notice Function called by the RevenueRouter to send the rebases once a week
     function rebase() external;
+
+    /// @notice Burn given {amount} of xSTBL for the given {user} and transfer STBL to the SBTL-bridge.
+    /// The {user} will receive same amount of xSTBL on the different chain in return.
+    /// @custom:restricted This function can only be called by XTokenBridge contract.
+    function sendToBridge(address user, uint amount) external;
+
+    /// @notice Mint given {amount} of xSTBL for the given {user} after receiving STBL from the SBTL-bridge.
+    /// @custom:restricted This function can only be called by XTokenBridge contract.
+    function takeFromBridge(address user, uint amount) external;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      VIEW FUNCTIONS                        */
@@ -99,4 +115,7 @@ interface IXSTBL {
 
     /// @notice The last period rebases were distributed
     function lastDistributedPeriod() external view returns (uint);
+
+    /// @notice Checks if an address is set as XTokenBridge contract
+    function isBridge(address bridge_) external view returns (bool);
 }
