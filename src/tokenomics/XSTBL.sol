@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+import {console} from "forge-std/console.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
@@ -324,6 +325,7 @@ contract XSTBL is Controllable, ERC20Upgradeable, IXSTBL {
 
     /// @inheritdoc IXSTBL
     function sendToBridge(address user_, uint amount_) external onlyBridge {
+        console.log("XSTBL.sendToBridge user, amount", user_, amount_);
         XstblStorage storage $ = _getXSTBLStorage();
         require(amount_ != 0 && user_ != address(0), IncorrectZeroArgument());
 
@@ -338,6 +340,7 @@ contract XSTBL is Controllable, ERC20Upgradeable, IXSTBL {
 
     /// @inheritdoc IXSTBL
     function receiveFromBridge(address user_, uint amount_) external onlyBridge {
+        console.log("XSTBL.receiveFromBridge user, amount", user_, amount_);
         require(amount_ != 0 && user_ != address(0), IncorrectZeroArgument());
 
         /// @dev transfer from the bridge to this address

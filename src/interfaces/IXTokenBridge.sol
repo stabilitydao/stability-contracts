@@ -9,11 +9,13 @@ interface IXTokenBridge {
     event Receive(address indexed to, uint32 indexed srcEid, uint amount);
 
     error NotBridge();
-    error BadSourceChain();
     error LzTokenFeeNotSupported();
     error ChainNotSupported();
     error InsufficientAmountReceived();
     error InvalidMessageFormat();
+    error IncorrectReceiver();
+    error UnauthorizedSender();
+    error UntrustedOApp();
 
     /// @notice LayerZero Omnichain Fungible Token (OFT) bridge address
     function bridge() external view returns (address);
@@ -48,9 +50,9 @@ interface IXTokenBridge {
     function initialize(address platform_, address bridge_, address xToken_) external;
 
     /// @notice Sets the xTokenBridge address for the given destination chain
-    /// @param dstEid_ Destination chain endpoint ID
-    /// @param bridge_ Address of the xTokenBridge on the destination chain
-    function setXTokenBridge(uint32 dstEid_, address bridge_) external;
+    /// @param dstEids_ Destination chain endpoint IDs
+    /// @param xTokenBridges_ Addresses of the xTokenBridge on the destination chain
+    function setXTokenBridge(uint32[] memory dstEids_, address[] memory xTokenBridges_) external;
 
     /// @notice Sets the LayerZero ZRO token address to pay fees in ZRO, see endpoint.lzToken()
     /// @param lzToken_ Address of the LayerZero ZRO token contract. Fee in ZRO is forbidden if 0

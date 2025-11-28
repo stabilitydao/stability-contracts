@@ -1,33 +1,25 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import {console, Test, Vm} from "forge-std/Test.sol";
-import {BridgedToken} from "../../src/tokenomics/BridgedToken.sol";
-import {StabilityOFTAdapter} from "../../src/tokenomics/StabilityOFTAdapter.sol";
-import {IPlatform} from "../../src/interfaces/IPlatform.sol";
-import {IControllable} from "../../src/interfaces/IControllable.sol";
-import {IOFTPausable} from "../../src/interfaces/IOFTPausable.sol";
-import {IOAppCore} from "@layerzerolabs/oapp-evm/contracts/oapp/interfaces/IOAppCore.sol";
-import {IOAppReceiver} from "@layerzerolabs/oapp-evm/contracts/oapp/interfaces/IOAppReceiver.sol";
-import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
-import {Proxy} from "../../src/core/proxy/Proxy.sol";
 import {AvalancheConstantsLib} from "../../chains/avalanche/AvalancheConstantsLib.sol";
-import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {SendParam} from "@layerzerolabs/oft-evm/contracts/interfaces/IOFT.sol";
+import {BridgeTestLib} from "./libs/BridgeTestLib.sol";
+import {BridgedToken} from "../../src/tokenomics/BridgedToken.sol";
+import {IControllable} from "../../src/interfaces/IControllable.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IOAppReceiver} from "@layerzerolabs/oapp-evm/contracts/oapp/interfaces/IOAppReceiver.sol";
+import {IOFTPausable} from "../../src/interfaces/IOFTPausable.sol";
 import {IOFT} from "@layerzerolabs/oft-evm/contracts/interfaces/IOFT.sol";
 import {MessagingFee} from "@layerzerolabs/oft-evm/contracts/interfaces/IOFT.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {Origin} from "@layerzerolabs/oapp-evm/contracts/oapp/interfaces/IOAppReceiver.sol";
-// import {OFTMsgCodec} from "@layerzerolabs/oft-evm/contracts/libs/OFTMsgCodec.sol";
 import {OptionsBuilder} from "@layerzerolabs/oapp-evm/contracts/oapp/libs/OptionsBuilder.sol";
-import {ILayerZeroEndpointV2} from "@layerzerolabs/lz-evm-protocol-v2/contracts/interfaces/ILayerZeroEndpointV2.sol";
-import {SetConfigParam} from "@layerzerolabs/lz-evm-protocol-v2/contracts/interfaces/IMessageLibManager.sol";
-import {ExecutorConfig} from "@layerzerolabs/lz-evm-messagelib-v2/contracts/SendLibBase.sol";
-import {UlnConfig} from "@layerzerolabs/lz-evm-messagelib-v2/contracts/uln/UlnBase.sol";
-// import {InboundPacket, PacketDecoder} from "@layerzerolabs/lz-evm-protocol-v2/../oapp/contracts/precrime/libs/Packet.sol";
+import {Origin} from "@layerzerolabs/oapp-evm/contracts/oapp/interfaces/IOAppReceiver.sol";
 import {PacketV1Codec} from "@layerzerolabs/lz-evm-protocol-v2/contracts/messagelib/libs/PacketV1Codec.sol";
-import {PlasmaConstantsLib} from "../../chains/plasma/PlasmaConstantsLib.sol";
-import {BridgeLib} from "./libs/BridgeLib.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+// import {OFTMsgCodec} from "@layerzerolabs/oft-evm/contracts/libs/OFTMsgCodec.sol";
+import {SendParam} from "@layerzerolabs/oft-evm/contracts/interfaces/IOFT.sol";
+// import {InboundPacket, PacketDecoder} from "@layerzerolabs/lz-evm-protocol-v2/../oapp/contracts/precrime/libs/Packet.sol";
+import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
+import {StabilityOFTAdapter} from "../../src/tokenomics/StabilityOFTAdapter.sol";
+import {console, Test} from "forge-std/Test.sol";
 
 contract BridgedTokenTest is Test {
     using OptionsBuilder for bytes;
@@ -71,9 +63,9 @@ contract BridgedTokenTest is Test {
         address receiver;
     }
 
-    BridgeLib.ChainConfig internal sonic;
-    BridgeLib.ChainConfig internal avalanche;
-    BridgeLib.ChainConfig internal plasma;
+    BridgeTestLib.ChainConfig internal sonic;
+    BridgeTestLib.ChainConfig internal avalanche;
+    BridgeTestLib.ChainConfig internal plasma;
     //endregion ------------------------------------- Constants, data types, variables
 
     constructor() {
@@ -82,15 +74,15 @@ contract BridgedTokenTest is Test {
             uint forkAvalanche = vm.createFork(vm.envString("AVALANCHE_RPC_URL"), AVALANCHE_FORK_BLOCK);
             uint forkPlasma = vm.createFork(vm.envString("PLASMA_RPC_URL"), PLASMA_FORK_BLOCK);
 
-            sonic = BridgeLib.createConfigSonic(vm, forkSonic);
-            avalanche = BridgeLib.createConfigAvalanche(vm, forkAvalanche);
-            plasma = BridgeLib.createConfigPlasma(vm, forkPlasma);
+            sonic = BridgeTestLib.createConfigSonic(vm, forkSonic);
+            avalanche = BridgeTestLib.createConfigAvalanche(vm, forkAvalanche);
+            plasma = BridgeTestLib.createConfigPlasma(vm, forkPlasma);
         }
 
         // ------------------- Create adapter and bridged token
-        adapter = StabilityOFTAdapter(BridgeLib.setupStabilityOFTAdapterOnSonic(vm, sonic));
-        bridgedTokenAvalanche = BridgedToken(BridgeLib.setupSTBLBridged(vm, avalanche));
-        bridgedTokenPlasma = BridgedToken(BridgeLib.setupSTBLBridged(vm, plasma));
+        adapter = StabilityOFTAdapter(BridgeTestLib.setupStabilityOFTAdapterOnSonic(vm, sonic));
+        bridgedTokenAvalanche = BridgedToken(BridgeTestLib.setupSTBLBridged(vm, avalanche));
+        bridgedTokenPlasma = BridgedToken(BridgeTestLib.setupSTBLBridged(vm, plasma));
 
         vm.selectFork(avalanche.fork);
         assertEq(bridgedTokenAvalanche.owner(), avalanche.multisig, "multisig is owner");
@@ -105,13 +97,14 @@ contract BridgedTokenTest is Test {
         plasma.oapp = address(bridgedTokenPlasma);
 
         // ------------------- Set up Sonic:Avalanche
-        BridgeLib.setUpSonicAvalanche(vm, sonic, avalanche);
+        BridgeTestLib.setUpSonicAvalanche(vm, sonic, avalanche);
 
         // ------------------- Set up Sonic:Plasma
-        BridgeLib.setUpSonicPlasma(vm, sonic, plasma);
+        BridgeTestLib.setUpSonicPlasma(vm, sonic, plasma);
 
         // ------------------- Set up Avalanche:Plasma
-        BridgeLib.setUpAvalanchePlasma(vm, avalanche, plasma);
+        BridgeTestLib.setUpAvalanchePlasma(vm, avalanche, plasma);
+
     }
 
     //region ------------------------------------- Unit tests for bridgedTokenAvalanche
@@ -125,14 +118,14 @@ contract BridgedTokenTest is Test {
         //            CONFIG_TYPE_EXECUTOR
         //        );
 
-        BridgeLib._getConfig(
+        BridgeTestLib._getConfig(
             vm,
             avalanche.fork,
             AvalancheConstantsLib.LAYER_ZERO_V2_ENDPOINT,
             address(bridgedTokenAvalanche),
             AvalancheConstantsLib.LAYER_ZERO_V2_RECEIVE_ULN_302,
             SonicConstantsLib.LAYER_ZERO_V2_ENDPOINT_ID,
-            BridgeLib.CONFIG_TYPE_ULN
+            BridgeTestLib.CONFIG_TYPE_ULN
         );
     }
 
@@ -152,7 +145,7 @@ contract BridgedTokenTest is Test {
         assertEq(bridgedTokenAvalanche.owner(), avalanche.multisig, "BridgedToken - owner");
         assertEq(bridgedTokenAvalanche.token(), address(bridgedTokenAvalanche), "BridgedToken - token");
         assertEq(bridgedTokenAvalanche.approvalRequired(), false, "BridgedToken - approvalRequired");
-        assertEq(bridgedTokenAvalanche.sharedDecimals(), BridgeLib.SHARED_DECIMALS, "BridgedToken - shared decimals");
+        assertEq(bridgedTokenAvalanche.sharedDecimals(), BridgeTestLib.SHARED_DECIMALS, "BridgedToken - shared decimals");
     }
 
     function testBridgedTokenPause() public {
@@ -203,18 +196,18 @@ contract BridgedTokenTest is Test {
         assertEq(adapter.owner(), sonic.multisig, "StabilityOFTAdapter - owner");
         assertEq(adapter.token(), SonicConstantsLib.TOKEN_STBL, "StabilityOFTAdapter - token");
         assertEq(adapter.approvalRequired(), true, "StabilityOFTAdapter - approvalRequired");
-        assertEq(adapter.sharedDecimals(), BridgeLib.SHARED_DECIMALS, "StabilityOFTAdapter - shared decimals");
+        assertEq(adapter.sharedDecimals(), BridgeTestLib.SHARED_DECIMALS, "StabilityOFTAdapter - shared decimals");
     }
 
     function testConfigStabilityOFTAdapter() internal {
-        BridgeLib._getConfig(
+        BridgeTestLib._getConfig(
             vm,
             sonic.fork,
             SonicConstantsLib.LAYER_ZERO_V2_ENDPOINT,
             address(adapter),
             SonicConstantsLib.LAYER_ZERO_V2_SEND_ULN_302,
             AvalancheConstantsLib.LAYER_ZERO_V2_ENDPOINT_ID,
-            BridgeLib.CONFIG_TYPE_EXECUTOR
+            BridgeTestLib.CONFIG_TYPE_EXECUTOR
         );
 
         //        _getConfig(
@@ -537,7 +530,7 @@ contract BridgedTokenTest is Test {
         uint sendAmount,
         uint balance0,
         address receiver,
-        BridgeLib.ChainConfig memory target
+        BridgeTestLib.ChainConfig memory target
     ) internal returns (Results memory dest) {
         vm.selectFork(sonic.fork);
 
@@ -570,7 +563,7 @@ contract BridgedTokenTest is Test {
 
         vm.prank(sender);
         adapter.send{value: msgFee.nativeFee}(sendParam, msgFee, sender);
-        bytes memory message = BridgeLib._extractSendMessage(vm.getRecordedLogs());
+        bytes memory message = BridgeTestLib._extractSendMessage(vm.getRecordedLogs());
 
         // ------------------ Target: simulate message reception
         vm.selectFork(target.fork);
@@ -611,7 +604,7 @@ contract BridgedTokenTest is Test {
         address sender,
         uint sendAmount,
         address receiver,
-        BridgeLib.ChainConfig memory target
+        BridgeTestLib.ChainConfig memory target
     ) internal returns (Results memory dest) {
         vm.selectFork(target.fork);
 
@@ -642,7 +635,7 @@ contract BridgedTokenTest is Test {
 
         vm.prank(sender);
         IOFT(target.oapp).send{value: msgFee.nativeFee}(sendParam, msgFee, sender);
-        bytes memory message = BridgeLib._extractSendMessage(vm.getRecordedLogs());
+        bytes memory message = BridgeTestLib._extractSendMessage(vm.getRecordedLogs());
 
         // ------------------ Sonic: simulate message reception
         vm.selectFork(sonic.fork);
@@ -674,8 +667,8 @@ contract BridgedTokenTest is Test {
         address sender,
         uint sendAmount,
         address receiver,
-        BridgeLib.ChainConfig memory src,
-        BridgeLib.ChainConfig memory target
+        BridgeTestLib.ChainConfig memory src,
+        BridgeTestLib.ChainConfig memory target
     ) internal returns (Results memory dest) {
         vm.selectFork(src.fork);
 
@@ -708,7 +701,7 @@ contract BridgedTokenTest is Test {
 
         vm.prank(sender);
         IOFT(src.oapp).send{value: msgFee.nativeFee}(sendParam, msgFee, sender);
-        bytes memory message = BridgeLib._extractSendMessage(vm.getRecordedLogs());
+        bytes memory message = BridgeTestLib._extractSendMessage(vm.getRecordedLogs());
 
         // ------------------ Target: simulate message reception
         vm.selectFork(target.fork);
@@ -824,7 +817,7 @@ contract BridgedTokenTest is Test {
     function _getBalancesBridged(
         address sender,
         address receiver,
-        BridgeLib.ChainConfig memory target
+        BridgeTestLib.ChainConfig memory target
     ) internal view returns (ChainResults memory res) {
         res.balanceSenderSTBL = IERC20(target.oapp).balanceOf(sender);
         res.balanceContractSTBL = IERC20(target.oapp).balanceOf(address(target.oapp));
@@ -846,7 +839,5 @@ contract BridgedTokenTest is Test {
         console.log("totalSupplySTBL:", res.totalSupplySTBL);
     }
 
-
     //endregion ------------------------------------- Internal logic
-
 }

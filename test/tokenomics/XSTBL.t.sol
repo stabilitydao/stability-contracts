@@ -14,9 +14,13 @@ import {XSTBL} from "../../src/tokenomics/XSTBL.sol";
 import {RevenueRouter} from "../../src/tokenomics/RevenueRouter.sol";
 import {FeeTreasury} from "../../src/tokenomics/FeeTreasury.sol";
 import {StabilityDAO} from "../../src/tokenomics/StabilityDAO.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+
 // import {console} from "forge-std/console.sol";
 
 contract XSTBLTest is Test, MockSetup {
+    using SafeERC20 for IERC20;
+
     address public stbl;
     IXSTBL public xStbl;
     IXStaking public xStaking;
@@ -208,7 +212,7 @@ contract XSTBLTest is Test, MockSetup {
 
         // ---------------------- prepare xSTBL for the user
         tokenA.mint(100e18);
-        tokenA.transfer(user, 100e18);
+        IERC20(address(tokenA)).safeTransfer(user, 100e18);
 
         vm.prank(user);
         IERC20(stbl).approve(address(xStbl), 100e18);

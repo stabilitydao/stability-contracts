@@ -1,35 +1,26 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import {console, Test, Vm} from "forge-std/Test.sol";
+import {console, Vm} from "forge-std/Test.sol";
 import {BridgedToken} from "../../../src/tokenomics/BridgedToken.sol";
 import {StabilityOFTAdapter} from "../../../src/tokenomics/StabilityOFTAdapter.sol";
 import {IPlatform} from "../../../src/interfaces/IPlatform.sol";
-import {IControllable} from "../../../src/interfaces/IControllable.sol";
-import {IOFTPausable} from "../../../src/interfaces/IOFTPausable.sol";
 import {IOAppCore} from "@layerzerolabs/oapp-evm/contracts/oapp/interfaces/IOAppCore.sol";
-import {IOAppReceiver} from "@layerzerolabs/oapp-evm/contracts/oapp/interfaces/IOAppReceiver.sol";
 import {SonicConstantsLib} from "../../../chains/sonic/SonicConstantsLib.sol";
 import {Proxy} from "../../../src/core/proxy/Proxy.sol";
 import {AvalancheConstantsLib} from "../../../chains/avalanche/AvalancheConstantsLib.sol";
-import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {SendParam} from "@layerzerolabs/oft-evm/contracts/interfaces/IOFT.sol";
-import {IOFT} from "@layerzerolabs/oft-evm/contracts/interfaces/IOFT.sol";
-import {MessagingFee} from "@layerzerolabs/oft-evm/contracts/interfaces/IOFT.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {Origin} from "@layerzerolabs/oapp-evm/contracts/oapp/interfaces/IOAppReceiver.sol";
+// import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 // import {OFTMsgCodec} from "@layerzerolabs/oft-evm/contracts/libs/OFTMsgCodec.sol";
-import {OptionsBuilder} from "@layerzerolabs/oapp-evm/contracts/oapp/libs/OptionsBuilder.sol";
 import {ILayerZeroEndpointV2} from "@layerzerolabs/lz-evm-protocol-v2/contracts/interfaces/ILayerZeroEndpointV2.sol";
 import {SetConfigParam} from "@layerzerolabs/lz-evm-protocol-v2/contracts/interfaces/IMessageLibManager.sol";
 import {ExecutorConfig} from "@layerzerolabs/lz-evm-messagelib-v2/contracts/SendLibBase.sol";
 import {UlnConfig} from "@layerzerolabs/lz-evm-messagelib-v2/contracts/uln/UlnBase.sol";
 // import {InboundPacket, PacketDecoder} from "@layerzerolabs/lz-evm-protocol-v2/../oapp/contracts/precrime/libs/Packet.sol";
-import {PacketV1Codec} from "@layerzerolabs/lz-evm-protocol-v2/contracts/messagelib/libs/PacketV1Codec.sol";
+// import {PacketV1Codec} from "@layerzerolabs/lz-evm-protocol-v2/contracts/messagelib/libs/PacketV1Codec.sol";
 import {PlasmaConstantsLib} from "../../../chains/plasma/PlasmaConstantsLib.sol";
 
 /// @notice Auxiliary data types and utils to test STBL-bridge related functionality
-library BridgeLib {
+library BridgeTestLib {
     /// @dev Set to 0 for immediate switch, or block number for gradual migration
     uint private constant GRACE_PERIOD = 0;
     uint32 internal constant CONFIG_TYPE_EXECUTOR = 1;
@@ -92,7 +83,7 @@ library BridgeLib {
 
 
     //region ------------------------------------- Create contracts
-    function setupSTBLBridged(Vm vm, BridgeLib.ChainConfig memory chain) internal returns (address) {
+    function setupSTBLBridged(Vm vm, BridgeTestLib.ChainConfig memory chain) internal returns (address) {
         vm.selectFork(chain.fork);
 
         Proxy proxy = new Proxy();
@@ -103,7 +94,7 @@ library BridgeLib {
         return address(bridgedStbl);
     }
 
-    function setupStabilityOFTAdapterOnSonic(Vm vm, BridgeLib.ChainConfig memory sonic) internal returns (address) {
+    function setupStabilityOFTAdapterOnSonic(Vm vm, BridgeTestLib.ChainConfig memory sonic) internal returns (address) {
         vm.selectFork(sonic.fork);
 
         Proxy proxy = new Proxy();
@@ -116,9 +107,9 @@ library BridgeLib {
     //endregion ------------------------------------- Create contracts
 
     //region ------------------------------------- Chains
-    function createConfigSonic(Vm vm, uint forkId) internal returns (BridgeLib.ChainConfig memory) {
+    function createConfigSonic(Vm vm, uint forkId) internal returns (BridgeTestLib.ChainConfig memory) {
         vm.selectFork(forkId);
-        return BridgeLib.ChainConfig({
+        return BridgeTestLib.ChainConfig({
             fork: forkId,
             multisig: IPlatform(SonicConstantsLib.PLATFORM).multisig(),
             oapp: address(0), // to be set later
@@ -134,9 +125,9 @@ library BridgeLib {
         });
     }
 
-    function createConfigAvalanche(Vm vm, uint forkId) internal returns (BridgeLib.ChainConfig memory) {
+    function createConfigAvalanche(Vm vm, uint forkId) internal returns (BridgeTestLib.ChainConfig memory) {
         vm.selectFork(forkId);
-        return BridgeLib.ChainConfig({
+        return BridgeTestLib.ChainConfig({
             fork: forkId,
             multisig: IPlatform(AvalancheConstantsLib.PLATFORM).multisig(),
             oapp: address(0), // to be set later
@@ -152,9 +143,9 @@ library BridgeLib {
         });
     }
 
-    function createConfigPlasma(Vm vm, uint forkId) internal returns (BridgeLib.ChainConfig memory) {
+    function createConfigPlasma(Vm vm, uint forkId) internal returns (BridgeTestLib.ChainConfig memory) {
         vm.selectFork(forkId);
-        return BridgeLib.ChainConfig({
+        return BridgeTestLib.ChainConfig({
             fork: forkId,
             multisig: IPlatform(PlasmaConstantsLib.PLATFORM).multisig(),
             oapp: address(0), // to be set later
@@ -173,7 +164,7 @@ library BridgeLib {
     //endregion ------------------------------------- Chains
 
     //region ------------------------------------- Setup bridges
-    function setUpSonicAvalanche(Vm vm, BridgeLib.ChainConfig memory sonic, BridgeLib.ChainConfig memory avalanche) internal {
+    function setUpSonicAvalanche(Vm vm, BridgeTestLib.ChainConfig memory sonic, BridgeTestLib.ChainConfig memory avalanche) internal {
         // ------------------- Set up layer zero on Sonic
         _setupLayerZeroConfig(vm, sonic, avalanche, true);
 
@@ -197,7 +188,7 @@ library BridgeLib {
         _setPeers(vm, sonic, avalanche);
     }
 
-    function setUpSonicPlasma(Vm vm, BridgeLib.ChainConfig memory sonic, BridgeLib.ChainConfig memory plasma) internal {
+    function setUpSonicPlasma(Vm vm, BridgeTestLib.ChainConfig memory sonic, BridgeTestLib.ChainConfig memory plasma) internal {
         // ------------------- Set up sending chain for Sonic:Plasma
         _setupLayerZeroConfig(vm, sonic, plasma, true);
 
@@ -221,7 +212,7 @@ library BridgeLib {
         _setPeers(vm, sonic, plasma);
     }
 
-    function setUpAvalanchePlasma(Vm vm, BridgeLib.ChainConfig memory avalanche, BridgeLib.ChainConfig memory plasma) internal {
+    function setUpAvalanchePlasma(Vm vm, BridgeTestLib.ChainConfig memory avalanche, BridgeTestLib.ChainConfig memory plasma) internal {
         // ------------------- Set up sending chain for Avalanche:Plasma
         _setupLayerZeroConfig(vm, avalanche, plasma, true);
 
@@ -243,7 +234,7 @@ library BridgeLib {
     //endregion ------------------------------------- Setup bridges
 
     //region ------------------------------------- Layer zero utils
-    function _setupLayerZeroConfig(Vm vm, BridgeLib.ChainConfig memory src, BridgeLib.ChainConfig memory dst, bool setupBothWays) internal {
+    function _setupLayerZeroConfig(Vm vm, BridgeTestLib.ChainConfig memory src, BridgeTestLib.ChainConfig memory dst, bool setupBothWays) internal {
         vm.selectFork(src.fork);
 
         if (src.sendLib != address(0)) {
@@ -270,7 +261,7 @@ library BridgeLib {
         }
     }
 
-    function _setPeers(Vm vm, BridgeLib.ChainConfig memory src, BridgeLib.ChainConfig memory dst) internal {
+    function _setPeers(Vm vm, BridgeTestLib.ChainConfig memory src, BridgeTestLib.ChainConfig memory dst) internal {
         // ------------------- Sonic: set up peer connection
         vm.selectFork(src.fork);
 
@@ -289,8 +280,8 @@ library BridgeLib {
     /// @param confirmations  Minimum block confirmations
     function _setSendConfig(
         Vm vm,
-        BridgeLib.ChainConfig memory src,
-        BridgeLib.ChainConfig memory dst,
+        BridgeTestLib.ChainConfig memory src,
+        BridgeTestLib.ChainConfig memory dst,
         address[] memory requiredDVNs,
         uint64 confirmations
     ) internal {
@@ -307,7 +298,7 @@ library BridgeLib {
         });
 
         ExecutorConfig memory exec = ExecutorConfig({
-            maxMessageSize: 40, // max bytes per cross-chain message
+            maxMessageSize: 256, // max bytes per cross-chain message
             executor: src.executor // address that pays destination execution fees
         });
 
@@ -328,8 +319,8 @@ library BridgeLib {
     /// @param confirmations Minimum block confirmations for ULN
     function _setReceiveConfig(
         Vm vm,
-        BridgeLib.ChainConfig memory src,
-        BridgeLib.ChainConfig memory dst,
+        BridgeTestLib.ChainConfig memory src,
+        BridgeTestLib.ChainConfig memory dst,
         address[] memory requiredDVNs,
         uint64 confirmations
     ) internal {
@@ -382,7 +373,7 @@ library BridgeLib {
             // Decode the Executor config (configType = 1)
             ExecutorConfig memory execConfig = abi.decode(config, (ExecutorConfig));
             // Log some key configuration parameters.
-            console.log("Executor Type:", execConfig.maxMessageSize);
+            console.log("Executor maxMessageSize:", execConfig.maxMessageSize);
             console.log("Executor Address:", execConfig.executor);
         }
 
@@ -424,6 +415,25 @@ library BridgeLib {
             message = new bytes(msgLen);
             for (uint i = 0; i < msgLen; ++i) {
                 message[i] = encodedPayload[start + i];
+            }
+        }
+
+        //        console.logBytes(message);
+        return message;
+    }
+
+    /// @notice Extract PacketSent message from emitted event
+    function _extractComposeMessage(Vm.Log[] memory logs) internal pure returns (bytes memory message) {
+        bytes memory encodedPayload;
+        bytes32 sig = keccak256("ComposeSent(address,address,bytes32,uint16,bytes)"); // ComposeSent(address from, address to, bytes32 guid, uint16 index, bytes message)
+
+        for (uint i; i < logs.length; ++i) {
+            if (logs[i].topics[0] == sig) {
+                (address from, address to,,, bytes memory _message) = abi.decode(logs[i].data, (address, address, bytes32, uint16, bytes));
+                console.log("ComposeSent from,to,message:", from, to);
+                console.logBytes(_message);
+                message = _message;
+                break;
             }
         }
 
