@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {console} from "forge-std/console.sol";
-import { IOAppComposer } from "@layerzerolabs/oapp-evm/contracts/oapp/interfaces/IOAppComposer.sol";
-import { OFTComposeMsgCodec } from "@layerzerolabs/oft-evm/contracts/libs/OFTComposeMsgCodec.sol";
+import {IOAppComposer} from "@layerzerolabs/oapp-evm/contracts/oapp/interfaces/IOAppComposer.sol";
+import {OFTComposeMsgCodec} from "@layerzerolabs/oft-evm/contracts/libs/OFTComposeMsgCodec.sol";
 import {IControllable, Controllable} from "../core/base/Controllable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IOFTPausable} from "../interfaces/IOFTPausable.sol";
@@ -11,9 +10,8 @@ import {IXSTBL} from "../interfaces/IXSTBL.sol";
 import {IXTokenBridge} from "../interfaces/IXTokenBridge.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {SendParam, MessagingFee} from "@layerzerolabs/oft-evm/contracts/interfaces/IOFT.sol";
-import {BridgeTokenLib} from "./libs/BridgeTokenLib.sol";
 
-contract XTokenBridge is Controllable, IXTokenBridge, IOAppComposer  {
+contract XTokenBridge is Controllable, IXTokenBridge, IOAppComposer {
     using SafeERC20 for IERC20;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -23,15 +21,19 @@ contract XTokenBridge is Controllable, IXTokenBridge, IOAppComposer  {
     /// @inheritdoc IControllable
     string public constant VERSION = "1.0.0";
 
-    uint8 internal constant MESSAGE_KIND_1 = 1;
+    // keccak256(abi.encode(uint(keccak256("erc7201:stability.XTokenBridge")) - 1)) & ~bytes32(uint(0xff));
+    bytes32 internal constant XOKEN_BRIDGE_STORAGE_LOCATION =
+        0x7331a1638fe957f8dc3395f52254374f52b3cbbdf185d4405a764a49dfb7f400;
 
-    // keccak256(abi.encode(uint(keccak256("erc7201:stability.XSTBLBridge")) - 1)) & ~bytes32(uint(0xff));
-    bytes32 internal constant XOKEN_BRIDGE_STORAGE_LOCATION = 0;
-
-    address immutable public LZ_ENDPOINT;
+    /// @notice LayerZero v2 Endpoint address
+    address public immutable LZ_ENDPOINT;
 
     //region --------------------------------- Data types
-    /// @custom:storage-location erc7201:stability.XSTBLBridge
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                         Data types                         */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    /// @custom:storage-location erc7201:stability.XTokenBridge
     struct XTokenBridgeStorage {
         /// @notice LayerZero Omnichain Fungible Token (OFT) bridge address
         address bridge;
@@ -49,6 +51,10 @@ contract XTokenBridge is Controllable, IXTokenBridge, IOAppComposer  {
     //endregion --------------------------------- Data types
 
     //region --------------------------------- Initializers
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                      Initializers                          */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
     constructor(address lzEndpoint_) {
         LZ_ENDPOINT = lzEndpoint_;
     }
@@ -62,9 +68,13 @@ contract XTokenBridge is Controllable, IXTokenBridge, IOAppComposer  {
         $.xToken = xToken_;
         // lzToken is zero by default
     }
+
     //endregion --------------------------------- Initializers
 
     //region --------------------------------- View
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                            View                            */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IXTokenBridge
     function bridge() external view returns (address) {
@@ -91,29 +101,40 @@ contract XTokenBridge is Controllable, IXTokenBridge, IOAppComposer  {
     }
 
     /// @inheritdoc IXTokenBridge
-    function quoteSend(uint32 dstEid_, uint amount, bytes memory options, bool payInLzToken_) external view returns (MessagingFee memory msgFee) {
+    function quoteSend(
+        uint32 dstEid_,
+        uint amount,
+        bytes memory options,
+        bool payInLzToken_
+    ) external view returns (MessagingFee memory msgFee) {
         XTokenBridgeStorage storage $ = _getStorage();
 
         address receiver = $.xTokenBridges[dstEid_];
 
         SendParam memory sendParam = SendParam({
             dstEid: dstEid_,
-            to: bytes32(uint(uint160(receiver))), // todo
+            to: bytes32(uint(uint160(receiver))),
             amountLD: amount,
             minAmountLD: amount,
             extraOptions: options,
-            composeMsg: BridgeTokenLib.packComposeMessageKind1(msg.sender, receiver),
+            composeMsg: abi.encode(msg.sender),
             oftCmd: ""
         });
         return IOFTPausable($.bridge).quoteSend(sendParam, payInLzToken_);
-
     }
 
     //endregion --------------------------------- View
 
     //region --------------------------------- Actions
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                          Actions                           */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
     /// @inheritdoc IXTokenBridge
-    function setXTokenBridge(uint32[] memory dstEids_, address[] memory xTokenBridges_) external onlyGovernanceOrMultisig {
+    function setXTokenBridge(
+        uint32[] memory dstEids_,
+        address[] memory xTokenBridges_
+    ) external onlyGovernanceOrMultisig {
         XTokenBridgeStorage storage $ = _getStorage();
         uint len = dstEids_.length;
         require(len == xTokenBridges_.length, IControllable.IncorrectArrayLength());
@@ -121,7 +142,6 @@ contract XTokenBridge is Controllable, IXTokenBridge, IOAppComposer  {
         for (uint i; i < len; ++i) {
             $.xTokenBridges[dstEids_[i]] = xTokenBridges_[i];
         }
-
     }
 
     /// @inheritdoc IXTokenBridge
@@ -132,7 +152,6 @@ contract XTokenBridge is Controllable, IXTokenBridge, IOAppComposer  {
 
     /// @inheritdoc IXTokenBridge
     function send(uint32 dstEid_, uint amount, MessagingFee memory msgFee, bytes memory options) external payable {
-        console.log("XTokenBridge.send.amount, this, dstEid_", amount, address(this), dstEid_);
         XTokenBridgeStorage storage $ = _getStorage();
         address _bridge = $.bridge;
 
@@ -165,23 +184,33 @@ contract XTokenBridge is Controllable, IXTokenBridge, IOAppComposer  {
 
         SendParam memory sendParam = SendParam({
             dstEid: dstEid_,
-            to: bytes32(uint(uint160(receiver))), // todo dest oapp
+            to: bytes32(uint(uint160(receiver))),
             amountLD: amount,
             minAmountLD: amount,
             extraOptions: options,
-            composeMsg: BridgeTokenLib.packComposeMessageKind1(msg.sender, receiver),
+            composeMsg: abi.encode(msg.sender),
             oftCmd: ""
         });
-        console.log("sendParam.message.len", sendParam.composeMsg.length);
-        console.logBytes(sendParam.composeMsg);
 
         IOFTPausable(_bridge).send{value: msgFee.nativeFee}(sendParam, msgFee, msg.sender);
 
         emit Send(msg.sender, dstEid_, amount);
     }
+
+    /// @inheritdoc IXTokenBridge
+    function salvage(address token, uint amount, address receiver) external onlyGovernanceOrMultisig {
+        if (amount == 0) {
+            amount = IERC20(token).balanceOf(address(this));
+        }
+        IERC20(token).safeTransfer(receiver, amount);
+    }
+
     //endregion --------------------------------- Actions
 
     //region --------------------------------- IOAppComposer
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                     IOAppComposer                          */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @notice Handles composed messages from the OFT: staking received STBL to xSTBL for the recipient
     /// @param oApp_ Address of the originating OApp (must be trusted OFT)
@@ -189,45 +218,45 @@ contract XTokenBridge is Controllable, IXTokenBridge, IOAppComposer  {
     /// @param message_ Encoded message containing compose data
     function lzCompose(
         address oApp_,
-        bytes32 /*guid_*/,
+        bytes32,
+        /*guid_*/
         bytes calldata message_,
-        address /*_executor*/,
+        address,
+        /*_executor*/
         bytes calldata /*_extraData*/
     ) external payable override {
         XTokenBridgeStorage storage $ = _getStorage();
         address _bridge = $.bridge;
 
-        // Security: Verify the message source
+        // ---------------- Verify the message source
         require(msg.sender == LZ_ENDPOINT, UnauthorizedSender());
         require(oApp_ == _bridge, UntrustedOApp());
 
         uint32 srcEid = OFTComposeMsgCodec.srcEid(message_);
-        uint256 amountLD = OFTComposeMsgCodec.amountLD(message_);
+        {
+            bytes32 composeFromBytes = OFTComposeMsgCodec.composeFrom(message_);
+            // @dev original sender who initiated the OFT transfer
+            address originalSender = OFTComposeMsgCodec.bytes32ToAddress(composeFromBytes);
+            require($.xTokenBridges[srcEid] == originalSender, InvalidOriginalSender());
+        }
 
-        // Get original sender (who initiated the OFT transfer)
-        bytes32 composeFromBytes = OFTComposeMsgCodec.composeFrom(message_);
-        address originalSender = OFTComposeMsgCodec.bytes32ToAddress(composeFromBytes);
+        // ---------------- Decode the message
+        uint amountLD = OFTComposeMsgCodec.amountLD(message_);
+        address recipient = abi.decode(OFTComposeMsgCodec.composeMsg(message_), (address));
 
-        // Decode your custom compose message
-        bytes memory composeMsg = OFTComposeMsgCodec.composeMsg(message_);
-        (address recipient, uint256 minAmountOut) = abi.decode(composeMsg, (address, uint256));
+        // ---------------- state STBL for the user
+        IERC20(IXSTBL($.xToken).STBL()).forceApprove($.xToken, amountLD);
+        IXSTBL($.xToken).takeFromBridge(recipient, amountLD);
 
-        // todo stake received STBL to xSTBL for the recipient
-        // todo emit TokenSwapped(originalSender, recipient, amountLD, amountOut);
-
-        console.log("srcEid", srcEid);
-        console.log("originalSender", originalSender);
-        console.log("amountLD", amountLD);
-        console.log("recipient", recipient);
-        console.log("composeMsg");
-        console.logBytes(composeMsg);
-        console.log("recipient", recipient);
-        console.log("minAmountOut", minAmountOut);
+        emit Staked(recipient, srcEid, amountLD);
     }
 
     //endregion --------------------------------- IOAppComposer
 
     //region --------------------------------- Internal utils
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                     Internal utils                         */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     function _getStorage() internal pure returns (XTokenBridgeStorage storage $) {
         //slither-disable-next-line assembly

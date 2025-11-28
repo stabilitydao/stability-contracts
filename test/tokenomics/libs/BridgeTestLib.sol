@@ -81,7 +81,6 @@ library BridgeTestLib {
         address xTokenBridge;
     }
 
-
     //region ------------------------------------- Create contracts
     function setupSTBLBridged(Vm vm, BridgeTestLib.ChainConfig memory chain) internal returns (address) {
         vm.selectFork(chain.fork);
@@ -104,6 +103,7 @@ library BridgeTestLib {
 
         return address(stblOFTAdapter);
     }
+
     //endregion ------------------------------------- Create contracts
 
     //region ------------------------------------- Chains
@@ -164,7 +164,11 @@ library BridgeTestLib {
     //endregion ------------------------------------- Chains
 
     //region ------------------------------------- Setup bridges
-    function setUpSonicAvalanche(Vm vm, BridgeTestLib.ChainConfig memory sonic, BridgeTestLib.ChainConfig memory avalanche) internal {
+    function setUpSonicAvalanche(
+        Vm vm,
+        BridgeTestLib.ChainConfig memory sonic,
+        BridgeTestLib.ChainConfig memory avalanche
+    ) internal {
         // ------------------- Set up layer zero on Sonic
         _setupLayerZeroConfig(vm, sonic, avalanche, true);
 
@@ -188,7 +192,11 @@ library BridgeTestLib {
         _setPeers(vm, sonic, avalanche);
     }
 
-    function setUpSonicPlasma(Vm vm, BridgeTestLib.ChainConfig memory sonic, BridgeTestLib.ChainConfig memory plasma) internal {
+    function setUpSonicPlasma(
+        Vm vm,
+        BridgeTestLib.ChainConfig memory sonic,
+        BridgeTestLib.ChainConfig memory plasma
+    ) internal {
         // ------------------- Set up sending chain for Sonic:Plasma
         _setupLayerZeroConfig(vm, sonic, plasma, true);
 
@@ -212,7 +220,11 @@ library BridgeTestLib {
         _setPeers(vm, sonic, plasma);
     }
 
-    function setUpAvalanchePlasma(Vm vm, BridgeTestLib.ChainConfig memory avalanche, BridgeTestLib.ChainConfig memory plasma) internal {
+    function setUpAvalanchePlasma(
+        Vm vm,
+        BridgeTestLib.ChainConfig memory avalanche,
+        BridgeTestLib.ChainConfig memory plasma
+    ) internal {
         // ------------------- Set up sending chain for Avalanche:Plasma
         _setupLayerZeroConfig(vm, avalanche, plasma, true);
 
@@ -231,33 +243,39 @@ library BridgeTestLib {
         // ------------------- set peers
         _setPeers(vm, avalanche, plasma);
     }
+
     //endregion ------------------------------------- Setup bridges
 
     //region ------------------------------------- Layer zero utils
-    function _setupLayerZeroConfig(Vm vm, BridgeTestLib.ChainConfig memory src, BridgeTestLib.ChainConfig memory dst, bool setupBothWays) internal {
+    function _setupLayerZeroConfig(
+        Vm vm,
+        BridgeTestLib.ChainConfig memory src,
+        BridgeTestLib.ChainConfig memory dst,
+        bool setupBothWays
+    ) internal {
         vm.selectFork(src.fork);
 
         if (src.sendLib != address(0)) {
             // Set send library for outbound messages
             vm.prank(src.multisig);
             ILayerZeroEndpointV2(src.endpoint)
-            .setSendLibrary(
-                src.oapp, // OApp address
-                dst.endpointId, // Destination chain EID
-                src.sendLib // SendUln302 address
-            );
+                .setSendLibrary(
+                    src.oapp, // OApp address
+                    dst.endpointId, // Destination chain EID
+                    src.sendLib // SendUln302 address
+                );
         }
 
         // Set receive library for inbound messages
         if (setupBothWays) {
             vm.prank(src.multisig);
             ILayerZeroEndpointV2(src.endpoint)
-            .setReceiveLibrary(
-                src.oapp, // OApp address
-                dst.endpointId, // Source chain EID
-                src.receiveLib, // ReceiveUln302 address
-                GRACE_PERIOD // Grace period for library switch
-            );
+                .setReceiveLibrary(
+                    src.oapp, // OApp address
+                    dst.endpointId, // Source chain EID
+                    src.receiveLib, // ReceiveUln302 address
+                    GRACE_PERIOD // Grace period for library switch
+                );
         }
     }
 
@@ -423,22 +441,19 @@ library BridgeTestLib {
     }
 
     /// @notice Extract PacketSent message from emitted event
-    function _extractComposeMessage(Vm.Log[] memory logs) internal pure returns (bytes memory message) {
-        bytes memory encodedPayload;
+    function _extractComposeMessage(Vm
+                .Log[] memory logs) internal pure returns (address from, address to, bytes memory message) {
         bytes32 sig = keccak256("ComposeSent(address,address,bytes32,uint16,bytes)"); // ComposeSent(address from, address to, bytes32 guid, uint16 index, bytes message)
 
         for (uint i; i < logs.length; ++i) {
             if (logs[i].topics[0] == sig) {
-                (address from, address to,,, bytes memory _message) = abi.decode(logs[i].data, (address, address, bytes32, uint16, bytes));
-                console.log("ComposeSent from,to,message:", from, to);
-                console.logBytes(_message);
-                message = _message;
+                (from, to,,, message) = abi.decode(logs[i].data, (address, address, bytes32, uint16, bytes));
                 break;
             }
         }
 
         //        console.logBytes(message);
-        return message;
+        return (from, to, message);
     }
 
     //endregion ------------------------------------- Layer zero utils

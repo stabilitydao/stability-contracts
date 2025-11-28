@@ -119,6 +119,7 @@ contract BridgedPriceOracle is Controllable, OAppUpgradeable, IBridgedPriceOracl
 
         require(messageFormat == OAppEncodingLib.MESSAGE_FORMAT_PRICE_USD18_1, InvalidMessageFormat());
 
+        // todo check current price timestamp, don't update if the received one is older than the stored one
         $.lastPriceInfo = PriceInfo({price: price, timestamp: timestamp});
 
         emit PriceUpdated(price, block.timestamp);

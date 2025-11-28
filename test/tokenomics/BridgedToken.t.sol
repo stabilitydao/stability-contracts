@@ -91,7 +91,6 @@ contract BridgedTokenTest is Test {
         vm.selectFork(sonic.fork);
         assertEq(adapter.owner(), sonic.multisig, "sonic.multisig is owner");
 
-
         sonic.oapp = address(adapter);
         avalanche.oapp = address(bridgedTokenAvalanche);
         plasma.oapp = address(bridgedTokenPlasma);
@@ -104,7 +103,6 @@ contract BridgedTokenTest is Test {
 
         // ------------------- Set up Avalanche:Plasma
         BridgeTestLib.setUpAvalanchePlasma(vm, avalanche, plasma);
-
     }
 
     //region ------------------------------------- Unit tests for bridgedTokenAvalanche
@@ -145,7 +143,9 @@ contract BridgedTokenTest is Test {
         assertEq(bridgedTokenAvalanche.owner(), avalanche.multisig, "BridgedToken - owner");
         assertEq(bridgedTokenAvalanche.token(), address(bridgedTokenAvalanche), "BridgedToken - token");
         assertEq(bridgedTokenAvalanche.approvalRequired(), false, "BridgedToken - approvalRequired");
-        assertEq(bridgedTokenAvalanche.sharedDecimals(), BridgeTestLib.SHARED_DECIMALS, "BridgedToken - shared decimals");
+        assertEq(
+            bridgedTokenAvalanche.sharedDecimals(), BridgeTestLib.SHARED_DECIMALS, "BridgedToken - shared decimals"
+        );
     }
 
     function testBridgedTokenPause() public {

@@ -37,7 +37,7 @@ interface IXSTBL {
     event ExemptionTo(address indexed candidate, bool status, bool success);
     event Rebase(address indexed caller, uint amount);
     event SendToBridge(address indexed user, uint amount);
-    event ReceiveFromBridge(address indexed user, uint amount);
+    event ReceivedFromBridge(address indexed user, uint amount);
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      WRITE FUNCTIONS                       */
@@ -77,7 +77,7 @@ interface IXSTBL {
 
     /// @notice Mint given {amount} of xSTBL for the given {user} after receiving STBL from the SBTL-bridge.
     /// @custom:restricted This function can only be called by XTokenBridge contract.
-    function receiveFromBridge(address user, uint amount) external;
+    function takeFromBridge(address user, uint amount) external;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      VIEW FUNCTIONS                        */

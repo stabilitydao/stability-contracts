@@ -250,30 +250,29 @@ contract XSTBLTest is Test, MockSetup {
         {
             vm.expectRevert(IControllable.IncorrectZeroArgument.selector);
             vm.prank(bridge);
-            xStbl.receiveFromBridge(address(0), 1e18);
+            xStbl.takeFromBridge(address(0), 1e18);
 
             vm.expectRevert(IControllable.IncorrectZeroArgument.selector);
             vm.prank(bridge);
-            xStbl.receiveFromBridge(user, 0);
+            xStbl.takeFromBridge(user, 0);
 
             vm.expectRevert(IControllable.IncorrectMsgSender.selector);
             vm.prank(user);
-            xStbl.receiveFromBridge(bridge, 1e18);
+            xStbl.takeFromBridge(bridge, 1e18);
 
             vm.prank(bridge);
             tokenA.approve(address(xStbl), 40e18);
 
             vm.prank(bridge);
-            xStbl.receiveFromBridge(user, 40e18);
+            xStbl.takeFromBridge(user, 40e18);
         }
 
-        assertEq(IERC20(address(xStbl)).balanceOf(user), 100e18, "user xSTBL balance after receiveFromBridge");
-        assertEq(IERC20(address(tokenA)).balanceOf(address(xStbl)), 100e18, "locked STBL balance after receiveFromBridge");
-        assertEq(IERC20(address(tokenA)).balanceOf(user), 0, "user STBL balance after receiveFromBridge");
-        assertEq(IERC20(address(tokenA)).balanceOf(bridge), 0, "bridge STBL balance after receiveFromBridge");
-
-
+        assertEq(IERC20(address(xStbl)).balanceOf(user), 100e18, "user xSTBL balance after takeFromBridge");
+        assertEq(IERC20(address(tokenA)).balanceOf(address(xStbl)), 100e18, "locked STBL balance after takeFromBridge");
+        assertEq(IERC20(address(tokenA)).balanceOf(user), 0, "user STBL balance after takeFromBridge");
+        assertEq(IERC20(address(tokenA)).balanceOf(bridge), 0, "bridge STBL balance after takeFromBridge");
     }
+
     //endregion --------------------- Tests
 
     //region --------------------- Helpers

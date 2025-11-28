@@ -8,6 +8,7 @@ import {XStaking} from "../../src/tokenomics/XStaking.sol";
 import {XTokenBridge} from "../../src/tokenomics/XTokenBridge.sol";
 import {OptionsBuilder} from "@layerzerolabs/oapp-evm/contracts/oapp/libs/OptionsBuilder.sol";
 import {IXSTBL} from "../../src/interfaces/IXSTBL.sol";
+import {IControllable} from "../../src/interfaces/IControllable.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
 import {IXTokenBridge} from "../../src/interfaces/IXTokenBridge.sol";
 import {PacketV1Codec} from "@layerzerolabs/lz-evm-protocol-v2/contracts/messagelib/libs/PacketV1Codec.sol";
@@ -23,7 +24,7 @@ import {MessagingFee} from "@layerzerolabs/oft-evm/contracts/interfaces/IOFT.sol
 import {Origin} from "@layerzerolabs/oapp-evm/contracts/oapp/interfaces/IOAppReceiver.sol";
 import {Proxy} from "../../src/core/proxy/Proxy.sol";
 import {IOAppReceiver} from "@layerzerolabs/oapp-evm/contracts/oapp/interfaces/IOAppReceiver.sol";
-import { IOAppComposer } from "@layerzerolabs/oapp-evm/contracts/oapp/interfaces/IOAppComposer.sol";
+import {IOAppComposer} from "@layerzerolabs/oapp-evm/contracts/oapp/interfaces/IOAppComposer.sol";
 
 contract XTokenBridgeTest is Test {
     using OptionsBuilder for bytes;
@@ -36,7 +37,9 @@ contract XTokenBridgeTest is Test {
     uint private constant PLASMA_FORK_BLOCK = 5398928; // Nov-5-2025 07:38:59 UTC
 
     /// @dev Gas limit for executor lzReceive calls
-    uint128 private constant GAS_LIMIT = 100_000;
+    uint128 private constant GAS_LIMIT_LZRECEIVE = 90_000;
+    /// @dev Gas limit for executor lzCompose calls
+    uint128 private constant GAS_LIMIT_LZCOMPOSE = 120_000;
 
     StabilityOFTAdapter internal adapter;
     BridgedToken internal bridgedTokenAvalanche;
@@ -62,6 +65,7 @@ contract XTokenBridgeTest is Test {
         ChainResults targetAfter;
         uint nativeFee;
     }
+
     //endregion ------------------------------------- Constants, data types, variables
 
     //region ------------------------------------- Constructor
@@ -95,10 +99,6 @@ contract XTokenBridgeTest is Test {
         avalanche.xTokenBridge = createXTokenBridge(avalanche);
         plasma.xTokenBridge = createXTokenBridge(plasma);
 
-        _setXTokenBridge(sonic, avalanche, plasma);
-        _setXTokenBridge(avalanche, sonic, plasma);
-        _setXTokenBridge(plasma, sonic, avalanche);
-
         _setXSTBLBridge(sonic);
         _setXSTBLBridge(avalanche);
         _setXSTBLBridge(plasma);
@@ -118,16 +118,133 @@ contract XTokenBridgeTest is Test {
         vm.selectFork(avalanche.fork);
         deal(address(this), 1 ether);
     }
+
     //endregion ------------------------------------- Constructor
 
     //region ------------------------------------- Unit tests
-    // todo
+    function testStorage() public pure {
+        bytes32 h = keccak256(abi.encode(uint(keccak256("erc7201:stability.XTokenBridge")) - 1)) & ~bytes32(uint(0xff));
+        assertEq(h, 0x7331a1638fe957f8dc3395f52254374f52b3cbbdf185d4405a764a49dfb7f400, "storage hash");
+    }
+
+    function testViewSonic() public {
+        vm.selectFork(sonic.fork);
+
+        IXTokenBridge xTokenBridge = IXTokenBridge(sonic.xTokenBridge);
+        assertEq(xTokenBridge.bridge(), sonic.oapp, "sonic: bridge");
+        assertEq(xTokenBridge.xToken(), sonic.xToken, "sonic: xToken");
+    }
+
+    function testSetXTokenBridge() public {
+        vm.selectFork(sonic.fork);
+
+        IXTokenBridge xTokenBridge = IXTokenBridge(sonic.xTokenBridge);
+
+        uint32[] memory dstEids = new uint32[](2);
+        dstEids[0] = avalanche.endpointId;
+        dstEids[1] = plasma.endpointId;
+        address[] memory listXTokenBridges = new address[](2);
+        listXTokenBridges[0] = avalanche.xTokenBridge;
+        listXTokenBridges[1] = plasma.xTokenBridge;
+
+        // ------------------- bad paths
+        vm.expectRevert(IControllable.NotGovernanceAndNotMultisig.selector);
+        vm.prank(address(0x1234));
+        xTokenBridge.setXTokenBridge(new uint32[](0), new address[](0));
+
+        vm.expectRevert(IControllable.IncorrectArrayLength.selector);
+        vm.prank(sonic.multisig);
+        xTokenBridge.setXTokenBridge(dstEids, new address[](0));
+
+        vm.expectRevert(IControllable.IncorrectArrayLength.selector);
+        vm.prank(sonic.multisig);
+        xTokenBridge.setXTokenBridge(new uint32[](1), listXTokenBridges);
+
+        // ------------------- good paths
+        assertEq(xTokenBridge.xTokenBridge(avalanche.endpointId), address(0), "before: avalanche bridge");
+        assertEq(xTokenBridge.xTokenBridge(plasma.endpointId), address(0), "before: plasma bridge");
+
+        vm.prank(sonic.multisig);
+        xTokenBridge.setXTokenBridge(dstEids, listXTokenBridges);
+
+        assertEq(xTokenBridge.xTokenBridge(avalanche.endpointId), avalanche.xTokenBridge, "after: avalanche bridge");
+        assertEq(xTokenBridge.xTokenBridge(plasma.endpointId), plasma.xTokenBridge, "after: plasma bridge");
+
+        dstEids = new uint32[](1);
+        dstEids[0] = avalanche.endpointId;
+
+        vm.prank(sonic.multisig);
+        xTokenBridge.setXTokenBridge(dstEids, new address[](1));
+
+        assertEq(xTokenBridge.xTokenBridge(avalanche.endpointId), address(0), "avalanche bridge is cleared");
+        assertEq(xTokenBridge.xTokenBridge(plasma.endpointId), plasma.xTokenBridge, "after: plasma bridge");
+    }
+
+    function testSetLzToken() public {
+        vm.selectFork(sonic.fork);
+
+        IXTokenBridge xTokenBridge = IXTokenBridge(sonic.xTokenBridge);
+
+        // ------------------- bad paths
+        vm.expectRevert(IControllable.NotOperator.selector);
+        vm.prank(address(0x1234));
+        xTokenBridge.setLzToken(address(1));
+
+        // ------------------- good paths
+        assertEq(xTokenBridge.lzToken(), address(0), "before: lzToken");
+
+        vm.prank(sonic.multisig);
+        xTokenBridge.setLzToken(address(1));
+
+        assertEq(xTokenBridge.lzToken(), address(1), "after: lzToken");
+
+        vm.prank(sonic.multisig);
+        xTokenBridge.setLzToken(address(0));
+
+        assertEq(xTokenBridge.lzToken(), address(0), "after reset: lzToken");
+    }
+
+    function testSalvage() public {
+        vm.selectFork(sonic.fork);
+        address receiver = makeAddr("receiver");
+
+        IXTokenBridge xTokenBridge = IXTokenBridge(sonic.xTokenBridge);
+        IERC20 stbl = IERC20(IXSTBL(sonic.xToken).STBL());
+
+        // ------------------- send some STBL to the xTokenBridge
+        deal(address(stbl), address(this), 100e18);
+        stbl.approve(address(xTokenBridge), 100e18);
+        stbl.safeTransfer(address(xTokenBridge), 100e18);
+
+        assertEq(stbl.balanceOf(address(xTokenBridge)), 100e18, "before: bridge STBL balance");
+        assertEq(stbl.balanceOf(receiver), 0, "before: multisig STBL balance");
+
+        // ------------------- bad paths
+        vm.expectRevert(IControllable.NotGovernanceAndNotMultisig.selector);
+        vm.prank(address(0x1234));
+        xTokenBridge.salvage(address(stbl), 70e18, receiver);
+
+        // ------------------- good paths
+        vm.prank(sonic.multisig);
+        xTokenBridge.salvage(address(stbl), 70e18, receiver);
+
+        assertEq(stbl.balanceOf(address(xTokenBridge)), 30e18, "after 1: bridge STBL balance");
+        assertEq(stbl.balanceOf(receiver), 70e18, "after 1: receiver STBL balance");
+
+        vm.prank(sonic.multisig);
+        xTokenBridge.salvage(address(stbl), 0, receiver);
+
+        assertEq(stbl.balanceOf(address(xTokenBridge)), 0, "after 2: bridge STBL balance");
+        assertEq(stbl.balanceOf(receiver), 100e18, "after 2: receiver STBL balance");
+    }
 
     //endregion ------------------------------------- Unit tests
 
     //region ------------------------------------- Send XSTBL between chains
     function testSendXSTBLFromSonicToPlasma() public {
         Results memory r;
+
+        _setUpXTokenBridges();
 
         // --------------- initial state on plasma
         vm.selectFork(plasma.fork);
@@ -144,21 +261,13 @@ contract XTokenBridgeTest is Test {
         vm.selectFork(sonic.fork);
         r.srcBefore = getBalances(sonic, address(this));
 
-        bytes memory options = OptionsBuilder.newOptions().addExecutorLzReceiveOption(GAS_LIMIT, 0);
-        MessagingFee memory msgFee = IXTokenBridge(sonic.xTokenBridge).quoteSend(
-            plasma.endpointId,
-            70e18,
-            options,
-            false
-        );
+        bytes memory options =
+            OptionsBuilder.newOptions().addExecutorLzReceiveOption(GAS_LIMIT_LZRECEIVE + GAS_LIMIT_LZCOMPOSE, 0);
+        MessagingFee memory msgFee =
+            IXTokenBridge(sonic.xTokenBridge).quoteSend(plasma.endpointId, 70e18, options, false);
 
         vm.recordLogs();
-        IXTokenBridge(sonic.xTokenBridge).send{value: msgFee.nativeFee}(
-            plasma.endpointId,
-            70e18,
-            msgFee,
-            options
-        );
+        IXTokenBridge(sonic.xTokenBridge).send{value: msgFee.nativeFee}(plasma.endpointId, 70e18, msgFee, options);
         bytes memory message = BridgeTestLib._extractSendMessage(vm.getRecordedLogs());
 
         // --------------- Simulate message receiving on Plasma
@@ -170,36 +279,24 @@ contract XTokenBridgeTest is Test {
             nonce: 1
         });
 
-        console.log("lzReceive");
+        // --------------- lzReceive
         {
             uint gasBefore = gasleft();
             vm.recordLogs();
             vm.prank(plasma.endpoint);
-            IOAppReceiver(plasma.oapp).lzReceive(
-                origin,
-                bytes32(0), // guid: actual value doesn't matter
-                message,
-                address(0), // executor
-                "" // extraData
-            );
-            assertLt(gasBefore - gasleft(), GAS_LIMIT, "lzReceive gas limit exceeded");
+            IOAppReceiver(plasma.oapp)
+                .lzReceive(
+                    origin,
+                    bytes32(0), // guid: actual value doesn't matter
+                    message,
+                    address(0), // executor
+                    "" // extraData
+                );
+            assertLt(gasBefore - gasleft(), GAS_LIMIT_LZRECEIVE, "lzReceive gas limit exceeded");
             console.log("gasBefore - gasleft() (lzReceive):", gasBefore - gasleft());
         }
-        {
-            bytes memory composeMessage = BridgeTestLib._extractComposeMessage(vm.getRecordedLogs());
-            uint gasBefore = gasleft();
-            vm.recordLogs();
-            vm.prank(plasma.endpoint);
-            IOAppComposer(plasma.xTokenBridge).lzCompose(
-                plasma.oapp,
-                bytes32(0), // guid: actual value doesn't matter
-                composeMessage,
-                address(0), // executor
-                "" // extraData
-            );
-            assertLt(gasBefore - gasleft(), GAS_LIMIT, "lzCompoze gas limit exceeded");
-            console.log("gasBefore - gasleft() (compose):", gasBefore - gasleft());
-        }
+
+        // --------------- lzCompose
 
         // see comment from OFTCore:
         // @dev Stores the lzCompose payload that will be executed in a separate tx.
@@ -211,7 +308,26 @@ contract XTokenBridgeTest is Test {
         // interface IMessagingComposer {
         // event ComposeSent(address from, address to, bytes32 guid, uint16 index, bytes message);
 
+        {
+            (address from, address to, bytes memory composeMessage) =
+                BridgeTestLib._extractComposeMessage(vm.getRecordedLogs());
+            uint gasBefore = gasleft();
+            vm.recordLogs();
+            vm.prank(plasma.endpoint);
+            IOAppComposer(plasma.xTokenBridge)
+                .lzCompose(
+                    plasma.oapp,
+                    bytes32(0), // guid: actual value doesn't matter
+                    composeMessage,
+                    address(0), // executor
+                    "" // extraData
+                );
+            assertLt(gasBefore - gasleft(), GAS_LIMIT_LZCOMPOSE, "lzCompoze gas limit exceeded");
+            console.log("gasBefore - gasleft() (compose):", gasBefore - gasleft());
 
+            assertEq(from, plasma.oapp, "invalid compose from");
+            assertEq(to, address(plasma.xTokenBridge), "invalid compose to");
+        }
 
         r.targetAfter = getBalances(plasma, address(this));
 
@@ -220,27 +336,44 @@ contract XTokenBridgeTest is Test {
         r.srcAfter = getBalances(sonic, address(this));
 
         // --------------- Verify results
-        // todo
-        showResults(r);
 
-        console.log("user", address(this));
-        console.log("sonic.xToken", sonic.xToken);
-        console.log("sonic.oapp", sonic.oapp);
-        console.log("sonic.xTokenBridge", sonic.xTokenBridge);
-        console.log("sonic.STBL", IXSTBL(sonic.xToken).STBL());
+        assertEq(r.srcBefore.balanceUserXSTBL, 100e18, "sonic: user xSTBL before");
+        assertEq(r.srcAfter.balanceUserXSTBL, 30e18, "sonic: user xSTBL after");
+        assertEq(r.targetBefore.balanceUserXSTBL, 0, "plasma: user xSTBL before");
+        assertEq(r.targetAfter.balanceUserXSTBL, 70e18, "plasma: user xSTBL after");
 
-        vm.selectFork(plasma.fork);
-        console.log("plasma.xToken", plasma.xToken);
-        console.log("plasma.oapp", plasma.oapp);
-        console.log("plasma.xTokenBridge", plasma.xTokenBridge);
-        console.log("plasma.STBL", IXSTBL(plasma.xToken).STBL());
+        assertEq(r.srcBefore.balanceXTokenBridgeSTBL, 0, "sonic: xTokenBridge STBL before");
+        assertEq(r.srcAfter.balanceXTokenBridgeSTBL, 0, "sonic: xTokenBridge STBL after");
+        assertEq(r.targetBefore.balanceXTokenBridgeSTBL, 0, "plasma: xTokenBridge STBL before");
+        assertEq(r.targetAfter.balanceXTokenBridgeSTBL, 0, "plasma: xTokenBridge STBL after");
+
+        assertEq(r.srcAfter.balanceXTokenSTBL, r.srcBefore.balanceXTokenSTBL - 70e18, "sonic: xToken STBL after");
+        assertEq(r.targetAfter.balanceXTokenSTBL, 70e18, "plasma: STBL staked to XSTBL");
+
+        assertEq(r.srcAfter.balanceOappSTBL, 70e18, "sonic: expected amount of locked STBL in the bridge");
+
+        //        showResults(r);
+        //
+        //        console.log("user", address(this));
+        //        console.log("sonic.xToken", sonic.xToken);
+        //        console.log("sonic.oapp", sonic.oapp);
+        //        console.log("sonic.xTokenBridge", sonic.xTokenBridge);
+        //        console.log("sonic.STBL", IXSTBL(sonic.xToken).STBL());
+        //
+        //        vm.selectFork(plasma.fork);
+        //        console.log("plasma.xToken", plasma.xToken);
+        //        console.log("plasma.oapp", plasma.oapp);
+        //        console.log("plasma.xTokenBridge", plasma.xTokenBridge);
+        //        console.log("plasma.STBL", IXSTBL(plasma.xToken).STBL());
     }
 
     //endregion ------------------------------------- Send XSTBL between chains
 
-
     //region ------------------------------------- Internal utils
-    function getBalances(BridgeTestLib.ChainConfig memory chain, address user) internal view returns (ChainResults memory results) {
+    function getBalances(
+        BridgeTestLib.ChainConfig memory chain,
+        address user
+    ) internal view returns (ChainResults memory results) {
         IERC20 stbl = IERC20(IXSTBL(chain.xToken).STBL());
 
         results.balanceUserSTBL = stbl.balanceOf(user);
@@ -260,12 +393,13 @@ contract XTokenBridgeTest is Test {
         Proxy xSTBLProxy = new Proxy();
         xSTBLProxy.initProxy(address(new XSTBL()));
 
-        XSTBL(address(xSTBLProxy)).initialize(
-            address(chain.platform),
-            chain.oapp,
-            address(xStakingProxy),
-            address(0) // todo probably zero is not enough for all tests
-        );
+        XSTBL(address(xSTBLProxy))
+            .initialize(
+                address(chain.platform),
+                chain.oapp,
+                address(xStakingProxy),
+                address(0) // todo probably zero is not enough for all tests
+            );
 
         XStaking(address(xStakingProxy)).initialize(address(chain.platform), address(xSTBLProxy));
 
@@ -323,6 +457,13 @@ contract XTokenBridgeTest is Test {
         vm.prank(chain.multisig);
         IXSTBL(chain.xToken).setBridge(chain.xTokenBridge, true);
     }
+
+    function _setUpXTokenBridges() internal {
+        _setXTokenBridge(sonic, avalanche, plasma);
+        _setXTokenBridge(avalanche, sonic, plasma);
+        _setXTokenBridge(plasma, sonic, avalanche);
+    }
+
     //endregion ------------------------------------- Internal utils
 
     //region ------------------------------------- Helpers
@@ -338,8 +479,8 @@ contract XTokenBridgeTest is Test {
         proxies[0] = SonicConstantsLib.TOKEN_XSTBL;
         implementations[0] = address(new XSTBL());
 
-//        vm.startPrank(SonicConstantsLib.MULTISIG);
-//        platform.cancelUpgrade();
+        //        vm.startPrank(SonicConstantsLib.MULTISIG);
+        //        platform.cancelUpgrade();
 
         vm.startPrank(SonicConstantsLib.MULTISIG);
         platform.announcePlatformUpgrade("2025.10.02-alpha", proxies, implementations);

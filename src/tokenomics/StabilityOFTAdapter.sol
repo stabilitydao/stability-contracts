@@ -18,7 +18,7 @@ contract StabilityOFTAdapter is Controllable, OFTAdapterUpgradeable, IStabilityO
 
     // keccak256(abi.encode(uint(keccak256("erc7201:stability.StabilityOFTAdapter")) - 1)) & ~bytes32(uint(0xff));
     bytes32 internal constant STABILITY_OFT_ADAPTER_STORAGE_LOCATION =
-    0xc2fe35575ba2043e2e48d6fdb6b1fc90678ceafd17da235789a1487ce75a9a00;
+        0xc2fe35575ba2043e2e48d6fdb6b1fc90678ceafd17da235789a1487ce75a9a00;
 
     /// @custom:storage-location erc7201:stability.StabilityOFTAdapter
     struct StabilityOftAdapterStorage {

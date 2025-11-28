@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {console} from "forge-std/console.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
@@ -20,7 +19,7 @@ import {IStabilityDAO} from "../interfaces/IStabilityDAO.sol";
 /// @author Jude (https://github.com/iammrjude)
 /// @author Omriss (https://github.com/omriss)
 /// Changelog:
-///  1.2.0: add list of bridges, sendToBridge, receiveFromBridge - #424
+///  1.2.0: add list of bridges, sendToBridge, takeFromBridge - #424
 ///  1.1.0: add possibility to change the slashing penalty value - #406
 ///  1.0.1: use SafeERC20.safeTransfer/safeTransferFrom instead of ERC20 transfer/transferFrom
 contract XSTBL is Controllable, ERC20Upgradeable, IXSTBL {
@@ -193,6 +192,7 @@ contract XSTBL is Controllable, ERC20Upgradeable, IXSTBL {
         XstblStorage storage $ = _getXSTBLStorage();
         $.bridges[bridge_] = status_;
     }
+
     //endregion ---------------------------- Restricted actions
 
     //region ---------------------------- User actions
@@ -316,6 +316,7 @@ contract XSTBL is Controllable, ERC20Upgradeable, IXSTBL {
             emit ExitVesting(msg.sender, vestID_, _amount, exitedAmount);
         }
     }
+
     //endregion ---------------------------- User actions
 
     //region ---------------------------- Bridge actions
@@ -325,7 +326,6 @@ contract XSTBL is Controllable, ERC20Upgradeable, IXSTBL {
 
     /// @inheritdoc IXSTBL
     function sendToBridge(address user_, uint amount_) external onlyBridge {
-        console.log("XSTBL.sendToBridge user, amount", user_, amount_);
         XstblStorage storage $ = _getXSTBLStorage();
         require(amount_ != 0 && user_ != address(0), IncorrectZeroArgument());
 
@@ -339,8 +339,7 @@ contract XSTBL is Controllable, ERC20Upgradeable, IXSTBL {
     }
 
     /// @inheritdoc IXSTBL
-    function receiveFromBridge(address user_, uint amount_) external onlyBridge {
-        console.log("XSTBL.receiveFromBridge user, amount", user_, amount_);
+    function takeFromBridge(address user_, uint amount_) external onlyBridge {
         require(amount_ != 0 && user_ != address(0), IncorrectZeroArgument());
 
         /// @dev transfer from the bridge to this address
@@ -351,8 +350,9 @@ contract XSTBL is Controllable, ERC20Upgradeable, IXSTBL {
         _mint(user_, amount_);
 
         /// @dev emit an event for conversion
-        emit ReceiveFromBridge(user_, amount_);
+        emit ReceivedFromBridge(user_, amount_);
     }
+
     //endregion ---------------------------- Bridge actions
 
     //region ---------------------------- View functions
