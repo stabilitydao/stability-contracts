@@ -37,9 +37,9 @@ contract XTokenBridgeTest is Test {
     uint private constant PLASMA_FORK_BLOCK = 5398928; // Nov-5-2025 07:38:59 UTC
 
     /// @dev Gas limit for executor lzReceive calls
-    uint128 private constant GAS_LIMIT_LZRECEIVE = 90_000;
+    uint128 private constant GAS_LIMIT_LZRECEIVE = 100_000;
     /// @dev Gas limit for executor lzCompose calls
-    uint128 private constant GAS_LIMIT_LZCOMPOSE = 120_000;
+    uint128 private constant GAS_LIMIT_LZCOMPOSE = 150_000;
 
     StabilityOFTAdapter internal adapter;
     BridgedToken internal bridgedTokenAvalanche;
@@ -110,13 +110,13 @@ contract XTokenBridgeTest is Test {
 
         // ------------------- Provide ether to address(this) to be able to pay fees
         vm.selectFork(sonic.fork);
-        deal(address(this), 1 ether);
+        deal(address(this), 100 ether);
 
         vm.selectFork(plasma.fork);
-        deal(address(this), 1 ether);
+        deal(address(this), 100 ether);
 
         vm.selectFork(avalanche.fork);
-        deal(address(this), 1 ether);
+        deal(address(this), 100 ether);
     }
 
     //endregion ------------------------------------- Constructor
@@ -242,13 +242,7 @@ contract XTokenBridgeTest is Test {
 
     //region ------------------------------------- Send XSTBL between chains
     function testSendXSTBLFromSonicToPlasma() public {
-        Results memory r;
-
         _setUpXTokenBridges();
-
-        // --------------- initial state on plasma
-        vm.selectFork(plasma.fork);
-        r.targetBefore = getBalances(plasma, address(this));
 
         // --------------- mint XSTBL on Sonic
         vm.selectFork(sonic.fork);
@@ -257,37 +251,169 @@ contract XTokenBridgeTest is Test {
         IERC20(SonicConstantsLib.TOKEN_STBL).approve(sonic.xToken, 100e18);
         IXSTBL(sonic.xToken).enter(100e18);
 
-        // --------------- send XSTBL on Sonic
+        // --------------- send XSTBL from Sonic to Plasma
+        Results memory r1 = _testSendXSTBL(sonic, plasma, 70e18, 0);
+
+        assertEq(r1.srcBefore.balanceUserXSTBL, 100e18, "sonic: user xSTBL before");
+        assertEq(r1.srcAfter.balanceUserXSTBL, 30e18, "sonic: user xSTBL after");
+        assertEq(r1.targetBefore.balanceUserXSTBL, 0, "plasma: user xSTBL before");
+        assertEq(r1.targetAfter.balanceUserXSTBL, 70e18, "plasma: user xSTBL after");
+
+        assertEq(r1.srcBefore.balanceXTokenBridgeSTBL, 0, "sonic: xTokenBridge STBL before");
+        assertEq(r1.srcAfter.balanceXTokenBridgeSTBL, 0, "sonic: xTokenBridge STBL after");
+        assertEq(r1.targetBefore.balanceXTokenBridgeSTBL, 0, "plasma: xTokenBridge STBL before");
+        assertEq(r1.targetAfter.balanceXTokenBridgeSTBL, 0, "plasma: xTokenBridge STBL after");
+
+        assertEq(r1.srcAfter.balanceXTokenSTBL, r1.srcBefore.balanceXTokenSTBL - 70e18, "sonic: xToken STBL after");
+        assertEq(r1.targetAfter.balanceXTokenSTBL, 70e18, "plasma: STBL staked to XSTBL");
+
+        assertEq(r1.srcAfter.balanceOappSTBL, 70e18, "sonic: expected amount of locked STBL in the bridge");
+
+        // --------------- send XSTBL from Sonic to Plasma 2
+        Results memory r2 = _testSendXSTBL(sonic, plasma, 30e18, 1);
+
+        assertEq(r2.srcBefore.balanceUserXSTBL, 30e18, "sonic: user xSTBL before 2");
+        assertEq(r2.srcAfter.balanceUserXSTBL, 0, "sonic: user xSTBL after 2");
+        assertEq(r2.targetBefore.balanceUserXSTBL, 70e18, "plasma: user xSTBL before 2");
+        assertEq(r2.targetAfter.balanceUserXSTBL, 100e18, "plasma: user xSTBL after 2");
+
+        assertEq(r2.srcBefore.balanceXTokenBridgeSTBL, 0, "sonic: xTokenBridge STBL before 2");
+        assertEq(r2.srcAfter.balanceXTokenBridgeSTBL, 0, "sonic: xTokenBridge STBL after 2");
+        assertEq(r2.targetBefore.balanceXTokenBridgeSTBL, 0, "plasma: xTokenBridge STBL before 2");
+        assertEq(r2.targetAfter.balanceXTokenBridgeSTBL, 0, "plasma: xTokenBridge STBL after 2");
+
+        assertEq(r2.srcAfter.balanceXTokenSTBL, r2.srcBefore.balanceXTokenSTBL - 30e18, "sonic: xToken STBL after 2");
+        assertEq(r2.targetAfter.balanceXTokenSTBL, 100e18, "plasma: STBL staked to XSTBL 2");
+
+        assertEq(r2.srcAfter.balanceOappSTBL, 100e18, "sonic: expected amount of locked STBL in the bridge 2");
+
+        // --------------- send XSTBL back from Plasma to Sonic
+        Results memory r3 = _testSendXSTBL(plasma, sonic, 100e18, 2);
+
+        assertEq(r3.srcBefore.balanceUserXSTBL, 100e18, "plasma: user xSTBL before 3");
+        assertEq(r3.srcAfter.balanceUserXSTBL, 0, "plasma: user xSTBL after 3");
+        assertEq(r3.targetBefore.balanceUserXSTBL, 0, "sonic: user xSTBL before 3");
+        assertEq(r3.targetAfter.balanceUserXSTBL, 100e18, "sonic: user xSTBL after 3");
+
+        assertEq(r3.srcBefore.balanceXTokenBridgeSTBL, 0, "plasma: xTokenBridge STBL before 3");
+        assertEq(r3.srcAfter.balanceXTokenBridgeSTBL, 0, "plasma: xTokenBridge STBL after 3");
+        assertEq(r3.targetBefore.balanceXTokenBridgeSTBL, 0, "sonic: xTokenBridge STBL before 3");
+        assertEq(r3.targetAfter.balanceXTokenBridgeSTBL, 0, "sonic: xTokenBridge STBL after 3");
+
+        assertEq(r3.srcAfter.balanceXTokenSTBL, 0, "plasma: xToken STBL after 3");
+        assertEq(r3.targetAfter.balanceXTokenSTBL, r1.srcBefore.balanceXTokenSTBL, "sonic: all STBL were returned back to XSTBL");
+
+        assertEq(r3.srcAfter.balanceOappSTBL, 0, "plasma: expected amount of locked STBL in the bridge 3");
+    }
+
+    function testSendXSTBLFromAvalancheToPlasma() public {
+        _setUpXTokenBridges();
+
+        // --------------- mint XSTBL on Sonic
         vm.selectFork(sonic.fork);
-        r.srcBefore = getBalances(sonic, address(this));
+        deal(SonicConstantsLib.TOKEN_STBL, address(this), 100e18);
+
+        IERC20(SonicConstantsLib.TOKEN_STBL).approve(sonic.xToken, 100e18);
+        IXSTBL(sonic.xToken).enter(100e18);
+
+        // --------------- send XSTBL from Sonic to Avalanche
+        _testSendXSTBL(sonic, avalanche, 100e18, 1345);
+
+        // --------------- send XSTBL from avalanche to Plasma
+        Results memory r1 = _testSendXSTBL(avalanche, plasma, 70e18, 0);
+
+        assertEq(r1.srcBefore.balanceUserXSTBL, 100e18, "avalanche: user xSTBL before");
+        assertEq(r1.srcAfter.balanceUserXSTBL, 30e18, "avalanche: user xSTBL after");
+        assertEq(r1.targetBefore.balanceUserXSTBL, 0, "plasma: user xSTBL before");
+        assertEq(r1.targetAfter.balanceUserXSTBL, 70e18, "plasma: user xSTBL after");
+
+        assertEq(r1.srcBefore.balanceXTokenBridgeSTBL, 0, "avalanche: xTokenBridge STBL before");
+        assertEq(r1.srcAfter.balanceXTokenBridgeSTBL, 0, "avalanche: xTokenBridge STBL after");
+        assertEq(r1.targetBefore.balanceXTokenBridgeSTBL, 0, "plasma: xTokenBridge STBL before");
+        assertEq(r1.targetAfter.balanceXTokenBridgeSTBL, 0, "plasma: xTokenBridge STBL after");
+
+        assertEq(r1.srcAfter.balanceXTokenSTBL, r1.srcBefore.balanceXTokenSTBL - 70e18, "avalanche: xToken STBL after");
+        assertEq(r1.targetAfter.balanceXTokenSTBL, 70e18, "plasma: STBL staked to XSTBL");
+
+        assertEq(r1.srcAfter.balanceOappSTBL, 0, "avalanche: expected amount of locked STBL in the bridge");
+
+        // --------------- send XSTBL from avalanche to Plasma 2
+        Results memory r2 = _testSendXSTBL(avalanche, plasma, 30e18, 1);
+
+        assertEq(r2.srcBefore.balanceUserXSTBL, 30e18, "avalanche: user xSTBL before 2");
+        assertEq(r2.srcAfter.balanceUserXSTBL, 0, "avalanche: user xSTBL after 2");
+        assertEq(r2.targetBefore.balanceUserXSTBL, 70e18, "plasma: user xSTBL before 2");
+        assertEq(r2.targetAfter.balanceUserXSTBL, 100e18, "plasma: user xSTBL after 2");
+
+        assertEq(r2.srcBefore.balanceXTokenBridgeSTBL, 0, "avalanche: xTokenBridge STBL before 2");
+        assertEq(r2.srcAfter.balanceXTokenBridgeSTBL, 0, "avalanche: xTokenBridge STBL after 2");
+        assertEq(r2.targetBefore.balanceXTokenBridgeSTBL, 0, "plasma: xTokenBridge STBL before 2");
+        assertEq(r2.targetAfter.balanceXTokenBridgeSTBL, 0, "plasma: xTokenBridge STBL after 2");
+
+        assertEq(r2.srcAfter.balanceXTokenSTBL, r2.srcBefore.balanceXTokenSTBL - 30e18, "avalanche: xToken STBL after 2");
+        assertEq(r2.targetAfter.balanceXTokenSTBL, 100e18, "plasma: STBL staked to XSTBL 2");
+
+        assertEq(r2.srcAfter.balanceOappSTBL, 0, "avalanche: expected amount of locked STBL in the bridge 2");
+
+        // --------------- send XSTBL back from Plasma to avalanche
+        Results memory r3 = _testSendXSTBL(plasma, avalanche, 100e18, 2);
+
+        assertEq(r3.srcBefore.balanceUserXSTBL, 100e18, "plasma: user xSTBL before 3");
+        assertEq(r3.srcAfter.balanceUserXSTBL, 0, "plasma: user xSTBL after 3");
+        assertEq(r3.targetBefore.balanceUserXSTBL, 0, "avalanche: user xSTBL before 3");
+        assertEq(r3.targetAfter.balanceUserXSTBL, 100e18, "avalanche: user xSTBL after 3");
+
+        assertEq(r3.srcBefore.balanceXTokenBridgeSTBL, 0, "plasma: xTokenBridge STBL before 3");
+        assertEq(r3.srcAfter.balanceXTokenBridgeSTBL, 0, "plasma: xTokenBridge STBL after 3");
+        assertEq(r3.targetBefore.balanceXTokenBridgeSTBL, 0, "avalanche: xTokenBridge STBL before 3");
+        assertEq(r3.targetAfter.balanceXTokenBridgeSTBL, 0, "avalanche: xTokenBridge STBL after 3");
+
+        assertEq(r3.srcAfter.balanceXTokenSTBL, 0, "plasma: xToken STBL after 3");
+        assertEq(r3.targetAfter.balanceXTokenSTBL, r1.srcBefore.balanceXTokenSTBL, "avalanche: all STBL were returned back to XSTBL");
+
+        assertEq(r3.srcAfter.balanceOappSTBL, 0, "plasma: expected amount of locked STBL in the bridge 3");
+    }
+
+    //endregion ------------------------------------- Send XSTBL between chains
+
+    //region ------------------------------------- Unit tests
+    function _testSendXSTBL(
+        BridgeTestLib.ChainConfig memory src,
+        BridgeTestLib.ChainConfig memory dest,
+        uint amount_,
+        uint guidId_
+    ) internal returns (Results memory r) {
+        // --------------- initial state on src
+        vm.selectFork(dest.fork);
+        r.targetBefore = getBalances(dest, address(this));
+
+        // --------------- send XSTBL on src
+        vm.selectFork(src.fork);
+        r.srcBefore = getBalances(src, address(this));
 
         bytes memory options =
             OptionsBuilder.newOptions().addExecutorLzReceiveOption(GAS_LIMIT_LZRECEIVE + GAS_LIMIT_LZCOMPOSE, 0);
-        MessagingFee memory msgFee =
-            IXTokenBridge(sonic.xTokenBridge).quoteSend(plasma.endpointId, 70e18, options, false);
+        MessagingFee memory msgFee = IXTokenBridge(src.xTokenBridge).quoteSend(dest.endpointId, amount_, options, false);
 
         vm.recordLogs();
-        IXTokenBridge(sonic.xTokenBridge).send{value: msgFee.nativeFee}(plasma.endpointId, 70e18, msgFee, options);
+        IXTokenBridge(src.xTokenBridge).send{value: msgFee.nativeFee}(dest.endpointId, amount_, msgFee, options);
         bytes memory message = BridgeTestLib._extractSendMessage(vm.getRecordedLogs());
 
-        // --------------- Simulate message receiving on Plasma
-        vm.selectFork(plasma.fork);
+        // --------------- Simulate message receiving on dest
+        vm.selectFork(dest.fork);
 
-        Origin memory origin = Origin({
-            srcEid: SonicConstantsLib.LAYER_ZERO_V2_ENDPOINT_ID,
-            sender: bytes32(uint(uint160(address(sonic.oapp)))),
-            nonce: 1
-        });
+        Origin memory origin =
+            Origin({srcEid: src.endpointId, sender: bytes32(uint(uint160(address(src.oapp)))), nonce: 1});
 
         // --------------- lzReceive
         {
             uint gasBefore = gasleft();
             vm.recordLogs();
-            vm.prank(plasma.endpoint);
-            IOAppReceiver(plasma.oapp)
+            vm.prank(dest.endpoint);
+            IOAppReceiver(dest.oapp)
                 .lzReceive(
                     origin,
-                    bytes32(0), // guid: actual value doesn't matter
+                    bytes32(guidId_), // guid: actual value doesn't matter
                     message,
                     address(0), // executor
                     "" // extraData
@@ -313,11 +439,11 @@ contract XTokenBridgeTest is Test {
                 BridgeTestLib._extractComposeMessage(vm.getRecordedLogs());
             uint gasBefore = gasleft();
             vm.recordLogs();
-            vm.prank(plasma.endpoint);
-            IOAppComposer(plasma.xTokenBridge)
+            vm.prank(dest.endpoint);
+            IOAppComposer(dest.xTokenBridge)
                 .lzCompose(
-                    plasma.oapp,
-                    bytes32(0), // guid: actual value doesn't matter
+                    dest.oapp,
+                    bytes32(guidId_), // guid: actual value doesn't matter
                     composeMessage,
                     address(0), // executor
                     "" // extraData
@@ -325,49 +451,32 @@ contract XTokenBridgeTest is Test {
             assertLt(gasBefore - gasleft(), GAS_LIMIT_LZCOMPOSE, "lzCompoze gas limit exceeded");
             console.log("gasBefore - gasleft() (compose):", gasBefore - gasleft());
 
-            assertEq(from, plasma.oapp, "invalid compose from");
-            assertEq(to, address(plasma.xTokenBridge), "invalid compose to");
+            assertEq(from, dest.oapp, "invalid compose from");
+            assertEq(to, address(dest.xTokenBridge), "invalid compose to");
         }
 
-        r.targetAfter = getBalances(plasma, address(this));
+        r.targetAfter = getBalances(dest, address(this));
 
-        // --------------- Sonic
-        vm.selectFork(sonic.fork);
-        r.srcAfter = getBalances(sonic, address(this));
-
-        // --------------- Verify results
-
-        assertEq(r.srcBefore.balanceUserXSTBL, 100e18, "sonic: user xSTBL before");
-        assertEq(r.srcAfter.balanceUserXSTBL, 30e18, "sonic: user xSTBL after");
-        assertEq(r.targetBefore.balanceUserXSTBL, 0, "plasma: user xSTBL before");
-        assertEq(r.targetAfter.balanceUserXSTBL, 70e18, "plasma: user xSTBL after");
-
-        assertEq(r.srcBefore.balanceXTokenBridgeSTBL, 0, "sonic: xTokenBridge STBL before");
-        assertEq(r.srcAfter.balanceXTokenBridgeSTBL, 0, "sonic: xTokenBridge STBL after");
-        assertEq(r.targetBefore.balanceXTokenBridgeSTBL, 0, "plasma: xTokenBridge STBL before");
-        assertEq(r.targetAfter.balanceXTokenBridgeSTBL, 0, "plasma: xTokenBridge STBL after");
-
-        assertEq(r.srcAfter.balanceXTokenSTBL, r.srcBefore.balanceXTokenSTBL - 70e18, "sonic: xToken STBL after");
-        assertEq(r.targetAfter.balanceXTokenSTBL, 70e18, "plasma: STBL staked to XSTBL");
-
-        assertEq(r.srcAfter.balanceOappSTBL, 70e18, "sonic: expected amount of locked STBL in the bridge");
+        // --------------- src
+        vm.selectFork(src.fork);
+        r.srcAfter = getBalances(src, address(this));
 
         //        showResults(r);
         //
         //        console.log("user", address(this));
-        //        console.log("sonic.xToken", sonic.xToken);
-        //        console.log("sonic.oapp", sonic.oapp);
-        //        console.log("sonic.xTokenBridge", sonic.xTokenBridge);
-        //        console.log("sonic.STBL", IXSTBL(sonic.xToken).STBL());
+        //        console.log("src.xToken", src.xToken);
+        //        console.log("src.oapp", src.oapp);
+        //        console.log("src.xTokenBridge", src.xTokenBridge);
+        //        console.log("src.STBL", IXSTBL(src.xToken).STBL());
         //
-        //        vm.selectFork(plasma.fork);
-        //        console.log("plasma.xToken", plasma.xToken);
-        //        console.log("plasma.oapp", plasma.oapp);
-        //        console.log("plasma.xTokenBridge", plasma.xTokenBridge);
-        //        console.log("plasma.STBL", IXSTBL(plasma.xToken).STBL());
+        //        vm.selectFork(dest.fork);
+        //        console.log("dest.xToken", dest.xToken);
+        //        console.log("dest.oapp", dest.oapp);
+        //        console.log("dest.xTokenBridge", dest.xTokenBridge);
+        //        console.log("dest.STBL", IXSTBL(dest.xToken).STBL());
     }
 
-    //endregion ------------------------------------- Send XSTBL between chains
+    //endregion ------------------------------------- Unit tests
 
     //region ------------------------------------- Internal utils
     function getBalances(

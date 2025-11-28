@@ -457,4 +457,7 @@ library BridgeTestLib {
     }
 
     //endregion ------------------------------------- Layer zero utils
+
+    /// @notice Empty function to exclude this test from coverage
+    function test() public {}
 }
