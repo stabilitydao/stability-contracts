@@ -10,8 +10,10 @@ import {IXSTBL} from "../interfaces/IXSTBL.sol";
 import {IXTokenBridge} from "../interfaces/IXTokenBridge.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {SendParam, MessagingFee} from "@layerzerolabs/oft-evm/contracts/interfaces/IOFT.sol";
+import {MessagingReceipt} from "@layerzerolabs/oapp-evm/contracts/oapp/OAppSender.sol";
+import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 
-contract XTokenBridge is Controllable, IXTokenBridge, IOAppComposer {
+contract XTokenBridge is Controllable, IXTokenBridge, IOAppComposer, ReentrancyGuardUpgradeable {
     using SafeERC20 for IERC20;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -22,7 +24,7 @@ contract XTokenBridge is Controllable, IXTokenBridge, IOAppComposer {
     string public constant VERSION = "1.0.0";
 
     // keccak256(abi.encode(uint(keccak256("erc7201:stability.XTokenBridge")) - 1)) & ~bytes32(uint(0xff));
-    bytes32 internal constant XOKEN_BRIDGE_STORAGE_LOCATION =
+    bytes32 internal constant XTOKEN_BRIDGE_STORAGE_LOCATION =
         0x7331a1638fe957f8dc3395f52254374f52b3cbbdf185d4405a764a49dfb7f400;
 
     /// @notice LayerZero v2 Endpoint address
@@ -109,6 +111,7 @@ contract XTokenBridge is Controllable, IXTokenBridge, IOAppComposer {
     ) external view returns (MessagingFee memory msgFee) {
         XTokenBridgeStorage storage $ = _getStorage();
 
+        /// @dev Receiver - address of this contract in another chain
         address receiver = $.xTokenBridges[dstEid_];
 
         SendParam memory sendParam = SendParam({
@@ -117,6 +120,7 @@ contract XTokenBridge is Controllable, IXTokenBridge, IOAppComposer {
             amountLD: amount,
             minAmountLD: amount,
             extraOptions: options,
+            /// @dev ComposeMsg contains an address of the original user who initiated the transfer
             composeMsg: abi.encode(msg.sender),
             oftCmd: ""
         });
@@ -142,18 +146,35 @@ contract XTokenBridge is Controllable, IXTokenBridge, IOAppComposer {
         for (uint i; i < len; ++i) {
             $.xTokenBridges[dstEids_[i]] = xTokenBridges_[i];
         }
+
+        emit SetXTokenBridges(dstEids_, xTokenBridges_);
     }
 
     /// @inheritdoc IXTokenBridge
     function setLzToken(address lzToken_) external onlyOperator {
         XTokenBridgeStorage storage $ = _getStorage();
         $.lzToken = lzToken_;
+
+        emit SetLzToken(lzToken_);
     }
 
     /// @inheritdoc IXTokenBridge
-    function send(uint32 dstEid_, uint amount, MessagingFee memory msgFee, bytes memory options) external payable {
+    function send(
+        uint32 dstEid_,
+        uint amount,
+        MessagingFee memory msgFee,
+        bytes memory options
+    ) external payable nonReentrant {
         XTokenBridgeStorage storage $ = _getStorage();
         address _bridge = $.bridge;
+
+        // ----------------- check amount and value
+        require(amount != 0, ZeroAmount());
+        /// @dev exact value must be sent otherwise excess will leave stuck in the contract
+        require(msg.value == msgFee.nativeFee, IncorrectNativeValue());
+
+        // ----------------- ensure that sender is not paused (the bridge is not able to check it on its own)
+        require(!IOFTPausable(_bridge).paused(msg.sender), SenderPaused());
 
         // ----------------- prepare STBL amount to send through the bridge
         /// @dev xSTBL
@@ -162,8 +183,10 @@ contract XTokenBridge is Controllable, IXTokenBridge, IOAppComposer {
         /// @dev STBL
         address token = IXSTBL(_xToken).STBL();
 
-        IXSTBL(_xToken).sendToBridge(msg.sender, amount);
-        require(IERC20(token).balanceOf(address(this)) >= amount, InsufficientAmountReceived());
+        {
+            IXSTBL(_xToken).sendToBridge(msg.sender, amount);
+            require(IERC20(token).balanceOf(address(this)) >= amount, IncorrectAmountReceivedFromXToken());
+        }
 
         IERC20(token).forceApprove(_bridge, amount);
 
@@ -173,6 +196,7 @@ contract XTokenBridge is Controllable, IXTokenBridge, IOAppComposer {
             if (_lzToken == address(0)) {
                 revert LzTokenFeeNotSupported();
             }
+            // assume here that if lzToken is set not zero it's actually supported by LayerZero v2
             IERC20(_lzToken).safeTransferFrom(msg.sender, address(this), msgFee.lzTokenFee);
             IERC20(_lzToken).forceApprove(_bridge, msgFee.lzTokenFee);
         }
@@ -188,13 +212,15 @@ contract XTokenBridge is Controllable, IXTokenBridge, IOAppComposer {
             amountLD: amount,
             minAmountLD: amount,
             extraOptions: options,
+            /// @dev ComposeMsg contains an address of the original user who initiated the transfer
             composeMsg: abi.encode(msg.sender),
             oftCmd: ""
         });
 
-        IOFTPausable(_bridge).send{value: msgFee.nativeFee}(sendParam, msgFee, msg.sender);
+        (MessagingReceipt memory r,) =
+            IOFTPausable(_bridge).send{value: msgFee.nativeFee}(sendParam, msgFee, msg.sender);
 
-        emit Send(msg.sender, dstEid_, amount);
+        emit Send(msg.sender, dstEid_, amount, r.guid);
     }
 
     /// @inheritdoc IXTokenBridge
@@ -214,17 +240,17 @@ contract XTokenBridge is Controllable, IXTokenBridge, IOAppComposer {
 
     /// @notice Handles composed messages from the OFT: staking received STBL to xSTBL for the recipient
     /// @param oApp_ Address of the originating OApp (must be trusted OFT)
-    /// param guid_ Unique identifier for this message
-    /// @param message_ Encoded message containing compose data
+    /// @param guid_ Unique identifier for this message
+    /// @param message_ Encoded message containing compose data.
+    /// The message is generated inside OFT-adapter.lzReceive on destination chain.
     function lzCompose(
         address oApp_,
-        bytes32,
-        /*guid_*/
+        bytes32 guid_,
         bytes calldata message_,
         address,
         /*_executor*/
         bytes calldata /*_extraData*/
-    ) external payable override {
+    ) external payable override nonReentrant {
         XTokenBridgeStorage storage $ = _getStorage();
         address _bridge = $.bridge;
 
@@ -235,20 +261,24 @@ contract XTokenBridge is Controllable, IXTokenBridge, IOAppComposer {
         uint32 srcEid = OFTComposeMsgCodec.srcEid(message_);
         {
             bytes32 composeFromBytes = OFTComposeMsgCodec.composeFrom(message_);
-            // @dev original sender who initiated the OFT transfer
-            address originalSender = OFTComposeMsgCodec.bytes32ToAddress(composeFromBytes);
-            require($.xTokenBridges[srcEid] == originalSender, InvalidOriginalSender());
+            /// @dev an instance of xTokenBridges which initiated the OFT transfer
+            address senderXTokenBridge = OFTComposeMsgCodec.bytes32ToAddress(composeFromBytes);
+            require($.xTokenBridges[srcEid] == senderXTokenBridge, InvalidSenderXTokenBridge());
         }
 
         // ---------------- Decode the message
         uint amountLD = OFTComposeMsgCodec.amountLD(message_);
         address recipient = abi.decode(OFTComposeMsgCodec.composeMsg(message_), (address));
 
+        require(recipient != address(0), IncorrectReceiver()); // just for safety
+        require(amountLD != 0, ZeroAmount()); // just for safety
+
         // ---------------- state STBL for the user
         IERC20(IXSTBL($.xToken).STBL()).forceApprove($.xToken, amountLD);
         IXSTBL($.xToken).takeFromBridge(recipient, amountLD);
+        // we don't check result user balance here to reduce gas consumption
 
-        emit Staked(recipient, srcEid, amountLD);
+        emit Staked(recipient, srcEid, amountLD, guid_);
     }
 
     //endregion --------------------------------- IOAppComposer
@@ -261,7 +291,7 @@ contract XTokenBridge is Controllable, IXTokenBridge, IOAppComposer {
     function _getStorage() internal pure returns (XTokenBridgeStorage storage $) {
         //slither-disable-next-line assembly
         assembly {
-            $.slot := XOKEN_BRIDGE_STORAGE_LOCATION
+            $.slot := XTOKEN_BRIDGE_STORAGE_LOCATION
         }
     }
 

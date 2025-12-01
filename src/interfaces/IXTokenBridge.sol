@@ -4,18 +4,34 @@ pragma solidity ^0.8.28;
 import {MessagingFee} from "@layerzerolabs/oft-evm/contracts/interfaces/IOFT.sol";
 
 interface IXTokenBridge {
-    /// @notice Emitted when user initiated cross-chain send
-    event Send(address indexed from, uint32 indexed dstEid, uint amount);
-    event Staked(address indexed to, uint32 indexed srcEid, uint amount);
+    /// @notice Emitted when user sends xToken to another chain
+    /// @param userFrom The address of the user-sender
+    /// @param dstEid The destination chain endpoint ID
+    /// @param amount The amount of xToken sent
+    /// @param guidId The unique GUID identifier for the sent message
+    event Send(address indexed userFrom, uint32 indexed dstEid, uint amount, bytes32 guidId);
+
+    /// @notice Emitted when xToken is received from another chain
+    /// @param userTo The address of the recipient-user
+    /// @param srcEid The source chain endpoint ID
+    /// @param amount The amount of xToken received
+    /// @param guidId The unique GUID identifier for the received message
+    event Staked(address indexed userTo, uint32 indexed srcEid, uint amount, bytes32 guidId);
+
+    event SetXTokenBridges(uint32[] dstEids, address[] xTokenBridges);
+    event SetLzToken(address lzToken);
 
     error NotBridge();
     error LzTokenFeeNotSupported();
     error ChainNotSupported();
-    error InsufficientAmountReceived();
-    error InvalidOriginalSender();
+    error IncorrectAmountReceivedFromXToken();
+    error InvalidSenderXTokenBridge();
     error IncorrectReceiver();
     error UnauthorizedSender();
     error UntrustedOApp();
+    error SenderPaused();
+    error ZeroAmount();
+    error IncorrectNativeValue();
 
     /// @notice LayerZero Omnichain Fungible Token (OFT) bridge address
     function bridge() external view returns (address);
@@ -33,7 +49,10 @@ interface IXTokenBridge {
     /// @notice Quote the gas needed to pay for sending `amount` of xSTBL to given target chain.
     /// @param dstEid_ Destination chain endpoint ID
     /// @param amount Amount of tokens to send (local decimals)
-    /// @param options Additional options for the message (use OptionsBuilder.addExecutorLzReceiveOption())
+    /// @param options Additional options for the message. Use:
+    ///    OptionsBuilder.addExecutorLzReceiveOption()
+    ///    OptionsBuilder.addExecutorLzComposeOption()
+    /// Gas limit should take into account two calls on the destination chain: lzReceive() and lzCompose()
     /// @param payInLzToken_ Whether to return fee in ZRO token.
     /// @return msgFee A `MessagingFee` struct containing the calculated gas fee.
     function quoteSend(
@@ -65,6 +84,7 @@ interface IXTokenBridge {
     /// @param msgFee The messaging fee struct obtained from quoteSend
     /// @param options Additional options for the transfer (gas limit on target chain, etc.)
     /// Use OptionsBuilder.addExecutorLzReceiveOption() to build options.
+    /// Gas limit should take into account two calls on the destination chain: lzReceive() and lzCompose()
     function send(uint32 dstEid_, uint amount, MessagingFee calldata msgFee, bytes calldata options) external payable;
 
     /// @notice Salvage tokens mistakenly sent to this contract

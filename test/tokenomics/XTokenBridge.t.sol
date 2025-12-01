@@ -10,25 +10,24 @@ import {OptionsBuilder} from "@layerzerolabs/oapp-evm/contracts/oapp/libs/Option
 import {IXSTBL} from "../../src/interfaces/IXSTBL.sol";
 import {IControllable} from "../../src/interfaces/IControllable.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
+import {IOFTPausable} from "../../src/interfaces/IOFTPausable.sol";
 import {IXTokenBridge} from "../../src/interfaces/IXTokenBridge.sol";
-import {PacketV1Codec} from "@layerzerolabs/lz-evm-protocol-v2/contracts/messagelib/libs/PacketV1Codec.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {StabilityOFTAdapter} from "../../src/tokenomics/StabilityOFTAdapter.sol";
 import {BridgedToken} from "../../src/tokenomics/BridgedToken.sol";
 import {XStaking} from "../../src/tokenomics/XStaking.sol";
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
-//import {AvalancheConstantsLib} from "../../chains/avalanche/AvalancheConstantsLib.sol";
-//import {PlasmaConstantsLib} from "../../chains/plasma/PlasmaConstantsLib.sol";
 import {MessagingFee} from "@layerzerolabs/oft-evm/contracts/interfaces/IOFT.sol";
 import {Origin} from "@layerzerolabs/oapp-evm/contracts/oapp/interfaces/IOAppReceiver.sol";
 import {Proxy} from "../../src/core/proxy/Proxy.sol";
 import {IOAppReceiver} from "@layerzerolabs/oapp-evm/contracts/oapp/interfaces/IOAppReceiver.sol";
 import {IOAppComposer} from "@layerzerolabs/oapp-evm/contracts/oapp/interfaces/IOAppComposer.sol";
+import {MockXToken} from "../../src/test/MockXToken.sol";
+import {OFTComposeMsgCodec} from "@layerzerolabs/oft-evm/contracts/libs/OFTComposeMsgCodec.sol";
 
 contract XTokenBridgeTest is Test {
     using OptionsBuilder for bytes;
-    using PacketV1Codec for bytes;
     using SafeERC20 for IERC20;
 
     //region ------------------------------------- Constants, data types, variables
@@ -238,6 +237,239 @@ contract XTokenBridgeTest is Test {
         assertEq(stbl.balanceOf(receiver), 100e18, "after 2: receiver STBL balance");
     }
 
+    function testSendBadPaths() public {
+        _setUpXTokenBridges();
+
+        // ------------------- provide xSTBL to the user
+        vm.selectFork(sonic.fork);
+        IXTokenBridge xTokenBridge = IXTokenBridge(sonic.xTokenBridge);
+
+        deal(SonicConstantsLib.TOKEN_STBL, address(this), 100e18);
+
+        IERC20(SonicConstantsLib.TOKEN_STBL).approve(sonic.xToken, 100e18);
+        IXSTBL(sonic.xToken).enter(100e18);
+
+        // ------------------- incorrect value
+        {
+            uint snapshot = vm.snapshotState();
+
+            bytes memory options = OptionsBuilder.newOptions().addExecutorLzReceiveOption(GAS_LIMIT_LZRECEIVE, 0)
+                .addExecutorLzComposeOption(0, GAS_LIMIT_LZCOMPOSE, 0);
+            MessagingFee memory msgFee =
+                IXTokenBridge(sonic.xTokenBridge).quoteSend(avalanche.endpointId, 1e18, options, false);
+
+            vm.expectRevert(IXTokenBridge.IncorrectNativeValue.selector);
+            xTokenBridge.send{value: msgFee.nativeFee + 1}(avalanche.endpointId, 1e18, msgFee, options);
+            vm.revertToState(snapshot);
+        }
+
+        // ------------------- zero amount
+        {
+            uint snapshot = vm.snapshotState();
+
+            bytes memory options = OptionsBuilder.newOptions().addExecutorLzReceiveOption(GAS_LIMIT_LZRECEIVE, 0)
+                .addExecutorLzComposeOption(0, GAS_LIMIT_LZCOMPOSE, 0);
+            MessagingFee memory msgFee =
+                IXTokenBridge(sonic.xTokenBridge).quoteSend(avalanche.endpointId, 0, options, false);
+
+            vm.expectRevert(IXTokenBridge.ZeroAmount.selector);
+            xTokenBridge.send{value: msgFee.nativeFee}(avalanche.endpointId, 0, msgFee, options);
+            vm.revertToState(snapshot);
+        }
+
+        // ------------------- sender is paused
+        {
+            uint snapshot = vm.snapshotState();
+            vm.prank(sonic.multisig);
+            IOFTPausable(sonic.oapp).setPaused(address(this), true);
+
+            bytes memory options = OptionsBuilder.newOptions().addExecutorLzReceiveOption(GAS_LIMIT_LZRECEIVE, 0)
+                .addExecutorLzComposeOption(0, GAS_LIMIT_LZCOMPOSE, 0);
+            MessagingFee memory msgFee =
+                IXTokenBridge(sonic.xTokenBridge).quoteSend(avalanche.endpointId, 1e18, options, false);
+
+            vm.expectRevert(IXTokenBridge.SenderPaused.selector);
+            xTokenBridge.send{value: msgFee.nativeFee}(avalanche.endpointId, 1e18, msgFee, options);
+            vm.revertToState(snapshot);
+        }
+
+        // ------------------- lz token not supported
+        {
+            uint snapshot = vm.snapshotState();
+
+            bytes memory options = OptionsBuilder.newOptions().addExecutorLzReceiveOption(GAS_LIMIT_LZRECEIVE, 0)
+                .addExecutorLzComposeOption(0, GAS_LIMIT_LZCOMPOSE, 0);
+
+            //  struct MessagingFee {uint256 nativeFee; uint256 lzTokenFee; }
+            vm.expectRevert(IXTokenBridge.LzTokenFeeNotSupported.selector);
+            xTokenBridge.send{value: 0}(avalanche.endpointId, 1e18, MessagingFee(0, 1e18), options);
+            vm.revertToState(snapshot);
+        }
+
+        // ------------------- chain not supported
+        {
+            uint snapshot = vm.snapshotState();
+
+            bytes memory options = OptionsBuilder.newOptions().addExecutorLzReceiveOption(GAS_LIMIT_LZRECEIVE, 0)
+                .addExecutorLzComposeOption(0, GAS_LIMIT_LZCOMPOSE, 0);
+            MessagingFee memory msgFee =
+                IXTokenBridge(sonic.xTokenBridge).quoteSend(avalanche.endpointId, 1e18, options, false);
+
+            //  struct MessagingFee {uint256 nativeFee; uint256 lzTokenFee; }
+            vm.expectRevert(IXTokenBridge.ChainNotSupported.selector);
+            xTokenBridge.send{value: msgFee.nativeFee}(98013078, 1e18, msgFee, options); // 98013078 is not valid endpointId
+            vm.revertToState(snapshot);
+        }
+    }
+
+    function testSendIncorrectAmount() public {
+        vm.selectFork(sonic.fork);
+
+        // ------------------- setup an instance of xTokenBridge with mocked xToken
+        Proxy xTokenBridgeProxy = new Proxy();
+        xTokenBridgeProxy.initProxy(address(new XTokenBridge(sonic.endpoint)));
+
+        MockXToken mockedXToken = new MockXToken(SonicConstantsLib.TOKEN_STBL, 50e18);
+        deal(SonicConstantsLib.TOKEN_STBL, address(mockedXToken), 50e18);
+
+        XTokenBridge(address(xTokenBridgeProxy)).initialize(address(sonic.platform), sonic.oapp, address(mockedXToken));
+
+        // ------------------- provide xSTBL to the user
+        vm.selectFork(sonic.fork);
+        IXTokenBridge xTokenBridge = IXTokenBridge(address(xTokenBridgeProxy));
+
+        deal(SonicConstantsLib.TOKEN_STBL, address(this), 100e18);
+
+        IERC20(SonicConstantsLib.TOKEN_STBL).approve(sonic.xToken, 100e18);
+        IXSTBL(sonic.xToken).enter(100e18);
+
+        // ------------------- chain not supported
+        vm.expectRevert(IXTokenBridge.IncorrectAmountReceivedFromXToken.selector);
+        xTokenBridge.send{value: 1e18}(avalanche.endpointId, 100e18, MessagingFee(1e18, 0), "");
+    }
+
+    function testComposeBadPaths() public {
+        _setUpXTokenBridges();
+
+        vm.selectFork(sonic.fork);
+
+        vm.expectRevert(IXTokenBridge.UnauthorizedSender.selector);
+        vm.prank(makeAddr("some wrong sender")); // (!)
+        IOAppComposer(sonic.xTokenBridge)
+            .lzCompose(
+                sonic.oapp,
+                bytes32(0),
+                "", // compose message
+                address(0), // executor
+                "" // extraData
+            );
+
+        vm.expectRevert(IXTokenBridge.UntrustedOApp.selector);
+        vm.prank(sonic.endpoint);
+        IOAppComposer(sonic.xTokenBridge)
+            .lzCompose(
+                makeAddr("some other oapp"), // (!)
+                bytes32(0),
+                "", // compose message
+                address(0), // executor
+                "" // extraData
+            );
+    }
+
+    function testComposeInvalidSenderXTokenBridge() public {
+        _setUpXTokenBridges();
+
+        // --------------- mint XSTBL on Sonic
+        vm.selectFork(sonic.fork);
+        deal(SonicConstantsLib.TOKEN_STBL, address(this), 100e18);
+
+        IERC20(SonicConstantsLib.TOKEN_STBL).approve(sonic.xToken, 100e18);
+        IXSTBL(sonic.xToken).enter(100e18);
+
+        // --------------- send XSTBL on sonic
+        vm.selectFork(sonic.fork);
+
+        bytes memory options = OptionsBuilder.newOptions().addExecutorLzReceiveOption(GAS_LIMIT_LZRECEIVE, 0)
+            .addExecutorLzComposeOption(0, GAS_LIMIT_LZCOMPOSE, 0);
+        MessagingFee memory msgFee =
+            IXTokenBridge(sonic.xTokenBridge).quoteSend(avalanche.endpointId, 1e18, options, false);
+
+        vm.recordLogs();
+        IXTokenBridge(sonic.xTokenBridge).send{value: msgFee.nativeFee}(avalanche.endpointId, 1e18, msgFee, options);
+        bytes memory message = BridgeTestLib._extractSendMessage(vm.getRecordedLogs());
+
+        // --------------- Simulate message receiving on avalanche
+        vm.selectFork(avalanche.fork);
+
+        {
+            vm.recordLogs();
+            vm.prank(avalanche.endpoint);
+            IOAppReceiver(avalanche.oapp)
+                .lzReceive(
+                    Origin({srcEid: sonic.endpointId, sender: bytes32(uint(uint160(address(sonic.oapp)))), nonce: 1}),
+                    bytes32(uint(1)),
+                    message,
+                    address(0), // executor
+                    "" // extraData
+                );
+        }
+
+        {
+            (,, bytes memory composeMessage) = BridgeTestLib._extractComposeMessage(vm.getRecordedLogs());
+
+            // now we have composeMessage with stored sonic.xTokenBridge inside
+            // let's check value of sonic.xTokenBridge on avalanche side to simulate error
+
+            uint32[] memory dstEids = new uint32[](1);
+            dstEids[0] = sonic.endpointId;
+            address[] memory addrs = new address[](1);
+            addrs[0] = makeAddr("wrong sonic.xTokenBridge address");
+
+            vm.prank(avalanche.multisig);
+            IXTokenBridge(avalanche.xTokenBridge).setXTokenBridge(dstEids, addrs);
+
+            vm.expectRevert(IXTokenBridge.InvalidSenderXTokenBridge.selector);
+            vm.prank(avalanche.endpoint);
+            IOAppComposer(avalanche.xTokenBridge)
+                .lzCompose(avalanche.oapp, bytes32(uint(2)), composeMessage, address(0), "");
+        }
+    }
+
+    function testComposeZeroValues() public {
+        _setUpXTokenBridges();
+        vm.selectFork(avalanche.fork);
+
+        {
+            bytes memory composeMessage = OFTComposeMsgCodec.encode(
+                0,
+                sonic.endpointId,
+                0,
+                // 0x[composeFrom][composeMsg], see OFTComposeMsgCodec.encode
+                abi.encodePacked(OFTComposeMsgCodec.addressToBytes32(sonic.xTokenBridge), abi.encode(address(this)))
+            );
+
+            vm.expectRevert(IXTokenBridge.ZeroAmount.selector);
+            vm.prank(avalanche.endpoint);
+            IOAppComposer(avalanche.xTokenBridge)
+                .lzCompose(avalanche.oapp, bytes32(uint(2)), composeMessage, address(0), "");
+        }
+
+        {
+            bytes memory composeMessage = OFTComposeMsgCodec.encode(
+                0,
+                sonic.endpointId,
+                1e18,
+                // 0x[composeFrom][composeMsg], see OFTComposeMsgCodec.encode
+                abi.encodePacked(OFTComposeMsgCodec.addressToBytes32(sonic.xTokenBridge), abi.encode(address(0)))
+            );
+
+            vm.expectRevert(IXTokenBridge.IncorrectReceiver.selector);
+            vm.prank(avalanche.endpoint);
+            IOAppComposer(avalanche.xTokenBridge)
+                .lzCompose(avalanche.oapp, bytes32(uint(2)), composeMessage, address(0), "");
+        }
+    }
+
     //endregion ------------------------------------- Unit tests
 
     //region ------------------------------------- Send XSTBL between chains
@@ -301,7 +533,11 @@ contract XTokenBridgeTest is Test {
         assertEq(r3.targetAfter.balanceXTokenBridgeSTBL, 0, "sonic: xTokenBridge STBL after 3");
 
         assertEq(r3.srcAfter.balanceXTokenSTBL, 0, "plasma: xToken STBL after 3");
-        assertEq(r3.targetAfter.balanceXTokenSTBL, r1.srcBefore.balanceXTokenSTBL, "sonic: all STBL were returned back to XSTBL");
+        assertEq(
+            r3.targetAfter.balanceXTokenSTBL,
+            r1.srcBefore.balanceXTokenSTBL,
+            "sonic: all STBL were returned back to XSTBL"
+        );
 
         assertEq(r3.srcAfter.balanceOappSTBL, 0, "plasma: expected amount of locked STBL in the bridge 3");
     }
@@ -350,7 +586,9 @@ contract XTokenBridgeTest is Test {
         assertEq(r2.targetBefore.balanceXTokenBridgeSTBL, 0, "plasma: xTokenBridge STBL before 2");
         assertEq(r2.targetAfter.balanceXTokenBridgeSTBL, 0, "plasma: xTokenBridge STBL after 2");
 
-        assertEq(r2.srcAfter.balanceXTokenSTBL, r2.srcBefore.balanceXTokenSTBL - 30e18, "avalanche: xToken STBL after 2");
+        assertEq(
+            r2.srcAfter.balanceXTokenSTBL, r2.srcBefore.balanceXTokenSTBL - 30e18, "avalanche: xToken STBL after 2"
+        );
         assertEq(r2.targetAfter.balanceXTokenSTBL, 100e18, "plasma: STBL staked to XSTBL 2");
 
         assertEq(r2.srcAfter.balanceOappSTBL, 0, "avalanche: expected amount of locked STBL in the bridge 2");
@@ -369,7 +607,11 @@ contract XTokenBridgeTest is Test {
         assertEq(r3.targetAfter.balanceXTokenBridgeSTBL, 0, "avalanche: xTokenBridge STBL after 3");
 
         assertEq(r3.srcAfter.balanceXTokenSTBL, 0, "plasma: xToken STBL after 3");
-        assertEq(r3.targetAfter.balanceXTokenSTBL, r1.srcBefore.balanceXTokenSTBL, "avalanche: all STBL were returned back to XSTBL");
+        assertEq(
+            r3.targetAfter.balanceXTokenSTBL,
+            r1.srcBefore.balanceXTokenSTBL,
+            "avalanche: all STBL were returned back to XSTBL"
+        );
 
         assertEq(r3.srcAfter.balanceOappSTBL, 0, "plasma: expected amount of locked STBL in the bridge 3");
     }
@@ -391,8 +633,8 @@ contract XTokenBridgeTest is Test {
         vm.selectFork(src.fork);
         r.srcBefore = getBalances(src, address(this));
 
-        bytes memory options =
-            OptionsBuilder.newOptions().addExecutorLzReceiveOption(GAS_LIMIT_LZRECEIVE + GAS_LIMIT_LZCOMPOSE, 0);
+        bytes memory options = OptionsBuilder.newOptions().addExecutorLzReceiveOption(GAS_LIMIT_LZRECEIVE, 0)
+            .addExecutorLzComposeOption(0, GAS_LIMIT_LZCOMPOSE, 0);
         MessagingFee memory msgFee = IXTokenBridge(src.xTokenBridge).quoteSend(dest.endpointId, amount_, options, false);
 
         vm.recordLogs();
@@ -598,5 +840,5 @@ contract XTokenBridgeTest is Test {
         platform.upgrade();
         vm.stopPrank();
     }
-    //region ------------------------------------- Helpers
+    //endregion ------------------------------------- Helpers
 }

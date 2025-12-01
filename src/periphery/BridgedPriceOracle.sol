@@ -7,6 +7,7 @@ import {IPlatform} from "../interfaces/IPlatform.sol";
 import {OAppEncodingLib} from "./libs/OAppEncodingLib.sol";
 import {IBridgedPriceOracle} from "../interfaces/IBridgedPriceOracle.sol";
 import {IAggregatorInterfaceMinimal} from "../integrations/chainlink/IAggregatorInterfaceMinimal.sol";
+import {OFTComposeMsgCodec} from "@layerzerolabs/oft-evm/contracts/libs/OFTComposeMsgCodec.sol";
 
 contract BridgedPriceOracle is Controllable, OAppUpgradeable, IBridgedPriceOracle {
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -106,7 +107,7 @@ contract BridgedPriceOracle is Controllable, OAppUpgradeable, IBridgedPriceOracl
     /// @dev extraData_ Additional data from the Executor (unused here)
     function _lzReceive(
         Origin calldata,
-        /*origin_*/
+        /*origin*/
         bytes32,
         /*guid_*/
         bytes calldata message_,
@@ -115,14 +116,23 @@ contract BridgedPriceOracle is Controllable, OAppUpgradeable, IBridgedPriceOracl
         bytes calldata /*extraData_*/
     ) internal override {
         BridgedPriceOracleStorage storage $ = getBridgedPriceOracleStorage();
-        (uint16 messageFormat, uint160 price, uint64 timestamp) = OAppEncodingLib.unpackPriceUsd18(message_);
 
+        // ---------------------- check sender
+        // struct Origin {uint32 srcEid; bytes32 sender; uint64 nonce;}
+        // we don't need to check sender explicitly
+        // assume that peers configuration doesn't allow untrusted senders (onlyPeer exception)
+
+        // ---------------------- extract and verify message data
+        (uint16 messageFormat, uint160 price, uint64 timestamp) = OAppEncodingLib.unpackPriceUsd18(message_);
         require(messageFormat == OAppEncodingLib.MESSAGE_FORMAT_PRICE_USD18_1, InvalidMessageFormat());
 
-        // todo check current price timestamp, don't update if the received one is older than the stored one
-        $.lastPriceInfo = PriceInfo({price: price, timestamp: timestamp});
-
-        emit PriceUpdated(price, block.timestamp);
+        if ($.lastPriceInfo.timestamp > timestamp) {
+            // skip outdated price update
+            emit PriceUpdateSkipped(price, timestamp);
+        } else {
+            $.lastPriceInfo = PriceInfo({price: price, timestamp: timestamp});
+            emit PriceUpdated(price, block.timestamp);
+        }
     }
 
     //endregion --------------------------------- Actions

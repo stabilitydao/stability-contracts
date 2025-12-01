@@ -210,7 +210,7 @@ contract PriceAggregatorOAppTest is Test {
         );
     }
 
-    function testLzReceiveUnsuppoted() public {
+    function testLzReceiveUnsupported() public {
         vm.selectFork(sonic.fork);
 
         Origin memory origin = Origin({
@@ -328,6 +328,52 @@ contract PriceAggregatorOAppTest is Test {
         (uint priceAvalanche,) = _sendPriceFromSonicToDest(sender, avalanche);
         assertEq(priceSonic, 1.7e18, "new price set on Sonic");
         assertEq(priceAvalanche, 1.7e18, "new price set on Avalanche");
+    }
+
+    function testSendPriceNotTrustedSender() public {
+        vm.selectFork(sonic.fork);
+
+        address sender = address(0x1);
+        deal(sender, 2 ether); // to pay fees
+
+        _setPriceOnSonic(1.7e18);
+
+        // ------------------- Send price to Avalanche
+        vm.selectFork(sonic.fork);
+
+        bytes memory options = OptionsBuilder.addExecutorLzReceiveOption(OptionsBuilder.newOptions(), 2_000_000, 0);
+        MessagingFee memory msgFee =
+            priceAggregatorOApp.quotePriceMessage(AvalancheConstantsLib.LAYER_ZERO_V2_ENDPOINT_ID, options, false);
+
+        vm.recordLogs();
+
+        // ------------------- Whitelisted
+        vm.selectFork(sonic.fork);
+        vm.prank(sonic.multisig);
+        priceAggregatorOApp.changeWhitelist(sender, true);
+
+        vm.prank(sender);
+        priceAggregatorOApp.sendPriceMessage{value: msgFee.nativeFee}(
+            AvalancheConstantsLib.LAYER_ZERO_V2_ENDPOINT_ID, options, msgFee
+        );
+        bytes memory message = _extractPayload(vm.getRecordedLogs());
+
+        // ------------------ Avalanche: simulate message reception
+        vm.selectFork(avalanche.fork);
+
+        vm.expectRevert(); // onlyPeer
+        vm.prank(avalanche.endpoint);
+        bridgedPriceOracleAvalanche.lzReceive(
+            Origin({
+                srcEid: sonic.endpointId,
+                sender: bytes32(uint(uint160(address(makeAddr("not trusted sender"))))),
+                nonce: 1
+            }),
+            bytes32(0), // guid: actual value doesn't matter
+            message,
+            address(0), // executor
+            "" // extraData
+        );
     }
 
     //endregion ------------------------------------- Send price from Sonic to Avalanche
