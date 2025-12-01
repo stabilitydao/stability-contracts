@@ -42,12 +42,15 @@ library ALMFLib {
 
     /// @custom:storage-location erc7201:stability.AaveLeverageMerklFarmStrategy
     struct AlmfStrategyStorage {
-        /// @notice Last share price used to calculate profit and loss = total() / vault.totalSupply()
-        /// @dev This value is initialized at first claim revenue (not at first deposit)
-        uint lastSharePrice;
+        /// @dev Deprecated
+        uint lastSharePriceInUSD;
 
         /// @notice Deposit threshold. Amounts less than the threshold are deposited directly without leverage
         mapping(address asset => uint) thresholds;
+
+        /// @notice Last share price used to calculate profit and loss = [total in collateral asset] / vault.totalSupply()
+        /// @dev This value is initialized at first claim revenue (not at first deposit)
+        uint lastSharePrice;
     }
 
     event SetThreshold(address asset, uint value);
@@ -527,6 +530,15 @@ library ALMFLib {
 
     /// @notice Get prices of collateral and borrow assets from Aave price oracle in USD, decimals 18
     function getPrices(
+        ILeverageLendingStrategy.LeverageLendingBaseStorage storage $
+    ) external view returns (uint collateralPrice, uint borrowPrice) {
+        (collateralPrice, borrowPrice) = ALMFLib.getPrices(
+            IPool(IAToken($.lendingVault).POOL()).ADDRESSES_PROVIDER(), $.collateralAsset, $.borrowAsset
+        );
+    }
+
+    /// @notice Get prices of collateral and borrow assets from Aave price oracle in USD, decimals 18
+    function getPrices(
         address aaveAddressProvider,
         address collateralAsset,
         address borrowAsset
@@ -736,21 +748,25 @@ library ALMFLib {
         state = _getState(data);
         resultLtv = ALMFCalcLib.getLtv(state.collateralBase, state.debtBase);
     }
+
     //endregion ------------------------------------- Rebalance debt
 
     //region ------------------------------------- Real tvl
 
+    /// @notice Calculate real TVL in USD, decimals 18
     function realTvl(
         ILeverageLendingStrategy.LeverageLendingBaseStorage storage $
     ) public view returns (uint tvl, bool trusted) {
         return _realTvl(_getState(IAToken($.lendingVault).POOL()));
     }
 
+    /// @notice Calculate real TVL in USD, decimals 18
     function _realTvl(ALMFCalcLib.State memory state) internal pure returns (uint tvl, bool trusted) {
         tvl = state.collateralBase - state.debtBase;
         trusted = true;
     }
 
+    /// @notice Calculate real share price as USD18 / vault-shares
     function _realSharePrice(
         ILeverageLendingStrategy.LeverageLendingBaseStorage storage $,
         address vault_
@@ -798,14 +814,19 @@ library ALMFLib {
             uint[] memory __rewardAmounts
         )
     {
-        (uint newPrice,) = _realSharePrice($, vault_);
+        /// @dev New price in collateral asset
+        uint newPrice = _sharePrice($, vault_);
+
+        /// @dev Previous price in collateral asset
         uint oldPrice = $a.lastSharePrice;
+
         if (oldPrice == 0) {
             // first initialization of share price
             // we cannot do it in deposit() because total supply is used for calculation
             $a.lastSharePrice = newPrice;
             oldPrice = newPrice;
         }
+
         (__assets, __amounts) = _getRevenue($, oldPrice, newPrice, vault_);
         $a.lastSharePrice = newPrice;
 
@@ -831,10 +852,12 @@ library ALMFLib {
         uint oldPrice,
         address vault_
     ) external view returns (address[] memory assets, uint[] memory amounts) {
-        (uint newPrice,) = _realSharePrice($, vault_);
+        uint newPrice = _sharePrice($, vault_);
         return _getRevenue($, oldPrice, newPrice, vault_);
     }
 
+    /// @param oldPrice Previous share price in collateral asset
+    /// @param newPrice New share price in collateral asset
     function _getRevenue(
         ILeverageLendingStrategy.LeverageLendingBaseStorage storage $,
         uint oldPrice,
@@ -850,13 +873,9 @@ library ALMFLib {
 
         if (newPrice > oldPrice && oldPrice != 0) {
             uint _totalSupply = IVault(vault_).totalSupply();
-            uint price8 = IAavePriceOracle(
-                    IAaveAddressProvider(IPool(IAToken($.lendingVault).POOL()).ADDRESSES_PROVIDER()).getPriceOracle()
-                ).getAssetPrice(assets[0]);
 
             // share price already takes into account accumulated interest
-            uint amountUSD18 = _totalSupply * (newPrice - oldPrice) / 1e18;
-            amounts[0] = amountUSD18 * 1e8 * 10 ** IERC20Metadata(assets[0]).decimals() / price8 / 1e18;
+            amounts[0] = (newPrice - oldPrice) * _totalSupply / 1e18;
         }
     }
 
@@ -890,6 +909,33 @@ library ALMFLib {
         // but StrategyBase expects it to be set in doHardWork in order to calculate aprCompound
         // so, we set it twice: here (new value) and in _claimRevenue (old value)
         $base.total = total($);
+    }
+
+    /// @notice Get share price in collateral asset
+    function _sharePrice(
+        ILeverageLendingStrategy.LeverageLendingBaseStorage storage $,
+        address vault_
+    ) internal view returns (uint sharePrice) {
+        uint totalSupply = IERC20(vault_).totalSupply();
+        if (totalSupply != 0) {
+            address collateralAsset = $.collateralAsset;
+
+            /// @dev Real tvl in USD, decimals 18
+            (uint __realTvl,) = realTvl($);
+
+            /// @dev Collateral price from AAVE oracle, decimals 8
+            uint collateralPrice8 = IAavePriceOracle(
+                    IAaveAddressProvider(IPool(IAToken($.lendingVault).POOL()).ADDRESSES_PROVIDER()).getPriceOracle()
+                ).getAssetPrice(collateralAsset);
+
+            /// @dev Real tvl in collateral asset
+            uint amount = __realTvl * 1e8 * 10 ** IERC20Metadata(collateralAsset).decimals() / collateralPrice8 / 1e18;
+
+            /// @dev Share price: collateral asset per vault-share, decimals = decimals of collateral asset
+            sharePrice = amount * 1e18 / totalSupply;
+        }
+
+        return sharePrice;
     }
 
     //endregion ------------------------------------- Revenue

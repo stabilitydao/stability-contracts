@@ -200,6 +200,8 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
             SonicConstantsLib.POOL_ALGEBRA_WS_USDC, ILeverageLendingStrategy.FlashLoanKind.AlgebraV4_3
         );
 
+        _testGetPrices();
+
         vm.revertToState(snapshot);
     }
 
@@ -636,6 +638,20 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
             state0.strategyBalanceBorrowAsset,
             "_testDepositWithdrawWithRewardsOnBalance.Rewards should stay on strategy balance"
         );
+    }
+
+    function _testGetPrices() internal view {
+        (uint priceC, uint priceB) = AaveLeverageMerklFarmStrategy(currentStrategy).getPrices();
+
+        IAavePriceOracle oracle =
+            IAavePriceOracle(IAaveAddressProvider(IPool(POOL).ADDRESSES_PROVIDER()).getPriceOracle());
+
+        // WETH - collateral, USDC - borrow asset
+        uint priceWeth8 = oracle.getAssetPrice(SonicConstantsLib.TOKEN_WETH);
+        assertEq(priceC, priceWeth8 * 1e10, "_testGetPrices.Collateral price should be equal to Aave price");
+
+        uint priceUsdc8 = oracle.getAssetPrice(SonicConstantsLib.TOKEN_USDC);
+        assertEq(priceB, priceUsdc8 * 1e10, "_testGetPrices.Borrow price should be equal to Aave price");
     }
 
     //endregion --------------------------------------- Additional tests

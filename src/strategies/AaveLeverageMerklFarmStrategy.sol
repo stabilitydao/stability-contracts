@@ -27,6 +27,7 @@ import {VaultTypeLib} from "../core/libs/VaultTypeLib.sol";
 /// @title Earns APR by lending assets on AAVE with leverage
 /// @dev ALMF strategy
 /// Changelog:
+///   1.1.1: share price is calculated in collateral asset, not in usd
 ///   1.1.0: add support of e-mode
 /// @author omriss (https://github.com/omriss)
 contract AaveLeverageMerklFarmStrategy is
@@ -45,7 +46,7 @@ contract AaveLeverageMerklFarmStrategy is
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.1.0";
+    string public constant VERSION = "1.1.1";
 
     //region ----------------------------------- Initialization and restricted actions
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -235,6 +236,14 @@ contract AaveLeverageMerklFarmStrategy is
 
         // for simplicity of v1.0: any amount can be deposited
         return amounts;
+    }
+
+    /// @notice Get prices of collateral and borrow assets from Aave price oracle in USD, decimals 18
+    /// @return collateralPrice Price of collateral asset ($/collateral asset, decimals 18)
+    /// @return borrowPrice Price of borrow asset ($/borrow asset, decimals 18)
+    function getPrices() public view returns (uint collateralPrice, uint borrowPrice) {
+        LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
+        (collateralPrice, borrowPrice) = ALMFLib.getPrices($);
     }
 
     //endregion ----------------------------------- View functions
