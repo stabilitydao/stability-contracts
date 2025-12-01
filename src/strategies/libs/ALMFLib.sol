@@ -865,7 +865,6 @@ library ALMFLib {
         address vault_
     ) internal view returns (address[] memory assets, uint[] memory amounts) {
         // assume below that there is only 1 asset - collateral asset
-
         amounts = new uint[](1);
         assets = new address[](1);
 
@@ -886,7 +885,7 @@ library ALMFLib {
         uint[] memory rewardAmounts_,
         uint priceImpactTolerance
     ) external returns (uint earnedExchangeAsset) {
-        return StrategyLib.liquidateRewards(
+        earnedExchangeAsset = StrategyLib.liquidateRewards(
             platform_, exchangeAsset, rewardAssets_, rewardAmounts_, priceImpactTolerance
         );
     }

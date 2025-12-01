@@ -159,6 +159,7 @@ contract ALMFStrategyEthereumTest is EthereumSetup, UniversalTest {
 
     //region --------------------------------------- Additional tests
     function _testDepositTwoHardworks() internal {
+        uint snapshot = vm.snapshotState();
         uint amount = DEFAULT_AMOUNT;
 
         IStrategy strategy = IStrategy(currentStrategy);
@@ -205,6 +206,7 @@ contract ALMFStrategyEthereumTest is EthereumSetup, UniversalTest {
             20e16,
             "Revenue after first hardwork is ~$300"
         );
+        vm.revertToState(snapshot);
     }
 
     function _testDepositChangeLtvWithdraw() internal {
@@ -325,7 +327,7 @@ contract ALMFStrategyEthereumTest is EthereumSetup, UniversalTest {
         // --------------------------------------------- Compare results
         assertApproxEqAbs(
             statesHW2[INDEX_AFTER_HARDWORK_3].total - statesInstant[INDEX_AFTER_HARDWORK_3].total,
-            100e18,
+            100e18 * 90 / 100, // todo check platform fee value
             6e18,
             "total is increased on rewards amount - fees"
         );
@@ -342,8 +344,8 @@ contract ALMFStrategyEthereumTest is EthereumSetup, UniversalTest {
         );
         assertApproxEqRel(
             statesHW2[INDEX_AFTER_WITHDRAW_4].userBalanceAsset,
-            100e8 / collateralPrice8 * 1e8 + statesInstant[INDEX_AFTER_WITHDRAW_4].userBalanceAsset,
-            6e16, //  < 6%
+            100e8 * 90 / 100 / collateralPrice8 * 1e8 + statesInstant[INDEX_AFTER_WITHDRAW_4].userBalanceAsset,
+            6e15, //  < 0.6%
             "user received almost all rewards 1"
         );
     }

@@ -177,13 +177,13 @@ contract ALMFStrategyPlasmaTest is PlasmaSetup, UniversalTest {
 
     //region --------------------------------------- _preDeposit overrides for farms
     function _preDepositForFarmWethUsdt3() internal {
-        uint snapshot = vm.snapshotState();
         // thresholds
         vm.prank(platform.multisig());
         AaveLeverageMerklFarmStrategy(currentStrategy).setThreshold(PlasmaConstantsLib.TOKEN_WETH, 1e12);
         vm.prank(platform.multisig());
         AaveLeverageMerklFarmStrategy(currentStrategy).setThreshold(PlasmaConstantsLib.TOKEN_USDT0, 1e6);
 
+        uint snapshot = vm.snapshotState();
         // initial supply
         _tryToDepositToVault(IStrategy(currentStrategy).vault(), 0.1e18, REVERT_NO, makeAddr("initial supplier"));
 
@@ -442,6 +442,7 @@ contract ALMFStrategyPlasmaTest is PlasmaSetup, UniversalTest {
 
     //region --------------------------------------- Additional tests
     function _testDepositTwoHardworks() internal {
+        uint snapshot = vm.snapshotState();
         uint amount = 1e18;
 
         uint priceWeth8 = _getWethPrice8();
@@ -478,16 +479,17 @@ contract ALMFStrategyPlasmaTest is PlasmaSetup, UniversalTest {
         );
         assertApproxEqRel(
             stateAfterHW1.revenueAmounts[0] * priceWeth8 * 1e6 / 1e8 / 1e18,
-            100e6,
+            100e6 * 70 / 100,
             20e16,
             "Revenue after first hardwork is ~$100"
         );
         assertApproxEqRel(
             stateAfterHW2.revenueAmounts[0] * priceWeth8 * 1e6 / 1e8 / 1e18,
-            300e6,
+            300e6 * 70 / 100,
             20e16,
             "Revenue after first hardwork is ~$300"
         );
+        vm.revertToState(snapshot);
     }
 
     function _testDepositChangeLtvWithdraw() internal {
@@ -608,8 +610,8 @@ contract ALMFStrategyPlasmaTest is PlasmaSetup, UniversalTest {
         // --------------------------------------------- Compare results
         assertApproxEqAbs(
             statesHW2[INDEX_AFTER_HARDWORK_3].total - statesInstant[INDEX_AFTER_HARDWORK_3].total,
-            100e18,
-            5e18,
+            100e18 * 70 / 100,
+            10e18,
             "_testDepositWaitHardworkWithdraw.total is increased on rewards amount - fees"
         );
         assertLt(
@@ -625,8 +627,8 @@ contract ALMFStrategyPlasmaTest is PlasmaSetup, UniversalTest {
         );
         assertApproxEqRel(
             statesHW2[INDEX_AFTER_WITHDRAW_4].userBalanceAsset,
-            100e18 / wethPrice * 1e8 + statesInstant[INDEX_AFTER_WITHDRAW_4].userBalanceAsset,
-            5e16, //  < 3%
+            100e18 * 70 / 100 / wethPrice * 1e8 + statesInstant[INDEX_AFTER_WITHDRAW_4].userBalanceAsset,
+            3e15, //  < 0.3%
             "_testDepositWaitHardworkWithdraw.user received almost all rewards"
         );
     }

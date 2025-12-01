@@ -82,6 +82,10 @@ contract AaveLeverageMerklFarmStrategy is
         __LeverageLendingBase_init(params); // __StrategyBase_init is called inside
         __FarmingStrategyBase_init(addresses[0], nums[0]);
 
+        // autoCompoundingByUnderlyingProtocol is false,
+        // we need to overwrite exchangeAssetIndex written inside __LeverageLendingBase_init
+        _getStrategyBaseStorage()._exchangeAssetIndex = 0;
+
         // set up params and approves, switch to e-mode
         ALMFLib2._postInit(
             _getLeverageLendingBaseStorage(),
@@ -389,7 +393,7 @@ contract AaveLeverageMerklFarmStrategy is
         override(LeverageLendingBase, StrategyBase)
         returns (bool)
     {
-        return true;
+        return false;
     }
 
     /// @inheritdoc StrategyBase

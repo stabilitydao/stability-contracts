@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
+import {Vm} from "forge-std/Test.sol";
 import {IControllable} from "../../src/interfaces/IControllable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IFarmingStrategy} from "../../src/interfaces/IFarmingStrategy.sol";
@@ -130,7 +131,7 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
             DEFAULT_MAX_LTV, // max target ltv
             0, // beets v2 flash loan kind
             0 // eMode is not used
-        ); //68
+        );
 
         vm.startPrank(platform.multisig());
         factory.addFarms(farms);
@@ -139,9 +140,6 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
     }
 
     function _preDeposit() internal override {
-        // ---------------------------------- Make additional tests
-        uint snapshot = vm.snapshotState();
-
         // --------- bad paths
         vm.expectRevert(IControllable.IncorrectMsgSender.selector);
         IFlashLoanRecipient(currentStrategy).receiveFlashLoan(new address[](1), new uint[](1), new uint[](1), "");
@@ -159,6 +157,9 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
         assertEq(AaveLeverageMerklFarmStrategy(currentStrategy).threshold(SonicConstantsLib.TOKEN_WETH), 1e12);
         assertEq(AaveLeverageMerklFarmStrategy(currentStrategy).threshold(SonicConstantsLib.TOKEN_USDC), 1e6);
 
+        // ---------------------------------- Make additional tests
+        uint snapshot = vm.snapshotState();
+
         // --------- any tests with zero initial supply
         _testWithdrawWithZeroDebt();
 
@@ -166,6 +167,7 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
         _tryToDepositToVault(IStrategy(currentStrategy).vault(), 0.1e18, REVERT_NO, makeAddr("initial supplier"));
 
         // --------- various deposit - withdraw tests
+        _testRevenueAmount();
         _testDepositWithdrawWithRewardsOnBalance();
 
         // check direct deposit of small amount without leverage
@@ -214,7 +216,54 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
     //endregion --------------------------------------- Universal test
 
     //region --------------------------------------- Additional tests
+    function _testRevenueAmount() internal {
+        uint snapshotId = vm.snapshotState();
+
+        IStrategy strategy = IStrategy(currentStrategy);
+
+        // --------------------------------------------- Deposit
+        _tryToDepositToVault(strategy.vault(), 1e18, REVERT_NO, address(this));
+        vm.roll(block.number + 6);
+
+        _skip(1 days, 0);
+
+        // --------------------------------------------- First hardwork to initialize share price
+        vm.prank(platform.multisig());
+        IVault(strategy.vault()).doHardWork();
+        _skip(5 days, 0);
+
+        // --------------------------------------------- Second hardwork to utilize rewards
+        // emulate merkl rewards
+        deal(
+            SonicConstantsLib.TOKEN_USDC, // rewards are in USDC (borrow asset)
+            currentStrategy,
+            100e6
+        );
+
+        vm.recordLogs();
+        vm.prank(platform.multisig());
+        IVault(strategy.vault()).doHardWork();
+
+        // extract data from event IStrategy.HardWork
+        uint earnedUSD18;
+
+        Vm.Log[] memory logs = vm.getRecordedLogs();
+        bytes32 eventSignature = keccak256("HardWork(uint256,uint256,uint256,uint256,uint256,uint256,uint256[])");
+        for (uint i = 0; i < logs.length; i++) {
+            if (logs[i].topics[0] == eventSignature) {
+                (,, earnedUSD18,,,,) = abi.decode(logs[i].data, (uint, uint, uint, uint, uint, uint, uint[]));
+                break;
+            }
+        }
+        assertApproxEqRel(
+            earnedUSD18, 100e18, 1e16, "_testRevenueAmount.Earned in HardWork event is approximately 100 USDC"
+        );
+
+        vm.revertToState(snapshotId);
+    }
+
     function _testDepositTwoHardworks() internal {
+        uint snapshot = vm.snapshotState();
         uint amount = 1e18;
 
         uint priceWeth8 = _getWethPrice8();
@@ -251,16 +300,17 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
         );
         assertApproxEqRel(
             stateAfterHW1.revenueAmounts[0] * priceWeth8 * 1e6 / 1e8 / 1e18,
-            100e6,
+            100e6 * 70 / 100, // 70%, platform fee
             20e16,
             "_testDepositTwoHardworks.Revenue after first hardwork is ~$100"
         );
         assertApproxEqRel(
             stateAfterHW2.revenueAmounts[0] * priceWeth8 * 1e6 / 1e8 / 1e18,
-            300e6,
+            300e6 * 70 / 100, // 70%, platform fee
             20e16,
             "_testDepositTwoHardworks.Revenue after first hardwork is ~$300"
         );
+        vm.revertToState(snapshot);
     }
 
     function _testDepositChangeLtvWithdraw() internal {
@@ -408,9 +458,10 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
         uint wethPrice = _getWethPrice8();
 
         // --------------------------------------------- Compare results
+
         assertApproxEqAbs(
             statesHW2[INDEX_AFTER_HARDWORK_3].total - statesInstant[INDEX_AFTER_HARDWORK_3].total,
-            100e18,
+            100e18 * 70 / 100,
             3e18,
             "_testDepositWaitHardworkWithdraw.total is increased on rewards amount - fees"
         );
@@ -427,8 +478,8 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
         );
         assertApproxEqRel(
             statesHW2[INDEX_AFTER_WITHDRAW_4].userBalanceAsset,
-            100e18 / wethPrice * 1e8 + statesInstant[INDEX_AFTER_WITHDRAW_4].userBalanceAsset,
-            3e16, //  < 3%
+            70e18 / wethPrice * 1e8 + statesInstant[INDEX_AFTER_WITHDRAW_4].userBalanceAsset,
+            3e15, //  < 0.3%
             "_testDepositWaitHardworkWithdraw.user received almost all rewards"
         );
     }
@@ -746,7 +797,6 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
         _tryToWithdrawFromVault(strategy.vault(), states[1].vaultBalance - states[0].vaultBalance);
         vm.roll(block.number + 6);
         states[4] = _getState();
-
         vm.revertToState(snapshot);
 
         assertLt(states[0].total, states[1].total, "Total should increase after deposit");
