@@ -8,6 +8,7 @@ import {
 } from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20BurnableUpgradeable.sol";
 import {IStabilityDAO} from "../interfaces/IStabilityDAO.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+import {EnumerableMap} from "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
 import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import {ConstantsLib} from "../core/libs/ConstantsLib.sol";
 
@@ -17,6 +18,8 @@ import {ConstantsLib} from "../core/libs/ConstantsLib.sol";
 /// Tokens are non-transferable and can be only minted and burned by XStaking contract.
 /// @author Omriss (https://github.com/omriss)
 /// Changelog:
+///  1.1.0: getVotes returns total voting power for all chains. Add setOtherChainsPowers + whitelist.
+///         initialize() has two new params: name and symbol - #424
 ///  1.0.1: userPower is renamed to getVotes (compatibility with OpenZeppelin's ERC20Votes) - #423
 contract StabilityDAO is
     Controllable,
@@ -25,12 +28,19 @@ contract StabilityDAO is
     ReentrancyGuardUpgradeable,
     IStabilityDAO
 {
+    using EnumerableMap for EnumerableMap.AddressToUintMap;
+
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         CONSTANTS                          */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.1";
+    string public constant VERSION = "1.1.0";
+
+    /// @notice Power location kinds for getVotes function. 0 - total, 1 - current chain, 2 - other chains
+    uint internal constant POWER_LOCATION_TOTAL_0 = 0;
+    uint internal constant POWER_LOCATION_CURRENT_CHAIN_1 = 1;
+    uint internal constant POWER_LOCATION_OTHER_CHAINS_2 = 2;
 
     // keccak256(abi.encode(uint(keccak256("erc7201:stability.StabilityDAO")) - 1)) & ~bytes32(uint(0xff));
     bytes32 private constant _STABILITY_DAO_TOKEN_STORAGE_LOCATION =
@@ -44,6 +54,17 @@ contract StabilityDAO is
     /*                         DATA TYPES                         */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
+    /// @notice Voting power of the users on other chains
+    struct OtherChainsPowers {
+        /// @notice Voting powers of users
+        /// The power includes both user's own power and power delegated to him by others on other chains
+        EnumerableMap.AddressToUintMap powers;
+
+        /// @notice Timestamp of OtherChainsPowers-data creation
+        uint timestamp;
+    }
+
+
     /// @custom:storage-location erc7201:stability.StabilityDAO
     struct StabilityDaoStorage {
         /// @dev Mapping is used to be able to add new fields to DaoParams struct in future, only config[0] is used
@@ -56,16 +77,26 @@ contract StabilityDAO is
         mapping(address user => address) delegatedTo;
         /// @notice Set of addresses that have delegated their vote power to a user
         mapping(address user => EnumerableSet.AddressSet) delegators;
+
+        /// @notice Single instance of OtherChainsPowers stored for address(0).
+        /// Map is used to update all data by single write operation
+        mapping(address zeroAddress => OtherChainsPowers) otherChainsPowers;
+
+        /// @notice Whitelist for addresses allowed to update OtherChainsPowers
+        mapping(address user => bool allowed) otherChainsPowersWhitelist;
     }
 
     error NonTransferable();
     error NotDelegatedTo();
     error AlreadyDelegated();
     error WrongValue();
+    error NotOtherChainsPowersWhitelisted();
 
     event ConfigUpdated(DaoParams newConfig);
     event DelegatePower(address from, address to);
     event UnDelegatePower(address from, address to);
+    event WhitelistOtherChainsPowers(address user, bool whitelisted);
+    event PowersOtherChainsUpdated(uint timestamp);
 
     //endregion ----------------------------------- Data types
 
@@ -83,9 +114,16 @@ contract StabilityDAO is
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IStabilityDAO
-    function initialize(address platform_, address xStbl_, address xStaking_, DaoParams memory p) public initializer {
+    function initialize(
+        address platform_,
+        address xStbl_,
+        address xStaking_,
+        DaoParams memory p,
+        string memory name_,
+        string memory symbol_
+    ) public initializer {
         __Controllable_init(platform_);
-        __ERC20_init("Stability DAO", "STBL_DAO");
+        __ERC20_init(name_, symbol_);  // "Stability DAO", "STBL_DAO"
         StabilityDaoStorage storage $ = _getStorage();
         $.xStaking = xStaking_;
         $.xStbl = xStbl_;
@@ -144,6 +182,35 @@ contract StabilityDAO is
 
             emit DelegatePower(msg.sender, to);
         }
+    }
+
+    /// @inheritdoc IStabilityDAO
+    function setWhitelistedForOtherChainsPowers(address user, bool whitelisted) external onlyGovernanceOrMultisig {
+        StabilityDaoStorage storage $ = _getStorage();
+        $.otherChainsPowersWhitelist[user] = whitelisted;
+
+        emit WhitelistOtherChainsPowers(user, whitelisted);
+    }
+
+    /// @inheritdoc IStabilityDAO
+    function updateOtherChainsPowers(address[] memory users, uint[] memory powers) external {
+        StabilityDaoStorage storage $ = _getStorage();
+        require($.otherChainsPowersWhitelist[msg.sender], NotOtherChainsPowersWhitelisted());
+
+        uint len = users.length;
+        require(len == powers.length, IControllable.IncorrectArrayLength());
+
+        delete $.otherChainsPowers[address(0)];
+        OtherChainsPowers storage poc = $.otherChainsPowers[address(0)];
+
+        for (uint i; i < len; ++i) {
+            poc.powers.set(users[i], powers[i]);
+        }
+
+        // todo do we need to calculate total power?
+
+        poc.timestamp = block.timestamp;
+        emit PowersOtherChainsUpdated(block.timestamp);
     }
 
     //endregion ----------------------------------- Actions
@@ -210,6 +277,58 @@ contract StabilityDAO is
     /// @inheritdoc IStabilityDAO
     function getVotes(address user_) public view returns (uint) {
         StabilityDaoStorage storage $ = _getStorage();
+        return _getVotesLocal($, user_);
+    }
+
+    /// @inheritdoc IStabilityDAO
+    function getVotesPower(address user_, uint powerLocation_) external view returns (uint) {
+        StabilityDaoStorage storage $ = _getStorage();
+        if (powerLocation_ == POWER_LOCATION_TOTAL_0) {
+            return _getVotesLocal($, user_) + _getVotesOther($, user_);
+        } else if (powerLocation_ == POWER_LOCATION_CURRENT_CHAIN_1) {
+            return _getVotesLocal($, user_);
+        } else if (powerLocation_ == POWER_LOCATION_OTHER_CHAINS_2) {
+            return _getVotesOther($, user_);
+        }
+
+        return 0;
+    }
+
+    /// @inheritdoc IStabilityDAO
+    function delegates(address user_) external view returns (address delegatedTo, address[] memory delegators) {
+        StabilityDaoStorage storage $ = _getStorage();
+        return ($.delegatedTo[user_], EnumerableSet.values($.delegators[user_]));
+    }
+
+    /// @inheritdoc IStabilityDAO
+    function getOtherChainsPowers() external view returns (uint timestamp, address[] memory users, uint[] memory powers) {
+        StabilityDaoStorage storage $ = _getStorage();
+        OtherChainsPowers storage poc = $.otherChainsPowers[address(0)];
+
+        uint len = poc.powers.length();
+        users = new address[](len);
+        powers = new uint[](len);
+        for (uint i; i < len; ++i) {
+            (address user, uint power) = poc.powers.at(i);
+            users[i] = user;
+            powers[i] = power;
+        }
+
+        timestamp = poc.timestamp;
+    }
+
+    /// @inheritdoc IStabilityDAO
+    function isWhitelistedForOtherChainsPowers(address user_) external view returns (bool) {
+        StabilityDaoStorage storage $ = _getStorage();
+        return $.otherChainsPowersWhitelist[user_];
+    }
+
+    //endregion ----------------------------------- View functions
+
+    //region ----------------------------------- Voting power calculation
+
+    /// @notice Get voting power of a user on the current chain
+    function _getVotesLocal(StabilityDaoStorage storage $, address user_) internal view returns (uint) {
         uint power = $.delegatedTo[user_] == address(0) ? balanceOf(user_) : 0;
 
         address[] memory delegators = EnumerableSet.values($.delegators[user_]);
@@ -221,13 +340,11 @@ contract StabilityDAO is
         return power;
     }
 
-    /// @inheritdoc IStabilityDAO
-    function delegates(address user_) external view returns (address delegatedTo, address[] memory delegators) {
-        StabilityDaoStorage storage $ = _getStorage();
-        return ($.delegatedTo[user_], EnumerableSet.values($.delegators[user_]));
+    /// @notice Get voting power of a user on other (not current) chains
+    function _getVotesOther(StabilityDaoStorage storage $, address user_) internal view returns (uint power) {
+        return $.otherChainsPowers[address(0)].powers.get(user_);
     }
-
-    //endregion ----------------------------------- View functions
+    //endregion ----------------------------------- Voting power calculation
 
     //region ----------------------------------- Internal logic
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/

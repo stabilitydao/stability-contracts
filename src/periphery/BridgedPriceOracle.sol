@@ -7,7 +7,6 @@ import {IPlatform} from "../interfaces/IPlatform.sol";
 import {OAppEncodingLib} from "./libs/OAppEncodingLib.sol";
 import {IBridgedPriceOracle} from "../interfaces/IBridgedPriceOracle.sol";
 import {IAggregatorInterfaceMinimal} from "../integrations/chainlink/IAggregatorInterfaceMinimal.sol";
-import {OFTComposeMsgCodec} from "@layerzerolabs/oft-evm/contracts/libs/OFTComposeMsgCodec.sol";
 
 contract BridgedPriceOracle is Controllable, OAppUpgradeable, IBridgedPriceOracle {
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/

@@ -53,16 +53,41 @@ interface IStabilityDAO is IERC20, IERC20Metadata {
     /// If user has balance of staked xSTBL below minimalPower, his power is 0
     function getVotes(address user_) external view returns (uint);
 
+    /// @notice Get voting power of a user for a specific kind of power location.
+    /// @param user_ The address of the user
+    /// @param powerLocation_ The kind of power location:
+    ///   0 - total power (same as getVotes(user_))
+    ///   1 - power on current chain
+    ///   2 - power on other chains (sum of all non-current chains)
+    /// The power = user's own (not-delegated) balance of STBL_DAO + balances of all users that delegated to him
+    /// If user has balance of staked xSTBL below minimalPower, his power is
+    function getVotesPower(address user_, uint powerLocation_) external view returns (uint);
+
     /// @notice Get delegation info of a user
     /// @return delegatedTo The address to whom the user has delegated his voting power (or address(0) if not delegated)
     /// @return delegators The list of addresses that have delegated their voting power to the user
     function delegates(address user_) external view returns (address delegatedTo, address[] memory delegators);
 
+    /// @notice Get list of users and their total powers on the other (not current) chains
+    /// @return timestamp The time when the powers were last updated through {setOtherChainsPowers}
+    /// @return users The list of user addresses
+    /// @return powers The list of total powers corresponding to the users list (user power = own power + delegated power)
+    function getOtherChainsPowers() external view returns (uint timestamp, address[] memory users, uint[] memory powers);
+
+    /// @notice Check if a user is whitelisted to call {setOtherChainsPowers}
+    function isWhitelistedForOtherChainsPowers(address user_) external view returns (bool);
     //endregion --------------------------------------- Read functions
 
     //region --------------------------------------- Write functions
     /// @dev Init
-    function initialize(address platform_, address xStbl_, address xStaking_, DaoParams memory config_) external;
+    function initialize(
+        address platform_,
+        address xStbl_,
+        address xStaking_,
+        DaoParams memory config_,
+        string memory name_,
+        string memory symbol_
+    ) external;
 
     /// @notice Update DAO config
     /// XStaking.syncStabilityDAOBalances() must be called after changing of minimalPower value
@@ -79,6 +104,13 @@ interface IStabilityDAO is IERC20, IERC20Metadata {
     /// To remove delegation just delegate the power to yourself or to address(0).
     /// @custom:restricted Anyone can call this function
     function setPowerDelegation(address to) external;
+
+    /// @notice Set whitelist status for a user to call {setOtherChainsPowers}
+    function setWhitelistedForOtherChainsPowers(address user, bool whitelisted) external;
+
+    /// @notice Set list of users and their total powers on the other (not current) chains
+    /// @custom:restricted whitelist {whitelistOtherChainsPowers}
+    function updateOtherChainsPowers(address[] memory users, uint[] memory powers) external;
 
     //endregion --------------------------------------- Write functions
 }

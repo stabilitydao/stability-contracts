@@ -44,7 +44,9 @@ contract PrepareUpgrade25103alpha is Script {
                     proposalThreshold: 10_000, // 10%
                     quorum: 30_000, // 30%
                     powerAllocationDelay: 1 days
-                })
+                }),
+                "Stability DAO",
+                "STBL_DAO"
             );
         vm.stopBroadcast();
     }

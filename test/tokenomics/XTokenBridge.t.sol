@@ -302,7 +302,7 @@ contract XTokenBridgeTest is Test {
 
             //  struct MessagingFee {uint256 nativeFee; uint256 lzTokenFee; }
             vm.expectRevert(IXTokenBridge.LzTokenFeeNotSupported.selector);
-            xTokenBridge.send{value: 0}(avalanche.endpointId, 1e18, MessagingFee(0, 1e18), options);
+            xTokenBridge.send{value: 0}(avalanche.endpointId, 1e18, MessagingFee({nativeFee: 0, lzTokenFee: 1e18}), options);
             vm.revertToState(snapshot);
         }
 
@@ -345,7 +345,7 @@ contract XTokenBridgeTest is Test {
 
         // ------------------- chain not supported
         vm.expectRevert(IXTokenBridge.IncorrectAmountReceivedFromXToken.selector);
-        xTokenBridge.send{value: 1e18}(avalanche.endpointId, 100e18, MessagingFee(1e18, 0), "");
+        xTokenBridge.send{value: 1e18}(avalanche.endpointId, 100e18, MessagingFee({nativeFee: 1e18, lzTokenFee: 0}), "");
     }
 
     function testComposeBadPaths() public {

@@ -296,7 +296,7 @@ contract XStakingUpgrade404SonicTest is Test {
         Proxy proxy = new Proxy();
         proxy.initProxy(address(new StabilityDAO()));
         IStabilityDAO token = IStabilityDAO(address(proxy));
-        token.initialize(address(PLATFORM), SonicConstantsLib.TOKEN_XSTBL, SonicConstantsLib.XSTBL_XSTAKING, p);
+        token.initialize(address(PLATFORM), SonicConstantsLib.TOKEN_XSTBL, SonicConstantsLib.XSTBL_XSTAKING, p, "Stability DAO", "STBL_DAO");
         return token;
     }
 

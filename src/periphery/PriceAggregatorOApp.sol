@@ -95,7 +95,7 @@ contract PriceAggregatorOApp is Controllable, OAppUpgradeable, IPriceAggregatorO
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IPriceAggregatorOApp
-    function changeWhitelist(address caller, bool whitelisted) external onlyOperator {
+    function changeWhitelist(address caller, bool whitelisted) external onlyGovernanceOrMultisig {
         PriceAggregatorOAppStorage storage $ = getPriceAggregatorOAppStorage();
         $.whitelist[caller] = whitelisted;
 

@@ -343,7 +343,6 @@ contract XSTBL is Controllable, ERC20Upgradeable, IXSTBL {
         require(amount_ != 0 && user_ != address(0), IncorrectZeroArgument());
 
         /// @dev transfer from the bridge to this address
-        // slither-disable-next-line unchecked-transfer
         IERC20(STBL()).safeTransferFrom(msg.sender, address(this), amount_);
 
         /// @dev mint the xSTBL to the user address

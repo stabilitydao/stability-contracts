@@ -298,7 +298,7 @@ contract XSTBLTest is Test, MockSetup {
         Proxy proxy = new Proxy();
         proxy.initProxy(address(new StabilityDAO()));
         IStabilityDAO token = IStabilityDAO(address(proxy));
-        token.initialize(address(platform), address(xStbl), address(xStaking), p);
+        token.initialize(address(platform), address(xStbl), address(xStaking), p, "Stability DAO", "STBL_DAO");
         return token;
     }
     //endregion --------------------- Helpers
