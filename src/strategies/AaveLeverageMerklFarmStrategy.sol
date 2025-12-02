@@ -27,7 +27,7 @@ import {VaultTypeLib} from "../core/libs/VaultTypeLib.sol";
 /// @title Earns APR by lending assets on AAVE with leverage
 /// @dev ALMF strategy
 /// Changelog:
-///   1.1.1: share price is calculated in collateral asset, not in usd
+///   1.2.0: share price is calculated in collateral asset, not in usd
 ///   1.1.0: add support of e-mode
 /// @author omriss (https://github.com/omriss)
 contract AaveLeverageMerklFarmStrategy is
@@ -46,7 +46,7 @@ contract AaveLeverageMerklFarmStrategy is
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.1.1";
+    string public constant VERSION = "1.2.0";
 
     //region ----------------------------------- Initialization and restricted actions
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -404,6 +404,18 @@ contract AaveLeverageMerklFarmStrategy is
         returns (uint[] memory amountsConsumed, uint value)
     {
         (amountsConsumed, value) = ALMFLib.previewDepositValue(_getLeverageLendingBaseStorage(), amountsMax);
+    }
+
+    /// @inheritdoc StrategyBase
+    function _beforeDoHardWork() internal override {
+        super._beforeDoHardWork();
+
+        // all strategies created before 1.2.0 we created with incorrect value of exchangeAssetIndex
+        // let's update it on the fly
+        StrategyBaseStorage storage $ = _getStrategyBaseStorage();
+        if ($._exchangeAssetIndex == type(uint).max) {
+            $._exchangeAssetIndex = 0;
+        }
     }
 
     //endregion ----------------------------------- Strategy base

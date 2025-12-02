@@ -42,7 +42,7 @@ library ALMFLib {
 
     /// @custom:storage-location erc7201:stability.AaveLeverageMerklFarmStrategy
     struct AlmfStrategyStorage {
-        /// @dev Deprecated
+        /// @dev Deprecated since 1.2.0
         uint lastSharePriceInUSD;
 
         /// @notice Deposit threshold. Amounts less than the threshold are deposited directly without leverage
