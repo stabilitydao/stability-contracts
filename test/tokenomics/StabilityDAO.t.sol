@@ -314,7 +314,14 @@ contract StabilityDAOSonicTest is Test {
         Proxy proxy = new Proxy();
         proxy.initProxy(address(new StabilityDAO()));
         IStabilityDAO token = IStabilityDAO(address(proxy));
-        token.initialize(SonicConstantsLib.PLATFORM, SonicConstantsLib.TOKEN_STBL, SonicConstantsLib.XSTBL_XSTAKING, p, "Stability DAO", "STBL_DAO");
+        token.initialize(
+            SonicConstantsLib.PLATFORM,
+            SonicConstantsLib.TOKEN_STBL,
+            SonicConstantsLib.XSTBL_XSTAKING,
+            p,
+            "Stability DAO",
+            "STBL_DAO"
+        );
         return token;
     }
 

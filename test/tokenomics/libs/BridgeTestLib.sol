@@ -414,7 +414,7 @@ library BridgeTestLib {
     }
 
     /// @notice Extract PacketSent message from emitted event
-    function _extractSendMessage(Vm.Log[] memory logs) internal pure returns (bytes memory message) {
+    function _extractSendMessage(Vm.Log[] memory logs) internal pure returns (bytes memory message, bytes32 guid) {
         bytes memory encodedPayload;
         bytes32 sig = keccak256("PacketSent(bytes,bytes,address)"); // PacketSent(bytes encodedPayload, bytes options, address sendLibrary)
 
@@ -427,6 +427,8 @@ library BridgeTestLib {
 
         // repeat decoding logic from Packet.sol\decode() and PacketV1Codec.sol\message()
         { // message = bytes(encodedPayload[113:]);
+
+            // header length: 1 + 8 + 4 + 32 + 4 + 32 + 32 = 113
             uint start = 113;
             require(encodedPayload.length >= start, "encodedPayload too short");
             uint msgLen = encodedPayload.length - start;
@@ -436,8 +438,9 @@ library BridgeTestLib {
             }
         }
 
-        //        console.logBytes(message);
-        return message;
+        assembly {
+            guid := mload(add(message, add(32, 81)))
+        }
     }
 
     /// @notice Extract PacketSent message from emitted event

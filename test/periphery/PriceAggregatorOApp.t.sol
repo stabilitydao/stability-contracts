@@ -267,25 +267,27 @@ contract PriceAggregatorOAppTest is Test {
     function testInvalidMessageFormat() public {
         vm.selectFork(avalanche.fork);
 
-        Origin memory origin = Origin({srcEid: sonic.endpointId, sender: bytes32(uint(uint160(address(priceAggregatorOApp)))), nonce: 1});
+        Origin memory origin =
+            Origin({srcEid: sonic.endpointId, sender: bytes32(uint(uint160(address(priceAggregatorOApp)))), nonce: 1});
 
         // same code as OAppEncodingLib.packPriceUsd18
         bytes32 brokenSerializedMessage = bytes32(
             (uint(222) << 240) // (!) incorrect message format
-            | (uint(uint160(1)) << 80)
-            | (uint(uint64(2)) << 16)
+                | (uint(uint160(1)) << 80) | (uint(uint64(2)) << 16)
         );
 
         vm.expectRevert(IBridgedPriceOracle.InvalidMessageFormat.selector);
         vm.prank(avalanche.endpoint);
-        IOAppReceiver(avalanche.oapp).lzReceive(
-            origin,
-            bytes32(0), // guid: actual value doesn't matter
-            abi.encodePacked(brokenSerializedMessage),
-            address(0), // executor
-            "" // extraData
-        );
+        IOAppReceiver(avalanche.oapp)
+            .lzReceive(
+                origin,
+                bytes32(0), // guid: actual value doesn't matter
+                abi.encodePacked(brokenSerializedMessage),
+                address(0), // executor
+                "" // extraData
+            );
     }
+
     //endregion ------------------------------------- Unit tests for BridgedPriceOracleAvalanche
 
     //region ------------------------------------- Send price from Sonic to Avalanche
@@ -455,18 +457,20 @@ contract PriceAggregatorOAppTest is Test {
         // ------------------ Target chain: simulate messages reception
         vm.selectFork(plasma.fork);
 
-        Origin memory origin = Origin({srcEid: sonic.endpointId, sender: bytes32(uint(uint160(address(priceAggregatorOApp)))), nonce: 1});
+        Origin memory origin =
+            Origin({srcEid: sonic.endpointId, sender: bytes32(uint(uint160(address(priceAggregatorOApp)))), nonce: 1});
 
         // ------------------ At first receive Message 2
         {
-        vm.prank(plasma.endpoint);
-            IOAppReceiver(plasma.oapp).lzReceive(
-                origin,
-                bytes32(0), // guid: actual value doesn't matter
-                message2,
-                address(0), // executor
-                "" // extraData
-            );
+            vm.prank(plasma.endpoint);
+            IOAppReceiver(plasma.oapp)
+                .lzReceive(
+                    origin,
+                    bytes32(0), // guid: actual value doesn't matter
+                    message2,
+                    address(0), // executor
+                    "" // extraData
+                );
 
             (uint currentPrice, uint currentTimestamp) = IBridgedPriceOracle(plasma.oapp).getPriceUsd18();
             assertEq(currentPrice, 2 * priceBase, "current price after message 2");
@@ -476,13 +480,14 @@ contract PriceAggregatorOAppTest is Test {
         // ------------------ Then receive outdated Message 1
         {
             vm.prank(plasma.endpoint);
-            IOAppReceiver(plasma.oapp).lzReceive(
-                origin,
-                bytes32(0), // guid: actual value doesn't matter
-                message1,
-                address(0), // executor
-                "" // extraData
-            );
+            IOAppReceiver(plasma.oapp)
+                .lzReceive(
+                    origin,
+                    bytes32(0), // guid: actual value doesn't matter
+                    message1,
+                    address(0), // executor
+                    "" // extraData
+                );
 
             (uint currentPrice, uint currentTimestamp) = IBridgedPriceOracle(plasma.oapp).getPriceUsd18();
             assertEq(currentPrice, 2 * priceBase, "current price is not changed (it's still from message 2)");

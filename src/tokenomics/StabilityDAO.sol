@@ -64,7 +64,6 @@ contract StabilityDAO is
         uint timestamp;
     }
 
-
     /// @custom:storage-location erc7201:stability.StabilityDAO
     struct StabilityDaoStorage {
         /// @dev Mapping is used to be able to add new fields to DaoParams struct in future, only config[0] is used
@@ -123,7 +122,7 @@ contract StabilityDAO is
         string memory symbol_
     ) public initializer {
         __Controllable_init(platform_);
-        __ERC20_init(name_, symbol_);  // "Stability DAO", "STBL_DAO"
+        __ERC20_init(name_, symbol_); // "Stability DAO", "STBL_DAO"
         StabilityDaoStorage storage $ = _getStorage();
         $.xStaking = xStaking_;
         $.xStbl = xStbl_;
@@ -301,7 +300,11 @@ contract StabilityDAO is
     }
 
     /// @inheritdoc IStabilityDAO
-    function getOtherChainsPowers() external view returns (uint timestamp, address[] memory users, uint[] memory powers) {
+    function getOtherChainsPowers()
+        external
+        view
+        returns (uint timestamp, address[] memory users, uint[] memory powers)
+    {
         StabilityDaoStorage storage $ = _getStorage();
         OtherChainsPowers storage poc = $.otherChainsPowers[address(0)];
 

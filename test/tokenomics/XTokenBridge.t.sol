@@ -302,7 +302,9 @@ contract XTokenBridgeTest is Test {
 
             //  struct MessagingFee {uint256 nativeFee; uint256 lzTokenFee; }
             vm.expectRevert(IXTokenBridge.LzTokenFeeNotSupported.selector);
-            xTokenBridge.send{value: 0}(avalanche.endpointId, 1e18, MessagingFee({nativeFee: 0, lzTokenFee: 1e18}), options);
+            xTokenBridge.send{value: 0}(
+                avalanche.endpointId, 1e18, MessagingFee({nativeFee: 0, lzTokenFee: 1e18}), options
+            );
             vm.revertToState(snapshot);
         }
 
@@ -396,7 +398,7 @@ contract XTokenBridgeTest is Test {
 
         vm.recordLogs();
         IXTokenBridge(sonic.xTokenBridge).send{value: msgFee.nativeFee}(avalanche.endpointId, 1e18, msgFee, options);
-        bytes memory message = BridgeTestLib._extractSendMessage(vm.getRecordedLogs());
+        (bytes memory message,) = BridgeTestLib._extractSendMessage(vm.getRecordedLogs());
 
         // --------------- Simulate message receiving on avalanche
         vm.selectFork(avalanche.fork);
@@ -616,6 +618,66 @@ contract XTokenBridgeTest is Test {
         assertEq(r3.srcAfter.balanceOappSTBL, 0, "plasma: expected amount of locked STBL in the bridge 3");
     }
 
+    function testLowGasLimit() public {
+        _setUpXTokenBridges();
+
+        // --------------- send XSTBL on src
+        vm.selectFork(sonic.fork);
+
+        deal(SonicConstantsLib.TOKEN_STBL, address(this), 100e18);
+        IERC20(SonicConstantsLib.TOKEN_STBL).approve(sonic.xToken, 100e18);
+        IXSTBL(sonic.xToken).enter(100e18);
+
+        bytes memory options = OptionsBuilder.newOptions().addExecutorLzReceiveOption(GAS_LIMIT_LZRECEIVE / 100, 0) // (!) too low gas limit
+            .addExecutorLzComposeOption(0, GAS_LIMIT_LZCOMPOSE / 100, 0); // (!) too low gas limit
+        MessagingFee memory msgFee =
+            IXTokenBridge(sonic.xTokenBridge).quoteSend(plasma.endpointId, 100e18, options, false);
+
+        vm.recordLogs();
+        IXTokenBridge(sonic.xTokenBridge).send{value: msgFee.nativeFee}(plasma.endpointId, 100e18, msgFee, options);
+        (bytes memory message, bytes32 guidId_) = BridgeTestLib._extractSendMessage(vm.getRecordedLogs());
+        console.logBytes32(guidId_);
+
+        // todo
+
+        // --------------- Simulate message receiving on plasma
+        vm.selectFork(plasma.fork);
+
+        Origin memory origin =
+            Origin({srcEid: sonic.endpointId, sender: bytes32(uint(uint160(address(sonic.oapp)))), nonce: 1});
+
+        // --------------- lzReceive
+        {
+            vm.recordLogs();
+            vm.prank(plasma.endpoint);
+            IOAppReceiver(plasma.oapp)
+                .lzReceive(
+                    origin,
+                    bytes32(guidId_), // guid: actual value doesn't matter
+                    message,
+                    address(0), // executor
+                    "" // extraData
+                );
+        }
+
+        // --------------- lzCompose
+        {
+            (address from, address to, bytes memory composeMessage) =
+                BridgeTestLib._extractComposeMessage(vm.getRecordedLogs());
+
+            vm.recordLogs();
+            vm.prank(plasma.endpoint);
+            IOAppComposer(plasma.xTokenBridge)
+                .lzCompose(
+                    plasma.oapp,
+                    bytes32(guidId_), // guid: actual value doesn't matter
+                    composeMessage,
+                    address(0), // executor
+                    "" // extraData
+                );
+        }
+    }
+
     //endregion ------------------------------------- Send XSTBL between chains
 
     //region ------------------------------------- Unit tests
@@ -639,7 +701,7 @@ contract XTokenBridgeTest is Test {
 
         vm.recordLogs();
         IXTokenBridge(src.xTokenBridge).send{value: msgFee.nativeFee}(dest.endpointId, amount_, msgFee, options);
-        bytes memory message = BridgeTestLib._extractSendMessage(vm.getRecordedLogs());
+        (bytes memory message,) = BridgeTestLib._extractSendMessage(vm.getRecordedLogs());
 
         // --------------- Simulate message receiving on dest
         vm.selectFork(dest.fork);

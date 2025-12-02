@@ -563,7 +563,7 @@ contract BridgedTokenTest is Test {
 
         vm.prank(sender);
         adapter.send{value: msgFee.nativeFee}(sendParam, msgFee, sender);
-        bytes memory message = BridgeTestLib._extractSendMessage(vm.getRecordedLogs());
+        (bytes memory message,) = BridgeTestLib._extractSendMessage(vm.getRecordedLogs());
 
         // ------------------ Target: simulate message reception
         vm.selectFork(target.fork);
@@ -635,7 +635,7 @@ contract BridgedTokenTest is Test {
 
         vm.prank(sender);
         IOFT(target.oapp).send{value: msgFee.nativeFee}(sendParam, msgFee, sender);
-        bytes memory message = BridgeTestLib._extractSendMessage(vm.getRecordedLogs());
+        (bytes memory message,) = BridgeTestLib._extractSendMessage(vm.getRecordedLogs());
 
         // ------------------ Sonic: simulate message reception
         vm.selectFork(sonic.fork);
@@ -701,7 +701,7 @@ contract BridgedTokenTest is Test {
 
         vm.prank(sender);
         IOFT(src.oapp).send{value: msgFee.nativeFee}(sendParam, msgFee, sender);
-        bytes memory message = BridgeTestLib._extractSendMessage(vm.getRecordedLogs());
+        (bytes memory message,) = BridgeTestLib._extractSendMessage(vm.getRecordedLogs());
 
         // ------------------ Target: simulate message reception
         vm.selectFork(target.fork);
