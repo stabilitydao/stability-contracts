@@ -3,7 +3,7 @@ pragma solidity ^0.8.23;
 
 import {XSTBL} from "../../src/tokenomics/XSTBL.sol";
 import {BridgeTestLib} from "./libs/BridgeTestLib.sol";
-import {console, Test} from "forge-std/Test.sol";
+import {console, Test, Vm} from "forge-std/Test.sol";
 import {XStaking} from "../../src/tokenomics/XStaking.sol";
 import {XTokenBridge} from "../../src/tokenomics/XTokenBridge.sol";
 import {OptionsBuilder} from "@layerzerolabs/oapp-evm/contracts/oapp/libs/OptionsBuilder.sol";
@@ -25,6 +25,7 @@ import {IOAppReceiver} from "@layerzerolabs/oapp-evm/contracts/oapp/interfaces/I
 import {IOAppComposer} from "@layerzerolabs/oapp-evm/contracts/oapp/interfaces/IOAppComposer.sol";
 import {MockXToken} from "../../src/test/MockXToken.sol";
 import {OFTComposeMsgCodec} from "@layerzerolabs/oft-evm/contracts/libs/OFTComposeMsgCodec.sol";
+import {ILayerZeroEndpointV2} from "@layerzerolabs/lz-evm-protocol-v2/contracts/interfaces/ILayerZeroEndpointV2.sol";
 
 contract XTokenBridgeTest is Test {
     using OptionsBuilder for bytes;
@@ -574,63 +575,67 @@ contract XTokenBridgeTest is Test {
         assertEq(r3.srcAfter.balanceOappSTBL, 0, "plasma: expected amount of locked STBL in the bridge 3");
     }
 
-    function testLowGasLimit() public {
+    function testReceiveThroughEndpoint() public {
         _setUpXTokenBridges();
 
-        // --------------- send XSTBL on src
+        // --------------- provide xSTBL to the user
         vm.selectFork(sonic.fork);
 
         deal(SonicConstantsLib.TOKEN_STBL, address(this), 100e18);
         IERC20(SonicConstantsLib.TOKEN_STBL).approve(sonic.xToken, 100e18);
         IXSTBL(sonic.xToken).enter(100e18);
 
-        bytes memory options = OptionsBuilder.newOptions().addExecutorLzReceiveOption(GAS_LIMIT_LZRECEIVE / 100, 0) // (!) too low gas limit
-            .addExecutorLzComposeOption(0, GAS_LIMIT_LZCOMPOSE / 100, 0); // (!) too low gas limit
-        MessagingFee memory msgFee = IXTokenBridge(sonic.xTokenBridge).quoteSend(plasma.endpointId, 100e18, options);
+        // --------------- send XSTBL on src
+        bytes memory options = OptionsBuilder.newOptions().addExecutorLzReceiveOption(GAS_LIMIT_LZRECEIVE, 0)
+            .addExecutorLzComposeOption(0, GAS_LIMIT_LZCOMPOSE, 0);
+        MessagingFee memory msgFee = IXTokenBridge(sonic.xTokenBridge).quoteSend(plasma.endpointId, 1e18, options);
 
         vm.recordLogs();
-        IXTokenBridge(sonic.xTokenBridge).send{value: msgFee.nativeFee}(plasma.endpointId, 100e18, msgFee, options);
-        (bytes memory message, bytes32 guidId_) = BridgeTestLib._extractSendMessage(vm.getRecordedLogs());
-        console.logBytes32(guidId_);
+        IXTokenBridge(sonic.xTokenBridge).send{value: msgFee.nativeFee}(plasma.endpointId, 1e18, msgFee, options);
+        Vm.Log[] memory logs = vm.getRecordedLogs();
+        // decode Layer Zero's event PacketSent
+        (bytes memory message, bytes32 guidId_) = BridgeTestLib._extractSendMessage(logs);
+        // decode XTokenBridge's event XTokenSent
+        (,,,, bytes32 guidId, uint64 nonce,) = BridgeTestLib._extractXTokenSentMessage(logs);
+        assertEq(guidId, guidId_, "XTokenSent has correct guid");
 
-        // todo
-
-        // --------------- Simulate message receiving on plasma
+        // --------------- Receive message on plasma side
         vm.selectFork(plasma.fork);
 
         Origin memory origin =
-            Origin({srcEid: sonic.endpointId, sender: bytes32(uint(uint160(address(sonic.oapp)))), nonce: 1});
+            Origin({srcEid: sonic.endpointId, sender: bytes32(uint(uint160(address(sonic.oapp)))), nonce: nonce});
 
-        // --------------- lzReceive
+        vm.prank(plasma.receiveLib);
+        ILayerZeroEndpointV2(plasma.endpoint).verify(origin, plasma.oapp, keccak256(abi.encodePacked(guidId_, message)));
+
         {
-            vm.recordLogs();
-            vm.prank(plasma.endpoint);
-            IOAppReceiver(plasma.oapp)
-                .lzReceive(
-                    origin,
-                    bytes32(guidId_), // guid: actual value doesn't matter
-                    message,
-                    address(0), // executor
-                    "" // extraData
-                );
+            bool isVerifiable = ILayerZeroEndpointV2(plasma.endpoint).verifiable(
+                origin,
+                plasma.oapp
+            );
+            require(isVerifiable, "Message not verifiable yet");
+
+            bytes32 inboundPayloadHash = ILayerZeroEndpointV2(plasma.endpoint).inboundPayloadHash(plasma.oapp, sonic.endpointId, bytes32(uint(uint160(address(sonic.oapp)))), nonce);
+            assertEq(inboundPayloadHash, keccak256(abi.encodePacked(guidId_, message)));
+
+            uint64 currentInboundNonce = ILayerZeroEndpointV2(plasma.endpoint).inboundNonce(
+                plasma.oapp,
+                sonic.endpointId,
+                bytes32(uint(uint160(address(sonic.oapp))))
+            );
+            assertEq(currentInboundNonce, 1, "Inbound nonce should be 1 before lzReceive (and 0 initially)");
         }
 
-        // --------------- lzCompose
-        {
-            (address from, address to, bytes memory composeMessage) =
-                BridgeTestLib._extractComposeMessage(vm.getRecordedLogs());
+        vm.recordLogs();
+        vm.prank(plasma.executor);
+        ILayerZeroEndpointV2(plasma.endpoint).lzReceive(origin, plasma.oapp, guidId_, message, "");
+        (,, bytes memory composeMessage) = BridgeTestLib._extractComposeMessage(vm.getRecordedLogs());
 
-            vm.recordLogs();
-            vm.prank(plasma.endpoint);
-            IOAppComposer(plasma.xTokenBridge)
-                .lzCompose(
-                    plasma.oapp,
-                    bytes32(guidId_), // guid: actual value doesn't matter
-                    composeMessage,
-                    address(0), // executor
-                    "" // extraData
-                );
-        }
+        vm.prank(plasma.endpoint);
+        IOAppComposer(plasma.xTokenBridge).lzCompose(plasma.oapp, guidId_, composeMessage, address(0), "");
+
+        assertEq(IERC20(plasma.xToken).balanceOf(address(this)), 1e18, "user should receive 1e18 xSTBL on plasma");
+
     }
 
     //endregion ------------------------------------- Send XSTBL between chains

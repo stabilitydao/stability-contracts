@@ -9,7 +9,7 @@ import {IOFTPausable} from "../interfaces/IOFTPausable.sol";
 import {IXSTBL} from "../interfaces/IXSTBL.sol";
 import {IXTokenBridge} from "../interfaces/IXTokenBridge.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {SendParam, MessagingFee} from "@layerzerolabs/oft-evm/contracts/interfaces/IOFT.sol";
+import {SendParam, MessagingFee, OFTReceipt} from "@layerzerolabs/oft-evm/contracts/interfaces/IOFT.sol";
 import {MessagingReceipt} from "@layerzerolabs/oapp-evm/contracts/oapp/OAppSender.sol";
 import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 
@@ -190,10 +190,18 @@ contract XTokenBridge is Controllable, IXTokenBridge, IOAppComposer, ReentrancyG
             oftCmd: ""
         });
 
-        (MessagingReceipt memory r,) =
+        (MessagingReceipt memory r, OFTReceipt memory oftReceipt) =
             IOFTPausable(_bridge).send{value: msgFee.nativeFee}(sendParam, msgFee, msg.sender);
 
-        emit Send(msg.sender, dstEid_, amount, r.guid);
+        emit XTokenSent(
+            msg.sender,
+            dstEid_,
+            amount,
+            oftReceipt.amountSentLD,
+            r.guid,
+            r.nonce,
+            r.fee.nativeFee
+        );
     }
 
     /// @inheritdoc IXTokenBridge
@@ -246,7 +254,7 @@ contract XTokenBridge is Controllable, IXTokenBridge, IOAppComposer, ReentrancyG
         require(recipient != address(0), IncorrectReceiver()); // just for safety
         require(amountLD != 0, ZeroAmount()); // just for safety
 
-        // ---------------- state STBL for the user
+        // ---------------- stake STBL for the user
         IERC20(IXSTBL($.xToken).STBL()).forceApprove($.xToken, amountLD);
         IXSTBL($.xToken).takeFromBridge(recipient, amountLD);
         // we don't check result user balance here to reduce gas consumption

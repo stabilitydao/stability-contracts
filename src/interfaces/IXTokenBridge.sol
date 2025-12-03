@@ -7,9 +7,20 @@ interface IXTokenBridge {
     /// @notice Emitted when user sends xToken to another chain
     /// @param userFrom The address of the user-sender
     /// @param dstEid The destination chain endpoint ID
-    /// @param amount The amount of xToken sent
-    /// @param guidId The unique GUID identifier for the sent message
-    event Send(address indexed userFrom, uint32 indexed dstEid, uint amount, bytes32 guidId);
+    /// @param amount The amount of xToken to send (local decimals).
+    /// @param amountSentLD Amount of tokens ACTUALLY debited from the sender in local decimals (from OFTReceipt)
+    /// @param guidId The unique GUID identifier for the sent message (from MessagingReceipt)
+    /// @param nonce The nonce of the sent message (from MessagingReceipt)
+    /// @param nativeFee The amount of native fee paid for the cross-chain message
+    event XTokenSent(
+        address indexed userFrom,
+        uint32 indexed dstEid,
+        uint amount,
+        uint amountSentLD,
+        bytes32 indexed guidId,
+        uint64 nonce,
+        uint nativeFee
+    );
 
     /// @notice Emitted when xToken is received from another chain
     /// @param userTo The address of the recipient-user

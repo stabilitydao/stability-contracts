@@ -274,7 +274,7 @@ library BridgeTestLib {
                     src.oapp, // OApp address
                     dst.endpointId, // Source chain EID
                     src.receiveLib, // ReceiveUln302 address
-                    GRACE_PERIOD // Grace period for library switch
+                    0 // Grace period for library switch
                 );
         }
     }
@@ -439,11 +439,24 @@ library BridgeTestLib {
         }
 
         assembly {
-            guid := mload(add(message, add(32, 81)))
+            guid := mload(add(encodedPayload, add(32, 81)))
         }
     }
 
-    /// @notice Extract PacketSent message from emitted event
+    function _extractPayload(Vm.Log[] memory logs) internal pure returns (bytes memory encodedPayload) {
+        bytes32 sig = keccak256("PacketSent(bytes,bytes,address)"); // PacketSent(bytes encodedPayload, bytes options, address sendLibrary)
+
+        for (uint i; i < logs.length; ++i) {
+            if (logs[i].topics[0] == sig) {
+                (encodedPayload,,) = abi.decode(logs[i].data, (bytes, bytes, address));
+                break;
+            }
+        }
+
+        return encodedPayload;
+    }
+
+    /// @notice Extract ComposeSent message from emitted event
     function _extractComposeMessage(Vm
                 .Log[] memory logs) internal pure returns (address from, address to, bytes memory message) {
         bytes32 sig = keccak256("ComposeSent(address,address,bytes32,uint16,bytes)"); // ComposeSent(address from, address to, bytes32 guid, uint16 index, bytes message)
@@ -457,6 +470,38 @@ library BridgeTestLib {
 
         //        console.logBytes(message);
         return (from, to, message);
+    }
+
+    /// @notice Extract XTokenSent message from emitted event
+    function _extractXTokenSentMessage(Vm.Log[] memory logs) internal pure returns (
+        address userFrom,
+        uint32 dstEid,
+        uint amount,
+        uint amountSentLD,
+        bytes32 guidId,
+        uint64 nonce,
+        uint nativeFee
+    ) {
+// event XTokenSent(address indexed userFrom, uint32 indexed dstEid, uint amount, uint amountSentLD, bytes32 indexed guidId, uint64 nonce, uint nativeFee);
+        bytes32 sig = keccak256("XTokenSent(address,uint32,uint256,uint256,bytes32,uint64,uint256)");
+
+        for (uint i; i < logs.length; ++i) {
+            if (logs[i].topics[0] != sig) continue;
+
+            // extract indexed out of topics
+            // topics = [sig, userFrom, dstEid, guidId]
+            require(logs[i].topics.length >= 4, "not enough topics for indexed params");
+            userFrom = address(uint160(uint256(logs[i].topics[1])));
+            dstEid = uint32(uint256(logs[i].topics[2]));
+            guidId = bytes32(logs[i].topics[3]);
+
+            // extract all other params from data: amount, amountSentLD, nonce, nativeFee
+            require(logs[i].data.length >= 32 * 4, "data too short for non-indexed params");
+            (amount, amountSentLD, nonce, nativeFee) = abi.decode(logs[i].data, (uint, uint, uint64, uint));
+            break;
+        }
+
+        return (userFrom, dstEid, amount, amountSentLD, guidId, nonce, nativeFee);
     }
 
     //endregion ------------------------------------- Layer zero utils
