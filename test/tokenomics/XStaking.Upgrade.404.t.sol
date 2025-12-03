@@ -8,7 +8,7 @@ import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
 import {Proxy} from "../../src/core/proxy/Proxy.sol";
 import {IStabilityDAO} from "../../src/interfaces/IStabilityDAO.sol";
-import {StabilityDAO} from "../../src/tokenomics/StabilityDAO.sol";
+import {DAO} from "../../src/tokenomics/DAO.sol";
 import {XStaking} from "../../src/tokenomics/XStaking.sol";
 import {XSTBL} from "../../src/tokenomics/XSTBL.sol";
 import {IXSTBL} from "../../src/interfaces/IXSTBL.sol";
@@ -294,7 +294,7 @@ contract XStakingUpgrade404SonicTest is Test {
         });
 
         Proxy proxy = new Proxy();
-        proxy.initProxy(address(new StabilityDAO()));
+        proxy.initProxy(address(new DAO()));
         IStabilityDAO token = IStabilityDAO(address(proxy));
         token.initialize(
             address(PLATFORM),

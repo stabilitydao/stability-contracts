@@ -13,7 +13,7 @@ import {XStaking} from "../../src/tokenomics/XStaking.sol";
 import {XSTBL} from "../../src/tokenomics/XSTBL.sol";
 import {RevenueRouter} from "../../src/tokenomics/RevenueRouter.sol";
 import {FeeTreasury} from "../../src/tokenomics/FeeTreasury.sol";
-import {StabilityDAO} from "../../src/tokenomics/StabilityDAO.sol";
+import {DAO} from "../../src/tokenomics/DAO.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 // import {console} from "forge-std/console.sol";
@@ -296,7 +296,7 @@ contract XSTBLTest is Test, MockSetup {
         });
 
         Proxy proxy = new Proxy();
-        proxy.initProxy(address(new StabilityDAO()));
+        proxy.initProxy(address(new DAO()));
         IStabilityDAO token = IStabilityDAO(address(proxy));
         token.initialize(address(platform), address(xStbl), address(xStaking), p, "Stability DAO", "STBL_DAO");
         return token;

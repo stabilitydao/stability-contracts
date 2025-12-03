@@ -60,7 +60,6 @@ interface IStabilityDAO is IERC20, IERC20Metadata {
     ///   1 - power on current chain
     ///   2 - power on other chains (sum of all non-current chains)
     /// The power = user's own (not-delegated) balance of STBL_DAO + balances of all users that delegated to him
-    /// If user has balance of staked xSTBL below minimalPower, his power is
     function getVotesPower(address user_, uint powerLocation_) external view returns (uint);
 
     /// @notice Get delegation info of a user
@@ -71,11 +70,14 @@ interface IStabilityDAO is IERC20, IERC20Metadata {
     /// @notice Get list of users and their total powers on the other (not current) chains
     /// @return timestamp The time when the powers were last updated through {setOtherChainsPowers}
     /// @return users The list of user addresses
-    /// @return powers The list of total powers corresponding to the users list (user power = own power + delegated power)
+    /// @return powers The list of total powers corresponding to the users list
     function getOtherChainsPowers() external view returns (uint timestamp, address[] memory users, uint[] memory powers);
 
     /// @notice Check if a user is whitelisted to call {setOtherChainsPowers}
     function isWhitelistedForOtherChainsPowers(address user_) external view returns (bool);
+
+    /// @notice True if delegation of voting power is forbidden
+    function delegationForbidden() external view returns (bool);
     //endregion --------------------------------------- Read functions
 
     //region --------------------------------------- Write functions
@@ -111,6 +113,9 @@ interface IStabilityDAO is IERC20, IERC20Metadata {
     /// @notice Set list of users and their total powers on the other (not current) chains
     /// @custom:restricted whitelist {whitelistOtherChainsPowers}
     function updateOtherChainsPowers(address[] memory users, uint[] memory powers) external;
+
+    /// @notice Forbid or allow delegation of voting power
+    function setDelegationForbidden(bool forbidden) external;
 
     //endregion --------------------------------------- Write functions
 }

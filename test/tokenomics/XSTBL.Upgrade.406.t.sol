@@ -12,7 +12,7 @@ import {IStabilityDAO} from "../../src/interfaces/IStabilityDAO.sol";
 import {XSTBL} from "../../src/tokenomics/XSTBL.sol";
 import {Platform} from "../../src/core/Platform.sol";
 import {Proxy} from "../../src/core/proxy/Proxy.sol";
-import {StabilityDAO} from "../../src/tokenomics/StabilityDAO.sol";
+import {DAO} from "../../src/tokenomics/DAO.sol";
 
 contract XstblUpgrade406SonicTest is Test {
     uint public constant FORK_BLOCK = 50689527; // Oct-15-2025 05:17:06 AM +UTC
@@ -222,7 +222,7 @@ contract XstblUpgrade406SonicTest is Test {
         });
 
         Proxy proxy = new Proxy();
-        proxy.initProxy(address(new StabilityDAO()));
+        proxy.initProxy(address(new DAO()));
         IStabilityDAO token = IStabilityDAO(address(proxy));
         token.initialize(
             SonicConstantsLib.PLATFORM,

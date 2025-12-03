@@ -21,13 +21,7 @@ import {ConstantsLib} from "../core/libs/ConstantsLib.sol";
 ///  1.1.0: getVotes returns total voting power for all chains. Add setOtherChainsPowers + whitelist.
 ///         initialize() has two new params: name and symbol - #424
 ///  1.0.1: userPower is renamed to getVotes (compatibility with OpenZeppelin's ERC20Votes) - #423
-contract StabilityDAO is
-    Controllable,
-    ERC20Upgradeable,
-    ERC20BurnableUpgradeable,
-    ReentrancyGuardUpgradeable,
-    IStabilityDAO
-{
+contract DAO is Controllable, ERC20Upgradeable, ERC20BurnableUpgradeable, ReentrancyGuardUpgradeable, IStabilityDAO {
     using EnumerableMap for EnumerableMap.AddressToUintMap;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -44,7 +38,7 @@ contract StabilityDAO is
 
     // keccak256(abi.encode(uint(keccak256("erc7201:stability.StabilityDAO")) - 1)) & ~bytes32(uint(0xff));
     bytes32 private constant _STABILITY_DAO_TOKEN_STORAGE_LOCATION =
-        0xb41400b8ab7d5c4f4647f6397fc72c137345511eb9c9a0082de7fe729c2ae200;
+        0xb41400b8ab7d5c4f4647f6397fc72c137345511eb9c9a0082de7fe729c2ae200; // StabilityDAO name is used historically
 
     /// @dev Same to XSTBL.DENOMINATOR
     uint internal constant DENOMINATOR_XSTBL = 10_000;
@@ -56,8 +50,7 @@ contract StabilityDAO is
 
     /// @notice Voting power of the users on other chains
     struct OtherChainsPowers {
-        /// @notice Voting powers of users
-        /// The power includes both user's own power and power delegated to him by others on other chains
+        /// @notice Voting powers of users on other chains
         EnumerableMap.AddressToUintMap powers;
 
         /// @notice Timestamp of OtherChainsPowers-data creation
@@ -65,7 +58,7 @@ contract StabilityDAO is
     }
 
     /// @custom:storage-location erc7201:stability.StabilityDAO
-    struct StabilityDaoStorage {
+    struct DaoStorage {
         /// @dev Mapping is used to be able to add new fields to DaoParams struct in future, only config[0] is used
         mapping(uint => DaoParams) config;
         /// @notice Address of XSTBL token
@@ -83,6 +76,10 @@ contract StabilityDAO is
 
         /// @notice Whitelist for addresses allowed to update OtherChainsPowers
         mapping(address user => bool allowed) otherChainsPowersWhitelist;
+
+        /// @notice Is delegation of voting power on the current chain forbidden
+        /// Basically delegation must be forbidden on all chains except main one (sonic for Stability)
+        bool delegationForbidden;
     }
 
     error NonTransferable();
@@ -90,12 +87,14 @@ contract StabilityDAO is
     error AlreadyDelegated();
     error WrongValue();
     error NotOtherChainsPowersWhitelisted();
+    error DelegationForbiddenOnTheChain();
 
     event ConfigUpdated(DaoParams newConfig);
     event DelegatePower(address from, address to);
     event UnDelegatePower(address from, address to);
     event WhitelistOtherChainsPowers(address user, bool whitelisted);
     event PowersOtherChainsUpdated(uint timestamp);
+    event SetDelegationForbiddenOnTheChain(bool forbidden);
 
     //endregion ----------------------------------- Data types
 
@@ -123,7 +122,7 @@ contract StabilityDAO is
     ) public initializer {
         __Controllable_init(platform_);
         __ERC20_init(name_, symbol_); // "Stability DAO", "STBL_DAO"
-        StabilityDaoStorage storage $ = _getStorage();
+        DaoStorage storage $ = _getDaoStorage();
         $.xStaking = xStaking_;
         $.xStbl = xStbl_;
         $.config[0] = p;
@@ -148,7 +147,7 @@ contract StabilityDAO is
 
     /// @inheritdoc IStabilityDAO
     function updateConfig(DaoParams memory p) external onlyGovernanceOrMultisig {
-        StabilityDaoStorage storage $ = _getStorage();
+        DaoStorage storage $ = _getDaoStorage();
 
         require(p.exitPenalty < DENOMINATOR_XSTBL, WrongValue());
         require(p.quorum < ConstantsLib.DENOMINATOR && p.proposalThreshold < ConstantsLib.DENOMINATOR, WrongValue());
@@ -162,7 +161,7 @@ contract StabilityDAO is
     function setPowerDelegation(address to) external nonReentrant {
         // anyone can call this function
 
-        StabilityDaoStorage storage $ = _getStorage();
+        DaoStorage storage $ = _getDaoStorage();
 
         if (to == msg.sender || to == address(0)) {
             address delegatee = $.delegatedTo[msg.sender];
@@ -173,6 +172,7 @@ contract StabilityDAO is
 
             emit UnDelegatePower(msg.sender, to);
         } else {
+            require(!$.delegationForbidden, DelegationForbiddenOnTheChain());
             require($.delegatedTo[msg.sender] == address(0), AlreadyDelegated());
             $.delegatedTo[msg.sender] = to;
 
@@ -185,7 +185,7 @@ contract StabilityDAO is
 
     /// @inheritdoc IStabilityDAO
     function setWhitelistedForOtherChainsPowers(address user, bool whitelisted) external onlyGovernanceOrMultisig {
-        StabilityDaoStorage storage $ = _getStorage();
+        DaoStorage storage $ = _getDaoStorage();
         $.otherChainsPowersWhitelist[user] = whitelisted;
 
         emit WhitelistOtherChainsPowers(user, whitelisted);
@@ -193,7 +193,7 @@ contract StabilityDAO is
 
     /// @inheritdoc IStabilityDAO
     function updateOtherChainsPowers(address[] memory users, uint[] memory powers) external {
-        StabilityDaoStorage storage $ = _getStorage();
+        DaoStorage storage $ = _getDaoStorage();
         require($.otherChainsPowersWhitelist[msg.sender], NotOtherChainsPowersWhitelisted());
 
         uint len = users.length;
@@ -206,10 +206,16 @@ contract StabilityDAO is
             poc.powers.set(users[i], powers[i]);
         }
 
-        // todo do we need to calculate total power?
-
         poc.timestamp = block.timestamp;
         emit PowersOtherChainsUpdated(block.timestamp);
+    }
+
+    /// @inheritdoc IStabilityDAO
+    function setDelegationForbidden(bool forbidden) external onlyGovernanceOrMultisig {
+        DaoStorage storage $ = _getDaoStorage();
+        $.delegationForbidden = forbidden;
+
+        emit SetDelegationForbiddenOnTheChain(forbidden);
     }
 
     //endregion ----------------------------------- Actions
@@ -235,59 +241,57 @@ contract StabilityDAO is
 
     /// @inheritdoc IStabilityDAO
     function config() public view returns (DaoParams memory) {
-        return _getStorage().config[0];
+        return _getDaoStorage().config[0];
     }
 
     /// @inheritdoc IStabilityDAO
     function xStbl() public view returns (address) {
-        return _getStorage().xStbl;
+        return _getDaoStorage().xStbl;
     }
 
     /// @inheritdoc IStabilityDAO
     function xStaking() public view returns (address) {
-        return _getStorage().xStaking;
+        return _getDaoStorage().xStaking;
     }
 
     /// @inheritdoc IStabilityDAO
     function minimalPower() external view returns (uint) {
-        return _getStorage().config[0].minimalPower;
+        return _getDaoStorage().config[0].minimalPower;
     }
 
     /// @inheritdoc IStabilityDAO
     function exitPenalty() external view returns (uint) {
-        return _getStorage().config[0].exitPenalty;
+        return _getDaoStorage().config[0].exitPenalty;
     }
 
     /// @inheritdoc IStabilityDAO
     function proposalThreshold() external view returns (uint) {
-        return _getStorage().config[0].proposalThreshold;
+        return _getDaoStorage().config[0].proposalThreshold;
     }
 
     /// @inheritdoc IStabilityDAO
     function quorum() external view returns (uint) {
-        return _getStorage().config[0].quorum;
+        return _getDaoStorage().config[0].quorum;
     }
 
     /// @inheritdoc IStabilityDAO
     function powerAllocationDelay() external view returns (uint) {
-        return _getStorage().config[0].powerAllocationDelay;
+        return _getDaoStorage().config[0].powerAllocationDelay;
     }
 
     /// @inheritdoc IStabilityDAO
     function getVotes(address user_) public view returns (uint) {
-        StabilityDaoStorage storage $ = _getStorage();
-        return _getVotesLocal($, user_);
+        return _getVotesPower(user_, true, true, true);
     }
 
     /// @inheritdoc IStabilityDAO
     function getVotesPower(address user_, uint powerLocation_) external view returns (uint) {
-        StabilityDaoStorage storage $ = _getStorage();
         if (powerLocation_ == POWER_LOCATION_TOTAL_0) {
-            return _getVotesLocal($, user_) + _getVotesOther($, user_);
+            return _getVotesPower(user_, true, true, false);
         } else if (powerLocation_ == POWER_LOCATION_CURRENT_CHAIN_1) {
-            return _getVotesLocal($, user_);
+            return _getVotesPower(user_, true, false, false);
         } else if (powerLocation_ == POWER_LOCATION_OTHER_CHAINS_2) {
-            return _getVotesOther($, user_);
+            return _getVotesPower(user_, false, true, false);
         }
 
         return 0;
@@ -295,7 +299,7 @@ contract StabilityDAO is
 
     /// @inheritdoc IStabilityDAO
     function delegates(address user_) external view returns (address delegatedTo, address[] memory delegators) {
-        StabilityDaoStorage storage $ = _getStorage();
+        DaoStorage storage $ = _getDaoStorage();
         return ($.delegatedTo[user_], EnumerableSet.values($.delegators[user_]));
     }
 
@@ -305,7 +309,7 @@ contract StabilityDAO is
         view
         returns (uint timestamp, address[] memory users, uint[] memory powers)
     {
-        StabilityDaoStorage storage $ = _getStorage();
+        DaoStorage storage $ = _getDaoStorage();
         OtherChainsPowers storage poc = $.otherChainsPowers[address(0)];
 
         uint len = poc.powers.length();
@@ -322,8 +326,12 @@ contract StabilityDAO is
 
     /// @inheritdoc IStabilityDAO
     function isWhitelistedForOtherChainsPowers(address user_) external view returns (bool) {
-        StabilityDaoStorage storage $ = _getStorage();
-        return $.otherChainsPowersWhitelist[user_];
+        return _getDaoStorage().otherChainsPowersWhitelist[user_];
+    }
+
+    /// @inheritdoc IStabilityDAO
+    function delegationForbidden() external view returns (bool) {
+        return _getDaoStorage().delegationForbidden;
     }
 
     //endregion ----------------------------------- View functions
@@ -331,21 +339,24 @@ contract StabilityDAO is
     //region ----------------------------------- Voting power calculation
 
     /// @notice Get voting power of a user on the current chain
-    function _getVotesLocal(StabilityDaoStorage storage $, address user_) internal view returns (uint) {
-        uint power = $.delegatedTo[user_] == address(0) ? balanceOf(user_) : 0;
+    function _getVotesPower(address user_, bool local, bool other, bool allowDelegation) internal view returns (uint) {
+        DaoStorage storage $ = _getDaoStorage();
+        EnumerableMap.AddressToUintMap storage _otherPowers = $.otherChainsPowers[address(0)].powers;
 
-        address[] memory delegators = EnumerableSet.values($.delegators[user_]);
-        uint len = delegators.length;
-        for (uint i; i < len; ++i) {
-            power += balanceOf(delegators[i]);
+        uint localPower = local ? $.delegatedTo[user_] == address(0) || !allowDelegation ? balanceOf(user_) : 0 : 0;
+
+        uint otherPower = other ? _otherPowers.contains(user_) ? _otherPowers.get(user_) : 0 : 0;
+
+        if (allowDelegation && !$.delegationForbidden) {
+            address[] memory delegators = EnumerableSet.values($.delegators[user_]);
+            uint len = delegators.length;
+            for (uint i; i < len; ++i) {
+                localPower += balanceOf(delegators[i]);
+                otherPower += _otherPowers.contains(delegators[i]) ? _otherPowers.get(delegators[i]) : 0;
+            }
         }
 
-        return power;
-    }
-
-    /// @notice Get voting power of a user on other (not current) chains
-    function _getVotesOther(StabilityDaoStorage storage $, address user_) internal view returns (uint power) {
-        return $.otherChainsPowers[address(0)].powers.get(user_);
+        return localPower + otherPower;
     }
     //endregion ----------------------------------- Voting power calculation
 
@@ -355,10 +366,10 @@ contract StabilityDAO is
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     function _requireXStaking() internal view {
-        require(_getStorage().xStaking == msg.sender, IncorrectMsgSender());
+        require(_getDaoStorage().xStaking == msg.sender, IncorrectMsgSender());
     }
 
-    function _getStorage() internal pure returns (StabilityDaoStorage storage $) {
+    function _getDaoStorage() internal pure returns (DaoStorage storage $) {
         //slither-disable-next-line assembly
         assembly {
             $.slot := _STABILITY_DAO_TOKEN_STORAGE_LOCATION

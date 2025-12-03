@@ -6,7 +6,7 @@ import {Platform} from "../../src/core/Platform.sol";
 import {Proxy} from "../../src/core/proxy/Proxy.sol";
 import {XStaking} from "../../src/tokenomics/XStaking.sol";
 import {XSTBL} from "../../src/tokenomics/XSTBL.sol";
-import {StabilityDAO} from "../../src/tokenomics/StabilityDAO.sol";
+import {DAO} from "../../src/tokenomics/DAO.sol";
 import {IStabilityDAO} from "../../src/interfaces/IStabilityDAO.sol";
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 import {RevenueRouter} from "../../src/tokenomics/RevenueRouter.sol";
@@ -32,8 +32,8 @@ contract PrepareUpgrade25103alpha is Script {
 
         // StabilityDAO
         Proxy proxy = new Proxy();
-        proxy.initProxy(address(new StabilityDAO()));
-        StabilityDAO(address(proxy))
+        proxy.initProxy(address(new DAO()));
+        DAO(address(proxy))
             .initialize(
                 PLATFORM,
                 SonicConstantsLib.TOKEN_XSTBL,

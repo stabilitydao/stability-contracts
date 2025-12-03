@@ -16,7 +16,7 @@ import {IXStaking} from "../../src/interfaces/IXStaking.sol";
 import {IControllable} from "../../src/interfaces/IControllable.sol";
 import {IRevenueRouter} from "../../src/interfaces/IRevenueRouter.sol";
 import {IStabilityDAO} from "../../src/interfaces/IStabilityDAO.sol";
-import {StabilityDAO} from "../../src/tokenomics/StabilityDAO.sol";
+import {DAO} from "../../src/tokenomics/DAO.sol";
 
 contract XStakingTest is Test, MockSetup {
     using SafeERC20 for IERC20;
@@ -252,7 +252,7 @@ contract XStakingTest is Test, MockSetup {
         vm.prank(users[0]);
         stabilityDao.setPowerDelegation(users[2]);
 
-        vm.expectRevert(StabilityDAO.AlreadyDelegated.selector);
+        vm.expectRevert(DAO.AlreadyDelegated.selector);
         vm.prank(users[0]);
         stabilityDao.setPowerDelegation(users[2]);
 
@@ -382,7 +382,7 @@ contract XStakingTest is Test, MockSetup {
         });
 
         Proxy proxy = new Proxy();
-        proxy.initProxy(address(new StabilityDAO()));
+        proxy.initProxy(address(new DAO()));
         IStabilityDAO token = IStabilityDAO(address(proxy));
         token.initialize(address(platform), address(xStbl), address(xStaking), p, "Stability DAO", "STBL_DAO");
         return token;

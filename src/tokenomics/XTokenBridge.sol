@@ -193,15 +193,7 @@ contract XTokenBridge is Controllable, IXTokenBridge, IOAppComposer, ReentrancyG
         (MessagingReceipt memory r, OFTReceipt memory oftReceipt) =
             IOFTPausable(_bridge).send{value: msgFee.nativeFee}(sendParam, msgFee, msg.sender);
 
-        emit XTokenSent(
-            msg.sender,
-            dstEid_,
-            amount,
-            oftReceipt.amountSentLD,
-            r.guid,
-            r.nonce,
-            r.fee.nativeFee
-        );
+        emit XTokenSent(msg.sender, dstEid_, amount, oftReceipt.amountSentLD, r.guid, r.nonce, r.fee.nativeFee);
     }
 
     /// @inheritdoc IXTokenBridge

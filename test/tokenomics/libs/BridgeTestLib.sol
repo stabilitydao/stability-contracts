@@ -473,16 +473,21 @@ library BridgeTestLib {
     }
 
     /// @notice Extract XTokenSent message from emitted event
-    function _extractXTokenSentMessage(Vm.Log[] memory logs) internal pure returns (
-        address userFrom,
-        uint32 dstEid,
-        uint amount,
-        uint amountSentLD,
-        bytes32 guidId,
-        uint64 nonce,
-        uint nativeFee
-    ) {
-// event XTokenSent(address indexed userFrom, uint32 indexed dstEid, uint amount, uint amountSentLD, bytes32 indexed guidId, uint64 nonce, uint nativeFee);
+    function _extractXTokenSentMessage(Vm
+                .Log[] memory logs)
+        internal
+        pure
+        returns (
+            address userFrom,
+            uint32 dstEid,
+            uint amount,
+            uint amountSentLD,
+            bytes32 guidId,
+            uint64 nonce,
+            uint nativeFee
+        )
+    {
+        // event XTokenSent(address indexed userFrom, uint32 indexed dstEid, uint amount, uint amountSentLD, bytes32 indexed guidId, uint64 nonce, uint nativeFee);
         bytes32 sig = keccak256("XTokenSent(address,uint32,uint256,uint256,bytes32,uint64,uint256)");
 
         for (uint i; i < logs.length; ++i) {
@@ -491,8 +496,8 @@ library BridgeTestLib {
             // extract indexed out of topics
             // topics = [sig, userFrom, dstEid, guidId]
             require(logs[i].topics.length >= 4, "not enough topics for indexed params");
-            userFrom = address(uint160(uint256(logs[i].topics[1])));
-            dstEid = uint32(uint256(logs[i].topics[2]));
+            userFrom = address(uint160(uint(logs[i].topics[1])));
+            dstEid = uint32(uint(logs[i].topics[2]));
             guidId = bytes32(logs[i].topics[3]);
 
             // extract all other params from data: amount, amountSentLD, nonce, nativeFee

@@ -232,7 +232,8 @@ contract XTokenBridgeTest is Test {
 
             bytes memory options = OptionsBuilder.newOptions().addExecutorLzReceiveOption(GAS_LIMIT_LZRECEIVE, 0)
                 .addExecutorLzComposeOption(0, GAS_LIMIT_LZCOMPOSE, 0);
-            MessagingFee memory msgFee = IXTokenBridge(sonic.xTokenBridge).quoteSend(avalanche.endpointId, 1e18, options);
+            MessagingFee memory msgFee =
+                IXTokenBridge(sonic.xTokenBridge).quoteSend(avalanche.endpointId, 1e18, options);
 
             vm.expectRevert(IXTokenBridge.IncorrectNativeValue.selector);
             xTokenBridge.send{value: msgFee.nativeFee + 1}(avalanche.endpointId, 1e18, msgFee, options);
@@ -260,7 +261,8 @@ contract XTokenBridgeTest is Test {
 
             bytes memory options = OptionsBuilder.newOptions().addExecutorLzReceiveOption(GAS_LIMIT_LZRECEIVE, 0)
                 .addExecutorLzComposeOption(0, GAS_LIMIT_LZCOMPOSE, 0);
-            MessagingFee memory msgFee = IXTokenBridge(sonic.xTokenBridge).quoteSend(avalanche.endpointId, 1e18, options);
+            MessagingFee memory msgFee =
+                IXTokenBridge(sonic.xTokenBridge).quoteSend(avalanche.endpointId, 1e18, options);
 
             vm.expectRevert(IXTokenBridge.SenderPaused.selector);
             xTokenBridge.send{value: msgFee.nativeFee}(avalanche.endpointId, 1e18, msgFee, options);
@@ -273,7 +275,8 @@ contract XTokenBridgeTest is Test {
 
             bytes memory options = OptionsBuilder.newOptions().addExecutorLzReceiveOption(GAS_LIMIT_LZRECEIVE, 0)
                 .addExecutorLzComposeOption(0, GAS_LIMIT_LZCOMPOSE, 0);
-            MessagingFee memory msgFee = IXTokenBridge(sonic.xTokenBridge).quoteSend(avalanche.endpointId, 1e18, options);
+            MessagingFee memory msgFee =
+                IXTokenBridge(sonic.xTokenBridge).quoteSend(avalanche.endpointId, 1e18, options);
 
             //  struct MessagingFee {uint256 nativeFee; uint256 lzTokenFee; }
             vm.expectRevert(IXTokenBridge.ChainNotSupported.selector);
@@ -609,20 +612,15 @@ contract XTokenBridgeTest is Test {
         ILayerZeroEndpointV2(plasma.endpoint).verify(origin, plasma.oapp, keccak256(abi.encodePacked(guidId_, message)));
 
         {
-            bool isVerifiable = ILayerZeroEndpointV2(plasma.endpoint).verifiable(
-                origin,
-                plasma.oapp
-            );
+            bool isVerifiable = ILayerZeroEndpointV2(plasma.endpoint).verifiable(origin, plasma.oapp);
             require(isVerifiable, "Message not verifiable yet");
 
-            bytes32 inboundPayloadHash = ILayerZeroEndpointV2(plasma.endpoint).inboundPayloadHash(plasma.oapp, sonic.endpointId, bytes32(uint(uint160(address(sonic.oapp)))), nonce);
+            bytes32 inboundPayloadHash = ILayerZeroEndpointV2(plasma.endpoint)
+                .inboundPayloadHash(plasma.oapp, sonic.endpointId, bytes32(uint(uint160(address(sonic.oapp)))), nonce);
             assertEq(inboundPayloadHash, keccak256(abi.encodePacked(guidId_, message)));
 
-            uint64 currentInboundNonce = ILayerZeroEndpointV2(plasma.endpoint).inboundNonce(
-                plasma.oapp,
-                sonic.endpointId,
-                bytes32(uint(uint160(address(sonic.oapp))))
-            );
+            uint64 currentInboundNonce = ILayerZeroEndpointV2(plasma.endpoint)
+                .inboundNonce(plasma.oapp, sonic.endpointId, bytes32(uint(uint160(address(sonic.oapp)))));
             assertEq(currentInboundNonce, 1, "Inbound nonce should be 1 before lzReceive (and 0 initially)");
         }
 
@@ -635,7 +633,6 @@ contract XTokenBridgeTest is Test {
         IOAppComposer(plasma.xTokenBridge).lzCompose(plasma.oapp, guidId_, composeMessage, address(0), "");
 
         assertEq(IERC20(plasma.xToken).balanceOf(address(this)), 1e18, "user should receive 1e18 xSTBL on plasma");
-
     }
 
     //endregion ------------------------------------- Send XSTBL between chains

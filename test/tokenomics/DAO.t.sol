@@ -9,15 +9,20 @@ import {IStabilityDAO} from "../../src/interfaces/IStabilityDAO.sol";
 import {Proxy} from "../../src/core/proxy/Proxy.sol";
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 import {Test} from "forge-std/Test.sol";
-import {StabilityDAO} from "../../src/tokenomics/StabilityDAO.sol";
+import {DAO} from "../../src/tokenomics/DAO.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Platform} from "../../src/core/Platform.sol";
 
-contract StabilityDAOSonicTest is Test {
+contract DAOSonicTest is Test {
     using SafeERC20 for IERC20;
 
     uint public constant FORK_BLOCK = 47854805; // Sep-23-2025 04:02:39 AM +UTC
     address internal multisig;
+
+    /// @notice Power location kinds for getVotes function. 0 - total, 1 - current chain, 2 - other chains
+    uint internal constant POWER_TOTAL_0 = 0;
+    uint internal constant POWER_CURRENT_CHAIN_1 = 1;
+    uint internal constant POWER_OTHER_CHAINS_2 = 2;
 
     constructor() {
         vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL"), FORK_BLOCK));
@@ -41,7 +46,7 @@ contract StabilityDAOSonicTest is Test {
         });
 
         Proxy proxy = new Proxy();
-        proxy.initProxy(address(new StabilityDAO()));
+        proxy.initProxy(address(new DAO()));
 
         IStabilityDAO token = IStabilityDAO(address(proxy));
         token.initialize(SonicConstantsLib.PLATFORM, address(1), address(2), p, "Stability DAO", "STBL_DAO");
@@ -61,7 +66,7 @@ contract StabilityDAOSonicTest is Test {
 
     function testMintBurn() public {
         address governance = IPlatform(SonicConstantsLib.PLATFORM).governance();
-        IStabilityDAO token = _createStabilityDAOInstance();
+        IStabilityDAO token = _createDAOInstance();
 
         vm.prank(address(0x123));
         vm.expectRevert(IControllable.IncorrectMsgSender.selector);
@@ -117,7 +122,7 @@ contract StabilityDAOSonicTest is Test {
             powerAllocationDelay: 172800
         });
 
-        IStabilityDAO token = _createStabilityDAOInstance(p1);
+        IStabilityDAO token = _createDAOInstance(p1);
 
         vm.prank(multisig);
         IPlatform(SonicConstantsLib.PLATFORM).setupStabilityDAO(address(token));
@@ -162,37 +167,37 @@ contract StabilityDAOSonicTest is Test {
             proposalThreshold: 10_000, // 10%
             powerAllocationDelay: 86400
         });
-        IStabilityDAO token = _createStabilityDAOInstance(p1);
+        IStabilityDAO token = _createDAOInstance(p1);
 
         p1.proposalThreshold = 100_000; // 100%
 
         vm.prank(multisig);
-        vm.expectRevert(StabilityDAO.WrongValue.selector);
+        vm.expectRevert(DAO.WrongValue.selector);
         token.updateConfig(p1);
 
         p1.proposalThreshold = 10_000;
         p1.exitPenalty = 100_00; // 100%
 
         vm.prank(multisig);
-        vm.expectRevert(StabilityDAO.WrongValue.selector);
+        vm.expectRevert(DAO.WrongValue.selector);
         token.updateConfig(p1);
 
         p1.exitPenalty = 50_00;
         p1.quorum = 100_000; // 100%
 
         vm.prank(multisig);
-        vm.expectRevert(StabilityDAO.WrongValue.selector);
+        vm.expectRevert(DAO.WrongValue.selector);
         token.updateConfig(p1);
     }
 
     function testNonTransferable() public {
-        IStabilityDAO token = _createStabilityDAOInstance();
+        IStabilityDAO token = _createDAOInstance();
 
         vm.prank(token.xStaking());
         token.mint(address(0x123), 1e18);
 
         vm.prank(address(0x123));
-        vm.expectRevert(StabilityDAO.NonTransferable.selector);
+        vm.expectRevert(DAO.NonTransferable.selector);
         // slither-disable-next-line erc20-unchecked-transfer
         // forge-lint: disable-next-line(erc20-unchecked-transfer)
         token.transfer(address(0x456), 1e18);
@@ -201,7 +206,7 @@ contract StabilityDAOSonicTest is Test {
         token.approve(address(0x456), 1e18);
 
         vm.prank(address(0x456));
-        vm.expectRevert(StabilityDAO.NonTransferable.selector);
+        vm.expectRevert(DAO.NonTransferable.selector);
         // slither-disable-next-line erc20-unchecked-transfer
         // forge-lint: disable-next-line(erc20-unchecked-transfer)
         token.transferFrom(address(0x123), address(0x789), 1e18);
@@ -210,76 +215,262 @@ contract StabilityDAOSonicTest is Test {
     function testSetPowerDelegation() public {
         address user1 = address(1);
         address user2 = address(2);
-        IStabilityDAO stabilityDao = _createStabilityDAOInstance();
+        IStabilityDAO dao = _createDAOInstance();
 
         // ---------------------------- Initial state
-        vm.prank(stabilityDao.xStaking());
-        stabilityDao.mint(user1, 10_000e18);
+        vm.prank(dao.xStaking());
+        dao.mint(user1, 10_000e18);
 
-        vm.prank(stabilityDao.xStaking());
-        stabilityDao.mint(user2, 20_000e18);
+        vm.prank(dao.xStaking());
+        dao.mint(user2, 20_000e18);
 
-        assertEq(stabilityDao.getVotes(user1), 10_000e18);
-        assertEq(stabilityDao.getVotes(user2), 20_000e18);
+        assertEq(dao.getVotes(user1), 10_000e18);
+        assertEq(dao.getVotes(user2), 20_000e18);
 
-        (address delegatedTo, address[] memory delegates) = stabilityDao.delegates(user1);
+        (address delegatedTo, address[] memory delegates) = dao.delegates(user1);
         assertEq(delegatedTo, address(0));
         assertEq(delegates.length, 0);
 
         // ---------------------------- User 1 delegates to User 2
         vm.prank(user1);
-        stabilityDao.setPowerDelegation(user2);
+        dao.setPowerDelegation(user2);
 
-        vm.expectRevert(StabilityDAO.AlreadyDelegated.selector);
+        vm.expectRevert(DAO.AlreadyDelegated.selector);
         vm.prank(user1);
-        stabilityDao.setPowerDelegation(address(this));
+        dao.setPowerDelegation(address(this));
 
-        assertEq(stabilityDao.getVotes(user1), 0);
-        assertEq(stabilityDao.getVotes(user2), 20_000e18 + 10_000e18);
+        assertEq(dao.getVotes(user1), 0);
+        assertEq(dao.getVotes(user2), 20_000e18 + 10_000e18);
 
-        (delegatedTo, delegates) = stabilityDao.delegates(user1);
+        (delegatedTo, delegates) = dao.delegates(user1);
         assertEq(delegatedTo, user2);
         assertEq(delegates.length, 0);
 
-        (delegatedTo, delegates) = stabilityDao.delegates(user2);
+        (delegatedTo, delegates) = dao.delegates(user2);
         assertEq(delegatedTo, address(0));
         assertEq(delegates.length, 1);
         assertEq(delegates[0], user1);
 
         // ---------------------------- User 2 delegates to User 1
         vm.prank(user2);
-        stabilityDao.setPowerDelegation(user1);
+        dao.setPowerDelegation(user1);
 
-        assertEq(stabilityDao.getVotes(user1), 20_000e18);
-        assertEq(stabilityDao.getVotes(user2), 10_000e18);
+        assertEq(dao.getVotes(user1), 20_000e18);
+        assertEq(dao.getVotes(user2), 10_000e18);
 
-        (delegatedTo, delegates) = stabilityDao.delegates(user1);
+        (delegatedTo, delegates) = dao.delegates(user1);
         assertEq(delegatedTo, user2);
         assertEq(delegates.length, 1);
         assertEq(delegates[0], user2);
 
-        (delegatedTo, delegates) = stabilityDao.delegates(user2);
+        (delegatedTo, delegates) = dao.delegates(user2);
         assertEq(delegatedTo, user1);
         assertEq(delegates.length, 1);
         assertEq(delegates[0], user1);
 
         // ---------------------------- Both Users clear delegations
         vm.prank(user1);
-        stabilityDao.setPowerDelegation(user1);
+        dao.setPowerDelegation(user1);
 
         vm.prank(user2);
-        stabilityDao.setPowerDelegation(address(0));
+        dao.setPowerDelegation(address(0));
 
-        assertEq(stabilityDao.getVotes(user1), 10_000e18);
-        assertEq(stabilityDao.getVotes(user2), 20_000e18);
+        assertEq(dao.getVotes(user1), 10_000e18);
+        assertEq(dao.getVotes(user2), 20_000e18);
 
-        (delegatedTo, delegates) = stabilityDao.delegates(user1);
+        (delegatedTo, delegates) = dao.delegates(user1);
         assertEq(delegatedTo, address(0));
         assertEq(delegates.length, 0);
 
-        (delegatedTo, delegates) = stabilityDao.delegates(user2);
+        (delegatedTo, delegates) = dao.delegates(user2);
         assertEq(delegatedTo, address(0));
         assertEq(delegates.length, 0);
+    }
+
+    function testDelegationForbidden() public {
+        IStabilityDAO token = _createDAOInstance();
+
+        // ---------------------- initially user delegates power to other user
+        assertEq(token.delegationForbidden(), false, "delegation is allowed initially");
+
+        address user2 = makeAddr("to");
+
+        token.setPowerDelegation(user2);
+
+        {
+            (address delegatedTo,) = token.delegates(address(this));
+            assertEq(delegatedTo, user2, "delegated to 1");
+        }
+
+        // ---------------------- Forbid delegation
+        vm.prank(multisig);
+        token.setDelegationForbidden(true);
+
+        assertEq(token.delegationForbidden(), true, "delegation is forbidden now");
+
+        // ---------------------- User is not able to re-delegate power to another user
+        vm.expectRevert(DAO.DelegationForbiddenOnTheChain.selector);
+        token.setPowerDelegation(makeAddr("to2"));
+
+        {
+            (address delegatedTo,) = token.delegates(address(this));
+            assertEq(delegatedTo, user2, "delegated to 2");
+        }
+
+        // ---------------------- User is able to clear exist delegation
+        token.setPowerDelegation(address(0));
+        {
+            (address delegatedTo,) = token.delegates(address(this));
+            assertEq(delegatedTo, address(0), "delegated to 3");
+        }
+    }
+
+    // solidity
+    function testWhitelistedForOtherChainsPowers() public {
+        IStabilityDAO token = _createDAOInstance();
+        address user = address(0x123);
+
+        assertEq(token.isWhitelistedForOtherChainsPowers(user), false, "initially not whitelisted");
+
+        vm.prank(address(0x456));
+        vm.expectRevert(IControllable.NotGovernanceAndNotMultisig.selector);
+        token.setWhitelistedForOtherChainsPowers(user, true);
+
+        vm.prank(multisig);
+        token.setWhitelistedForOtherChainsPowers(user, true);
+        assertEq(token.isWhitelistedForOtherChainsPowers(user), true, "whitelisted by multisig");
+
+        vm.prank(multisig);
+        token.setWhitelistedForOtherChainsPowers(user, false);
+        assertEq(token.isWhitelistedForOtherChainsPowers(user), false, "removed by multisig");
+    }
+
+    // solidity
+    function testUpdateOtherChainsPowers() public {
+        IStabilityDAO token = _createDAOInstance();
+
+        address user1 = makeAddr("user1");
+        address user2 = makeAddr("user2");
+        address user3 = makeAddr("user3");
+
+        // -------------------------- provide powers for user 1 and user 2 on main chain
+        deal(address(token), user1, 150e18);
+        deal(address(token), user2, 250e18);
+
+        // -------------------------- set power on other chains for user 1 and user 2
+        {
+            address[] memory users = new address[](2);
+            users[0] = user1;
+            users[1] = user2;
+            uint[] memory powers = new uint[](2);
+            powers[0] = 1000e18;
+            powers[1] = 2000e18;
+
+            vm.prank(user1);
+            vm.expectRevert(DAO.NotOtherChainsPowersWhitelisted.selector);
+            token.updateOtherChainsPowers(users, powers);
+
+            vm.prank(multisig);
+            token.setWhitelistedForOtherChainsPowers(user1, true);
+            assertEq(token.isWhitelistedForOtherChainsPowers(user1), true, "user1 is whitelisted");
+
+            vm.prank(user1);
+            token.updateOtherChainsPowers(users, powers);
+        }
+
+        // -------------------------- check results
+        {
+            (uint timestamp, address[] memory users, uint[] memory powers) = token.getOtherChainsPowers();
+            assertEq(timestamp, block.timestamp, "timestamp");
+            assertEq(users.length, 2, "users length");
+            assertEq(powers.length, 2, "powers length");
+            assertEq(users[0], user1, "user1 address");
+            assertEq(users[1], user2, "user2 address");
+            assertEq(powers[0], 1000e18, "user1 power");
+            assertEq(powers[1], 2000e18, "user2 power");
+        }
+
+        // -------------------------- set power on other chains for user 3
+        {
+            address[] memory users = new address[](1);
+            users[0] = user3;
+            uint[] memory powers = new uint[](1);
+            powers[0] = 3000e18;
+
+            vm.prank(user1);
+            token.updateOtherChainsPowers(users, powers);
+        }
+
+        // -------------------------- check results
+        {
+            (uint timestamp, address[] memory users, uint[] memory powers) = token.getOtherChainsPowers();
+            assertEq(timestamp, block.timestamp, "timestamp");
+            assertEq(users.length, 1, "users length");
+            assertEq(powers.length, 1, "powers length");
+            assertEq(users[0], user3, "user3 address");
+            assertEq(powers[0], 3000e18, "user3 power");
+        }
+    }
+
+    function testGetVotesPower() public {
+        IStabilityDAO token = _createDAOInstance();
+
+        address user1 = makeAddr("user1");
+        address user2 = makeAddr("user2");
+
+        // -------------------------- provide powers for user 1 and user 2 on main chain
+        deal(address(token), user1, 150e18);
+        deal(address(token), user2, 250e18);
+
+        // -------------------------- set power on other chains for user 1 and user 2
+
+        address[] memory users = new address[](2);
+        users[0] = user1;
+        users[1] = user2;
+        uint[] memory powers = new uint[](2);
+        powers[0] = 1000e18;
+        powers[1] = 2000e18;
+
+        vm.prank(user1);
+        vm.expectRevert(DAO.NotOtherChainsPowersWhitelisted.selector);
+        token.updateOtherChainsPowers(users, powers);
+
+        vm.prank(multisig);
+        token.setWhitelistedForOtherChainsPowers(user1, true);
+        assertEq(token.isWhitelistedForOtherChainsPowers(user1), true, "user1 is whitelisted");
+
+        vm.prank(user1);
+        token.updateOtherChainsPowers(users, powers);
+
+        // -------------------------- check vote powers
+        assertEq(token.getVotes(user1), 1000e18 + 150e18, "getVotes user 1");
+        assertEq(token.getVotes(user2), 2000e18 + 250e18, "getVotes user 2");
+
+        assertEq(token.getVotesPower(user1, POWER_TOTAL_0), 1000e18 + 150e18, "total power of user 1");
+        assertEq(token.getVotesPower(user2, POWER_TOTAL_0), 2000e18 + 250e18, "total power of user 2");
+
+        assertEq(token.getVotesPower(user1, POWER_CURRENT_CHAIN_1), 150e18, "current power of user 1");
+        assertEq(token.getVotesPower(user2, POWER_CURRENT_CHAIN_1), 250e18, "current power of user 2");
+
+        assertEq(token.getVotesPower(user1, POWER_OTHER_CHAINS_2), 1000e18, "other chains power of user 1");
+        assertEq(token.getVotesPower(user2, POWER_OTHER_CHAINS_2), 2000e18, "other chains power of user 2");
+
+        // -------------------------- user 1 delegates his power to user 2
+        vm.prank(user1);
+        token.setPowerDelegation(user2);
+
+        // todo
+        //        assertEq(token.getVotes(user1), 0, "getVotes user 1 after delegation");
+        //        assertEq(token.getVotes(user2), 2000e18 + 250e18 + 1000e18 + 150e18, "getVotes user 2 after delegation");
+        //
+        //        assertEq(token.getVotesPower(user1, POWER_TOTAL_0), 1000e18 + 150e18, "total power of user 1");
+        //        assertEq(token.getVotesPower(user2, POWER_TOTAL_0), 2000e18 + 250e18, "total power of user 2");
+        //
+        //        assertEq(token.getVotesPower(user1, POWER_CURRENT_CHAIN_1), 150e18, "current power of user 1");
+        //        assertEq(token.getVotesPower(user2, POWER_CURRENT_CHAIN_1), 250e18, "current power of user 2");
+        //
+        //        assertEq(token.getVotesPower(user1, POWER_OTHER_CHAINS_2), 1000e18, "other chains power of user 1");
+        //        assertEq(token.getVotesPower(user2, POWER_OTHER_CHAINS_2), 2000e18, "other chains power of user 2");
     }
 
     //endregion --------------------------------- Unit tests
@@ -299,7 +490,7 @@ contract StabilityDAOSonicTest is Test {
         return dest;
     }
 
-    function _createStabilityDAOInstance() internal returns (IStabilityDAO) {
+    function _createDAOInstance() internal returns (IStabilityDAO) {
         IStabilityDAO.DaoParams memory p = IStabilityDAO.DaoParams({
             minimalPower: 4000e18,
             exitPenalty: 80_00,
@@ -307,12 +498,12 @@ contract StabilityDAOSonicTest is Test {
             proposalThreshold: 25_000,
             powerAllocationDelay: 86400
         });
-        return _createStabilityDAOInstance(p);
+        return _createDAOInstance(p);
     }
 
-    function _createStabilityDAOInstance(IStabilityDAO.DaoParams memory p) internal returns (IStabilityDAO) {
+    function _createDAOInstance(IStabilityDAO.DaoParams memory p) internal returns (IStabilityDAO) {
         Proxy proxy = new Proxy();
-        proxy.initProxy(address(new StabilityDAO()));
+        proxy.initProxy(address(new DAO()));
         IStabilityDAO token = IStabilityDAO(address(proxy));
         token.initialize(
             SonicConstantsLib.PLATFORM,
