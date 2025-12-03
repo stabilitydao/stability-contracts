@@ -179,30 +179,6 @@ contract XTokenBridgeTest is Test {
         assertEq(xTokenBridge.xTokenBridge(plasma.endpointId), plasma.xTokenBridge, "after: plasma bridge");
     }
 
-    function testSetLzToken() public {
-        vm.selectFork(sonic.fork);
-
-        IXTokenBridge xTokenBridge = IXTokenBridge(sonic.xTokenBridge);
-
-        // ------------------- bad paths
-        vm.expectRevert(IControllable.NotOperator.selector);
-        vm.prank(address(0x1234));
-        xTokenBridge.setLzToken(address(1));
-
-        // ------------------- good paths
-        assertEq(xTokenBridge.lzToken(), address(0), "before: lzToken");
-
-        vm.prank(sonic.multisig);
-        xTokenBridge.setLzToken(address(1));
-
-        assertEq(xTokenBridge.lzToken(), address(1), "after: lzToken");
-
-        vm.prank(sonic.multisig);
-        xTokenBridge.setLzToken(address(0));
-
-        assertEq(xTokenBridge.lzToken(), address(0), "after reset: lzToken");
-    }
-
     function testSalvage() public {
         vm.selectFork(sonic.fork);
         address receiver = makeAddr("receiver");
@@ -255,8 +231,7 @@ contract XTokenBridgeTest is Test {
 
             bytes memory options = OptionsBuilder.newOptions().addExecutorLzReceiveOption(GAS_LIMIT_LZRECEIVE, 0)
                 .addExecutorLzComposeOption(0, GAS_LIMIT_LZCOMPOSE, 0);
-            MessagingFee memory msgFee =
-                IXTokenBridge(sonic.xTokenBridge).quoteSend(avalanche.endpointId, 1e18, options, false);
+            MessagingFee memory msgFee = IXTokenBridge(sonic.xTokenBridge).quoteSend(avalanche.endpointId, 1e18, options);
 
             vm.expectRevert(IXTokenBridge.IncorrectNativeValue.selector);
             xTokenBridge.send{value: msgFee.nativeFee + 1}(avalanche.endpointId, 1e18, msgFee, options);
@@ -269,8 +244,7 @@ contract XTokenBridgeTest is Test {
 
             bytes memory options = OptionsBuilder.newOptions().addExecutorLzReceiveOption(GAS_LIMIT_LZRECEIVE, 0)
                 .addExecutorLzComposeOption(0, GAS_LIMIT_LZCOMPOSE, 0);
-            MessagingFee memory msgFee =
-                IXTokenBridge(sonic.xTokenBridge).quoteSend(avalanche.endpointId, 0, options, false);
+            MessagingFee memory msgFee = IXTokenBridge(sonic.xTokenBridge).quoteSend(avalanche.endpointId, 0, options);
 
             vm.expectRevert(IXTokenBridge.ZeroAmount.selector);
             xTokenBridge.send{value: msgFee.nativeFee}(avalanche.endpointId, 0, msgFee, options);
@@ -285,26 +259,10 @@ contract XTokenBridgeTest is Test {
 
             bytes memory options = OptionsBuilder.newOptions().addExecutorLzReceiveOption(GAS_LIMIT_LZRECEIVE, 0)
                 .addExecutorLzComposeOption(0, GAS_LIMIT_LZCOMPOSE, 0);
-            MessagingFee memory msgFee =
-                IXTokenBridge(sonic.xTokenBridge).quoteSend(avalanche.endpointId, 1e18, options, false);
+            MessagingFee memory msgFee = IXTokenBridge(sonic.xTokenBridge).quoteSend(avalanche.endpointId, 1e18, options);
 
             vm.expectRevert(IXTokenBridge.SenderPaused.selector);
             xTokenBridge.send{value: msgFee.nativeFee}(avalanche.endpointId, 1e18, msgFee, options);
-            vm.revertToState(snapshot);
-        }
-
-        // ------------------- lz token not supported
-        {
-            uint snapshot = vm.snapshotState();
-
-            bytes memory options = OptionsBuilder.newOptions().addExecutorLzReceiveOption(GAS_LIMIT_LZRECEIVE, 0)
-                .addExecutorLzComposeOption(0, GAS_LIMIT_LZCOMPOSE, 0);
-
-            //  struct MessagingFee {uint256 nativeFee; uint256 lzTokenFee; }
-            vm.expectRevert(IXTokenBridge.LzTokenFeeNotSupported.selector);
-            xTokenBridge.send{value: 0}(
-                avalanche.endpointId, 1e18, MessagingFee({nativeFee: 0, lzTokenFee: 1e18}), options
-            );
             vm.revertToState(snapshot);
         }
 
@@ -314,8 +272,7 @@ contract XTokenBridgeTest is Test {
 
             bytes memory options = OptionsBuilder.newOptions().addExecutorLzReceiveOption(GAS_LIMIT_LZRECEIVE, 0)
                 .addExecutorLzComposeOption(0, GAS_LIMIT_LZCOMPOSE, 0);
-            MessagingFee memory msgFee =
-                IXTokenBridge(sonic.xTokenBridge).quoteSend(avalanche.endpointId, 1e18, options, false);
+            MessagingFee memory msgFee = IXTokenBridge(sonic.xTokenBridge).quoteSend(avalanche.endpointId, 1e18, options);
 
             //  struct MessagingFee {uint256 nativeFee; uint256 lzTokenFee; }
             vm.expectRevert(IXTokenBridge.ChainNotSupported.selector);
@@ -393,8 +350,7 @@ contract XTokenBridgeTest is Test {
 
         bytes memory options = OptionsBuilder.newOptions().addExecutorLzReceiveOption(GAS_LIMIT_LZRECEIVE, 0)
             .addExecutorLzComposeOption(0, GAS_LIMIT_LZCOMPOSE, 0);
-        MessagingFee memory msgFee =
-            IXTokenBridge(sonic.xTokenBridge).quoteSend(avalanche.endpointId, 1e18, options, false);
+        MessagingFee memory msgFee = IXTokenBridge(sonic.xTokenBridge).quoteSend(avalanche.endpointId, 1e18, options);
 
         vm.recordLogs();
         IXTokenBridge(sonic.xTokenBridge).send{value: msgFee.nativeFee}(avalanche.endpointId, 1e18, msgFee, options);
@@ -630,8 +586,7 @@ contract XTokenBridgeTest is Test {
 
         bytes memory options = OptionsBuilder.newOptions().addExecutorLzReceiveOption(GAS_LIMIT_LZRECEIVE / 100, 0) // (!) too low gas limit
             .addExecutorLzComposeOption(0, GAS_LIMIT_LZCOMPOSE / 100, 0); // (!) too low gas limit
-        MessagingFee memory msgFee =
-            IXTokenBridge(sonic.xTokenBridge).quoteSend(plasma.endpointId, 100e18, options, false);
+        MessagingFee memory msgFee = IXTokenBridge(sonic.xTokenBridge).quoteSend(plasma.endpointId, 100e18, options);
 
         vm.recordLogs();
         IXTokenBridge(sonic.xTokenBridge).send{value: msgFee.nativeFee}(plasma.endpointId, 100e18, msgFee, options);
@@ -697,7 +652,7 @@ contract XTokenBridgeTest is Test {
 
         bytes memory options = OptionsBuilder.newOptions().addExecutorLzReceiveOption(GAS_LIMIT_LZRECEIVE, 0)
             .addExecutorLzComposeOption(0, GAS_LIMIT_LZCOMPOSE, 0);
-        MessagingFee memory msgFee = IXTokenBridge(src.xTokenBridge).quoteSend(dest.endpointId, amount_, options, false);
+        MessagingFee memory msgFee = IXTokenBridge(src.xTokenBridge).quoteSend(dest.endpointId, amount_, options);
 
         vm.recordLogs();
         IXTokenBridge(src.xTokenBridge).send{value: msgFee.nativeFee}(dest.endpointId, amount_, msgFee, options);

@@ -40,9 +40,6 @@ contract XTokenBridge is Controllable, IXTokenBridge, IOAppComposer, ReentrancyG
         /// @notice LayerZero Omnichain Fungible Token (OFT) bridge address
         address bridge;
 
-        /// @notice Optional: LayerZero ZRO token address to pay fees in ZRO, see endpoint.lzToken()
-        address lzToken;
-
         /// @notice xSTBL address
         address xToken;
 
@@ -85,12 +82,6 @@ contract XTokenBridge is Controllable, IXTokenBridge, IOAppComposer, ReentrancyG
     }
 
     /// @inheritdoc IXTokenBridge
-    function lzToken() external view returns (address) {
-        XTokenBridgeStorage storage $ = _getStorage();
-        return $.lzToken;
-    }
-
-    /// @inheritdoc IXTokenBridge
     function xToken() external view returns (address) {
         XTokenBridgeStorage storage $ = _getStorage();
         return $.xToken;
@@ -106,8 +97,7 @@ contract XTokenBridge is Controllable, IXTokenBridge, IOAppComposer, ReentrancyG
     function quoteSend(
         uint32 dstEid_,
         uint amount,
-        bytes memory options,
-        bool payInLzToken_
+        bytes memory options
     ) external view returns (MessagingFee memory msgFee) {
         XTokenBridgeStorage storage $ = _getStorage();
 
@@ -124,7 +114,9 @@ contract XTokenBridge is Controllable, IXTokenBridge, IOAppComposer, ReentrancyG
             composeMsg: abi.encode(msg.sender),
             oftCmd: ""
         });
-        return IOFTPausable($.bridge).quoteSend(sendParam, payInLzToken_);
+
+        // paying using ZRO token (Layer Zero token) is not supported
+        return IOFTPausable($.bridge).quoteSend(sendParam, false);
     }
 
     //endregion --------------------------------- View
@@ -148,14 +140,6 @@ contract XTokenBridge is Controllable, IXTokenBridge, IOAppComposer, ReentrancyG
         }
 
         emit SetXTokenBridges(dstEids_, xTokenBridges_);
-    }
-
-    /// @inheritdoc IXTokenBridge
-    function setLzToken(address lzToken_) external onlyOperator {
-        XTokenBridgeStorage storage $ = _getStorage();
-        $.lzToken = lzToken_;
-
-        emit SetLzToken(lzToken_);
     }
 
     /// @inheritdoc IXTokenBridge
@@ -189,17 +173,6 @@ contract XTokenBridge is Controllable, IXTokenBridge, IOAppComposer, ReentrancyG
         }
 
         IERC20(token).forceApprove(_bridge, amount);
-
-        // ----------------- prepare ZRO fee if necessary
-        if (msgFee.lzTokenFee != 0) {
-            address _lzToken = $.lzToken;
-            if (_lzToken == address(0)) {
-                revert LzTokenFeeNotSupported();
-            }
-            // assume here that if lzToken is set not zero it's actually supported by LayerZero v2
-            IERC20(_lzToken).safeTransferFrom(msg.sender, address(this), msgFee.lzTokenFee);
-            IERC20(_lzToken).forceApprove(_bridge, msgFee.lzTokenFee);
-        }
 
         // ----------------- send STBL through the bridge
         /// @dev Receiver - address of this contract in another chain

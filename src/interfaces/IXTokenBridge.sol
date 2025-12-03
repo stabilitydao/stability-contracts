@@ -19,10 +19,8 @@ interface IXTokenBridge {
     event Staked(address indexed userTo, uint32 indexed srcEid, uint amount, bytes32 guidId);
 
     event SetXTokenBridges(uint32[] dstEids, address[] xTokenBridges);
-    event SetLzToken(address lzToken);
 
     error NotBridge();
-    error LzTokenFeeNotSupported();
     error ChainNotSupported();
     error IncorrectAmountReceivedFromXToken();
     error InvalidSenderXTokenBridge();
@@ -36,9 +34,6 @@ interface IXTokenBridge {
     /// @notice LayerZero Omnichain Fungible Token (OFT) bridge address
     function bridge() external view returns (address);
 
-    /// @notice Optional: LayerZero ZRO token address to pay fees in ZRO
-    function lzToken() external view returns (address);
-
     /// @notice xSTBL address
     function xToken() external view returns (address);
 
@@ -47,19 +42,18 @@ interface IXTokenBridge {
     function xTokenBridge(uint32 dstEid_) external view returns (address);
 
     /// @notice Quote the gas needed to pay for sending `amount` of xSTBL to given target chain.
+    /// Paying using ZRO token (Layer Zero token) is not supported.
     /// @param dstEid_ Destination chain endpoint ID
     /// @param amount Amount of tokens to send (local decimals)
     /// @param options Additional options for the message. Use:
     ///    OptionsBuilder.addExecutorLzReceiveOption()
     ///    OptionsBuilder.addExecutorLzComposeOption()
     /// Gas limit should take into account two calls on the destination chain: lzReceive() and lzCompose()
-    /// @param payInLzToken_ Whether to return fee in ZRO token.
     /// @return msgFee A `MessagingFee` struct containing the calculated gas fee.
     function quoteSend(
         uint32 dstEid_,
         uint amount,
-        bytes calldata options,
-        bool payInLzToken_
+        bytes calldata options
     ) external view returns (MessagingFee memory msgFee);
 
     /// @notice Initialize the XTokenBridge
@@ -72,10 +66,6 @@ interface IXTokenBridge {
     /// @param dstEids_ Destination chain endpoint IDs
     /// @param xTokenBridges_ Addresses of the xTokenBridge on the destination chain
     function setXTokenBridge(uint32[] memory dstEids_, address[] memory xTokenBridges_) external;
-
-    /// @notice Sets the LayerZero ZRO token address to pay fees in ZRO, see endpoint.lzToken()
-    /// @param lzToken_ Address of the LayerZero ZRO token contract. Fee in ZRO is forbidden if 0
-    function setLzToken(address lzToken_) external;
 
     /// @notice Sends xToken to another chain
     /// @dev The user must send enough native tokens to cover the cross-chain message fees. Use quoteSend to estimate it.
