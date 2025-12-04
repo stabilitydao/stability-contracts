@@ -310,7 +310,11 @@ contract BridgedTokenTest is Test {
         assertEq(r2.targetAfter.balanceReceiverMainToken, 80e18, "D balance 3");
 
         assertEq(r2.srcAfter.totalSupplyMainToken, 57e18 + 20e18, "total supply after all transfers: b + c");
-        assertEq(r2.targetAfter.totalSupplyMainToken, r1.srcBefore.totalSupplyMainToken, "total supply of STBL wasn't changed");
+        assertEq(
+            r2.targetAfter.totalSupplyMainToken,
+            r1.srcBefore.totalSupplyMainToken,
+            "total supply of STBL wasn't changed"
+        );
     }
 
     function testSendFromSonicToPlasmaAndBack() public {
@@ -341,7 +345,11 @@ contract BridgedTokenTest is Test {
         assertEq(r2.targetAfter.balanceReceiverMainToken, 80e18, "D balance 3");
 
         assertEq(r2.srcAfter.totalSupplyMainToken, 57e18 + 20e18, "total supply after all transfers: b + c");
-        assertEq(r2.targetAfter.totalSupplyMainToken, r1.srcBefore.totalSupplyMainToken, "total supply of STBL wasn't changed");
+        assertEq(
+            r2.targetAfter.totalSupplyMainToken,
+            r1.srcBefore.totalSupplyMainToken,
+            "total supply of STBL wasn't changed"
+        );
     }
 
     function testSendFromAvalancheToPlasmaAndBack() public {

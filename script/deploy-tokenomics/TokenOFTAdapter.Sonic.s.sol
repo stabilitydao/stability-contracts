@@ -19,8 +19,7 @@ contract DeployTokenOFTAdapterSonic is Script {
 
         require(configDeployed.get("OAPP_MAIN_TOKEN").toAddress() == address(0), "OAPP_MAIN_TOKEN already deployed");
         require(
-            block.chainid == 146,
-            "TokenOFTAdapter is used on the Sonic only (the chain where native STBL is deployed)"
+            block.chainid == 146, "TokenOFTAdapter is used on the Sonic only (the chain where native STBL is deployed)"
         );
 
         // ---------------------- Deploy
