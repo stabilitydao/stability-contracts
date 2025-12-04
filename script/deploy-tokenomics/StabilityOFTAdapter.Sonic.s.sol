@@ -13,9 +13,14 @@ contract DeployStabilityOFTAdapterSonic is Script {
     function run() external {
         uint deployerPrivateKey = vm.envUint("PRIVATE_KEY");
 
+        // ---------------------- Initialize
         StdConfig config = new StdConfig("./config.toml", false); // read only config
         StdConfig configDeployed = new StdConfig("./config.d.toml", true); // auto-write deployed addresses
 
+        require(configDeployed.get("OAPP_STBL").toAddress() == address(0), "OAPP_STBL already deployed");
+        require(block.chainid == 146, "StabilityOFTAdapter is used on the Sonic only (the chain where native STBL is deployed)");
+
+        // ---------------------- Deploy
         vm.startBroadcast(deployerPrivateKey);
         Proxy proxy = new Proxy();
         proxy.initProxy(
@@ -27,9 +32,10 @@ contract DeployStabilityOFTAdapterSonic is Script {
         );
         StabilityOFTAdapter(address(proxy)).initialize(config.get("PLATFORM").toAddress());
 
+        // ---------------------- Write results
         vm.stopBroadcast();
 
-        configDeployed.set("STABILITY_OFT_ADAPTER", address(proxy));
+        configDeployed.set("OAPP_STBL", address(proxy));
     }
 
     function testDeployScript() external {}

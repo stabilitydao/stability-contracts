@@ -13,17 +13,22 @@ contract DeployBridgedToken is Script {
     function run() external {
         uint deployerPrivateKey = vm.envUint("PRIVATE_KEY");
 
+        // ---------------------- Initialize
         StdConfig config = new StdConfig("./config.toml", false); // read only config
         StdConfig configDeployed = new StdConfig("./config.d.toml", true); // auto-write deployed addresses
 
+        require(configDeployed.get("OAPP_STBL").toAddress() == address(0), "OAPP_STBL already deployed");
+
+        // ---------------------- Deploy
         vm.startBroadcast(deployerPrivateKey);
         Proxy proxy = new Proxy();
         proxy.initProxy(address(new BridgedToken(config.get("LAYER_ZERO_V2_ENDPOINT").toAddress())));
         BridgedToken(address(proxy)).initialize(config.get("PLATFORM").toAddress(), "Stability STBL", "STBL");
 
+        // ---------------------- Write results
         vm.stopBroadcast();
 
-        configDeployed.set("BRIDGED_TOKEN_STBL", address(proxy));
+        configDeployed.set("OAPP_STBL", address(proxy));
     }
 
     function testDeployScript() external {}

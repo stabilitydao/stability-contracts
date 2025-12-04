@@ -9,7 +9,7 @@ import {RevenueRouter} from "../../src/tokenomics/RevenueRouter.sol";
 import {FeeTreasury} from "../../src/tokenomics/FeeTreasury.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
 
-contract DeployXSTBLSystem is Script {
+contract DeployXSTBLSystemSonic is Script {
     address public constant PLATFORM = 0x4Aca671A420eEB58ecafE83700686a2AD06b20D8;
     address public constant STBL = 0x78a76316F66224CBaCA6e70acB24D5ee5b2Bd2c7;
 

@@ -768,7 +768,7 @@ contract XTokenBridgeTest is Test {
                 address(chain.platform),
                 chain.oapp,
                 address(xStakingProxy),
-                address(0) // todo probably zero is not enough for all tests
+                address(0) // revenue router is not used in the tests
             );
 
         XStaking(address(xStakingProxy)).initialize(address(chain.platform), address(xSTBLProxy));

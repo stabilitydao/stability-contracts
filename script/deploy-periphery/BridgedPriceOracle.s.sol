@@ -7,15 +7,19 @@ import {Script} from "forge-std/Script.sol";
 import {Proxy} from "../../src/core/proxy/Proxy.sol";
 import {BridgedPriceOracle} from "../../src/periphery/BridgedPriceOracle.sol";
 
-contract DeployBridgedToken is Script {
+contract DeployBridgedPriceOracle is Script {
     using LibVariable for Variable;
 
     function run() external {
         uint deployerPrivateKey = vm.envUint("PRIVATE_KEY");
 
+        // ---------------------- Initialize
         StdConfig config = new StdConfig("./config.toml", false); // read only config
         StdConfig configDeployed = new StdConfig("./config.d.toml", true); // auto-write deployed addresses
 
+        require(configDeployed.get("BRIDGED_PRICE_ORACLE_STBL").toAddress() == address(0), "BridgedPriceOracle already deployed");
+
+        // ---------------------- Deploy
         vm.startBroadcast(deployerPrivateKey);
         Proxy proxy = new Proxy();
         proxy.initProxy(address(new BridgedPriceOracle(config.get("LAYER_ZERO_V2_ENDPOINT").toAddress())));
@@ -23,6 +27,7 @@ contract DeployBridgedToken is Script {
         // @dev assume here that we deploy price oracle for STBL token
         BridgedPriceOracle(address(proxy)).initialize(config.get("PLATFORM").toAddress(), "STBL");
 
+        // ---------------------- Write results
         vm.stopBroadcast();
 
         // @dev assume here that we deploy price oracle for STBL token
