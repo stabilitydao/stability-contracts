@@ -20,6 +20,7 @@ import {SendParam} from "@layerzerolabs/oft-evm/contracts/interfaces/IOFT.sol";
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 import {StabilityOFTAdapter} from "../../src/tokenomics/StabilityOFTAdapter.sol";
 import {console, Test} from "forge-std/Test.sol";
+import {UniswapV3Adapter} from "../../src/adapters/UniswapV3Adapter.sol";
 
 contract BridgedTokenTest is Test {
     using OptionsBuilder for bytes;
@@ -34,7 +35,7 @@ contract BridgedTokenTest is Test {
     /// @dev Gas limit for executor lzReceive calls
     /// 2 mln => fee = 0.78 S
     /// 100_000 => fee = 0.36 S
-    uint128 private constant GAS_LIMIT = 60_000;
+    uint128 private constant GAS_LIMIT = 65_000;
 
     StabilityOFTAdapter internal adapter;
     BridgedToken internal bridgedTokenAvalanche;
@@ -153,6 +154,7 @@ contract BridgedTokenTest is Test {
 
         assertEq(bridgedTokenAvalanche.paused(address(this)), false);
 
+        // ------------------- Pause/unpause individual address (this)
         vm.prank(avalanche.multisig);
         bridgedTokenAvalanche.setPaused(address(this), true);
         assertEq(bridgedTokenAvalanche.paused(address(this)), true);
@@ -408,6 +410,37 @@ contract BridgedTokenTest is Test {
         _testSendToSonicOnPause(userA, 1e18, userF, true); // allowed
     }
 
+    function testWholeBridgePausedOnSonic() public {
+        address userF = makeAddr("A");
+        address userA = makeAddr("D");
+
+        // ------------- Prepare balances and pause the user on Sonic
+        _testSendFromSonicToBridged(userF, 100e18, 500e18, userF, avalanche);
+
+        vm.selectFork(sonic.fork);
+        deal(SonicConstantsLib.TOKEN_STBL, userA, 300e18);
+
+        assertEq(IERC20(SonicConstantsLib.TOKEN_STBL).balanceOf(userF), 400e18, "Sonic.F: initial balance");
+        assertEq(IERC20(SonicConstantsLib.TOKEN_STBL).balanceOf(userA), 300e18, "Sonic.A: initial balance");
+
+        // ------------ Pause whole bridge on Sonic
+        vm.prank(sonic.multisig);
+        adapter.setPaused(address(adapter), true);
+
+        vm.selectFork(avalanche.fork);
+        vm.prank(userF);
+        IERC20(bridgedTokenAvalanche).safeTransfer(userA, 70e18);
+
+        assertEq(bridgedTokenAvalanche.balanceOf(userF), 30e18, "Avalanche.F: initial balance");
+        assertEq(bridgedTokenAvalanche.balanceOf(userA), 70e18, "Avalanche.A: initial balance");
+
+        // ----------- Tests
+        _testSendToAvalancheOnPause(userF, 1e18, userA, false); // forbidden
+        _testSendToAvalancheOnPause(userA, 1e18, userF, false); // forbidden
+        _testSendToSonicOnPause(userF, 1e18, userA, true); // allowed
+        _testSendToSonicOnPause(userA, 1e18, userF, true); // allowed
+    }
+
     function testUserPausedOnAvalanche() public {
         address userF = makeAddr("A");
         address userA = makeAddr("D");
@@ -436,6 +469,37 @@ contract BridgedTokenTest is Test {
         _testSendToAvalancheOnPause(userA, 1e18, userF, true); // allowed
         _testSendToSonicOnPause(userF, 1e18, userA, false); // forbidden
         _testSendToSonicOnPause(userA, 1e18, userF, true); // allowed
+    }
+
+    function testWholeBridgePausedOnAvalanche() public {
+        address userF = makeAddr("A");
+        address userA = makeAddr("D");
+
+        // ------------- Prepare balances and pause the user on Avalanche
+        _testSendFromSonicToBridged(userF, 100e18, 500e18, userF, avalanche);
+
+        vm.selectFork(sonic.fork);
+        deal(SonicConstantsLib.TOKEN_STBL, userA, 300e18);
+
+        assertEq(IERC20(SonicConstantsLib.TOKEN_STBL).balanceOf(userF), 400e18, "Sonic.F: initial balance");
+        assertEq(IERC20(SonicConstantsLib.TOKEN_STBL).balanceOf(userA), 300e18, "Sonic.A: initial balance");
+
+        vm.selectFork(avalanche.fork);
+        vm.prank(userF);
+        IERC20(bridgedTokenAvalanche).safeTransfer(userA, 70e18);
+
+        assertEq(bridgedTokenAvalanche.balanceOf(userF), 30e18, "Avalanche.F: initial balance");
+        assertEq(bridgedTokenAvalanche.balanceOf(userA), 70e18, "Avalanche.A: initial balance");
+
+        // ------------ Pause whole bridge on Avalanche
+        vm.prank(avalanche.multisig);
+        bridgedTokenAvalanche.setPaused(address(bridgedTokenAvalanche), true);
+
+        // ----------- Tests
+        _testSendToAvalancheOnPause(userF, 1e18, userA, true); // allowed
+        _testSendToAvalancheOnPause(userA, 1e18, userF, true); // allowed
+        _testSendToSonicOnPause(userF, 1e18, userA, false); // forbidden
+        _testSendToSonicOnPause(userA, 1e18, userF, false); // forbidden
     }
 
     function testUserPausedOnBothChains() public {
@@ -498,9 +562,24 @@ contract BridgedTokenTest is Test {
         bridgedTokenAvalanche.setPaused(address(bridgedTokenAvalanche), true);
 
         // ----------- Tests
-        _testSendToAvalancheOnPause(userF, 1e18, userA, true); // forbidden
+        _testSendToAvalancheOnPause(userF, 1e18, userA, false); // forbidden
+        _testSendToAvalancheOnPause(userA, 1e18, userF, false); // forbidden
+        _testSendToSonicOnPause(userF, 1e18, userA, false); // forbidden
+        _testSendToSonicOnPause(userA, 1e18, userF, false); // forbidden
+
+        // ------------ Unpause
+        vm.selectFork(sonic.fork);
+        vm.prank(sonic.multisig);
+        adapter.setPaused(address(adapter), false);
+
+        vm.selectFork(avalanche.fork);
+        vm.prank(avalanche.multisig);
+        bridgedTokenAvalanche.setPaused(address(bridgedTokenAvalanche), false);
+
+        // ----------- Tests
+        _testSendToAvalancheOnPause(userF, 1e18, userA, true); // allowed
         _testSendToAvalancheOnPause(userA, 1e18, userF, true); // allowed
-        _testSendToSonicOnPause(userF, 1e18, userA, true); // forbidden
+        _testSendToSonicOnPause(userF, 1e18, userA, true); // allowed
         _testSendToSonicOnPause(userA, 1e18, userF, true); // allowed
     }
 

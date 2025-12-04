@@ -18,7 +18,10 @@ contract DeployStabilityOFTAdapterSonic is Script {
         StdConfig configDeployed = new StdConfig("./config.d.toml", true); // auto-write deployed addresses
 
         require(configDeployed.get("OAPP_STBL").toAddress() == address(0), "OAPP_STBL already deployed");
-        require(block.chainid == 146, "StabilityOFTAdapter is used on the Sonic only (the chain where native STBL is deployed)");
+        require(
+            block.chainid == 146,
+            "StabilityOFTAdapter is used on the Sonic only (the chain where native STBL is deployed)"
+        );
 
         // ---------------------- Deploy
         vm.startBroadcast(deployerPrivateKey);

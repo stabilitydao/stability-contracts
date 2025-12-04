@@ -17,8 +17,14 @@ contract DeployPriceAggregatorOAppSonic is Script {
         StdConfig config = new StdConfig("./config.toml", false); // read only config
         StdConfig configDeployed = new StdConfig("./config.d.toml", true); // auto-write deployed addresses
 
-        require(block.chainid == 146, "PriceAggregatorOApp is used on the Sonic only (the chain where native STBL is deployed)");
-        require(configDeployed.get("PRICE_AGGREGATOR_OAPP_STBL").toAddress() == address(0), "PriceAggregatorOApp already deployed");
+        require(
+            block.chainid == 146,
+            "PriceAggregatorOApp is used on the Sonic only (the chain where native STBL is deployed)"
+        );
+        require(
+            configDeployed.get("PRICE_AGGREGATOR_OAPP_STBL").toAddress() == address(0),
+            "PriceAggregatorOApp already deployed"
+        );
 
         // ---------------------- Deploy
         vm.startBroadcast(deployerPrivateKey);

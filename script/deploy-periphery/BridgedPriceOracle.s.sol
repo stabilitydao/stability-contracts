@@ -17,7 +17,10 @@ contract DeployBridgedPriceOracle is Script {
         StdConfig config = new StdConfig("./config.toml", false); // read only config
         StdConfig configDeployed = new StdConfig("./config.d.toml", true); // auto-write deployed addresses
 
-        require(configDeployed.get("BRIDGED_PRICE_ORACLE_STBL").toAddress() == address(0), "BridgedPriceOracle already deployed");
+        require(
+            configDeployed.get("BRIDGED_PRICE_ORACLE_STBL").toAddress() == address(0),
+            "BridgedPriceOracle already deployed"
+        );
 
         // ---------------------- Deploy
         vm.startBroadcast(deployerPrivateKey);

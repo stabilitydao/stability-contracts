@@ -41,7 +41,10 @@ contract PriceAggregatorOAppSetupTest is Test {
         IPriceAggregatorOApp(sonic.oapp).changeWhitelist(priceUpdater, true);
     }
 
-    function _createConfigSonic(uint forkId, StdConfig configDeployed) internal returns (BridgeTestLib.ChainConfig memory) {
+    function _createConfigSonic(
+        uint forkId,
+        StdConfig configDeployed
+    ) internal returns (BridgeTestLib.ChainConfig memory) {
         vm.selectFork(forkId);
 
         address oapp = configDeployed.get("PRICE_AGGREGATOR_OAPP_STBL").toAddress();
@@ -65,11 +68,13 @@ contract PriceAggregatorOAppSetupTest is Test {
             executor: SonicConstantsLib.LAYER_ZERO_V2_EXECUTOR,
             xToken: xToken,
             xTokenBridge: xTokenBridge
-
         });
     }
 
-    function _createConfigPlasma(uint forkId, StdConfig configDeployed) internal returns (BridgeTestLib.ChainConfig memory) {
+    function _createConfigPlasma(
+        uint forkId,
+        StdConfig configDeployed
+    ) internal returns (BridgeTestLib.ChainConfig memory) {
         vm.selectFork(forkId);
 
         address oapp = configDeployed.get("BRIDGED_PRICE_ORACLE_STBL").toAddress();

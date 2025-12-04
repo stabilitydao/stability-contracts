@@ -17,9 +17,8 @@ contract DeployXSTBLSystem is Script {
         StdConfig configDeployed = new StdConfig("./config.d.toml", true); // auto-write deployed addresses
 
         // Native STBL is deployed on Sonic. All other chains use bridged versions of STBL
-        address stbl = block.chainid == 146
-            ? config.get("TOKEN_STBL").toAddress()
-            : configDeployed.get("OAPP_STBL").toAddress();
+        address stbl =
+            block.chainid == 146 ? config.get("TOKEN_STBL").toAddress() : configDeployed.get("OAPP_STBL").toAddress();
         require(stbl != address(0), "STBL address is zero");
 
         address platform = config.get("PLATFORM").toAddress();

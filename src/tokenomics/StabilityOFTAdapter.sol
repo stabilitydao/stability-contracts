@@ -112,7 +112,7 @@ contract StabilityOFTAdapter is Controllable, OFTAdapterUpgradeable, IStabilityO
 
     function _requireNotPaused(address account) internal view {
         StabilityOftAdapterStorage storage $ = getStabilityOftAdapterStorage();
-        require(!$.paused[account], IOFTPausable.Paused());
+        require(!$.paused[account] && !$.paused[address(this)], Paused());
     }
 
     //endregion --------------------------------- Internal logic

@@ -118,9 +118,10 @@ contract BridgedToken is Controllable, OFTUpgradeable, IBridgedToken {
         }
     }
 
+    /// @notice Reverts if the account is paused OR the whole bridge is paused
     function _requireNotPaused(address account) internal view {
         BridgedTokenStorage storage $ = getBridgedTokenStorage();
-        require(!$.paused[account], Paused());
+        require(!$.paused[account] && !$.paused[address(this)], Paused());
     }
 
     //endregion --------------------------------- Internal logic
