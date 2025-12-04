@@ -19,11 +19,17 @@ contract DeployBridgedToken is Script {
 
         require(configDeployed.get("OAPP_STBL").toAddress() == address(0), "OAPP_STBL already deployed");
 
+        address endpoint = config.get("LAYER_ZERO_V2_ENDPOINT").toAddress();
+        require(endpoint != address(0), "endpoint is not set");
+
+        address platform = config.get("PLATFORM").toAddress();
+        require(platform != address(0), "platform is not set");
+
         // ---------------------- Deploy
         vm.startBroadcast(deployerPrivateKey);
         Proxy proxy = new Proxy();
-        proxy.initProxy(address(new BridgedToken(config.get("LAYER_ZERO_V2_ENDPOINT").toAddress())));
-        BridgedToken(address(proxy)).initialize(config.get("PLATFORM").toAddress(), "Stability STBL", "STBL");
+        proxy.initProxy(address(new BridgedToken(endpoint)));
+        BridgedToken(address(proxy)).initialize(platform, "Stability STBL", "STBL");
 
         // ---------------------- Write results
         vm.stopBroadcast();

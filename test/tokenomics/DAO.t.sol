@@ -12,7 +12,6 @@ import {Test} from "forge-std/Test.sol";
 import {DAO} from "../../src/tokenomics/DAO.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Platform} from "../../src/core/Platform.sol";
-import {PriceAggregatorOApp} from "../../src/periphery/PriceAggregatorOApp.sol";
 
 contract DAOSonicTest is Test {
     using SafeERC20 for IERC20;

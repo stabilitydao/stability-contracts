@@ -6,8 +6,6 @@ import {Script} from "forge-std/Script.sol";
 import {Proxy} from "../../src/core/proxy/Proxy.sol";
 import {XStaking} from "../../src/tokenomics/XStaking.sol";
 import {XSTBL} from "../../src/tokenomics/XSTBL.sol";
-import {RevenueRouter} from "../../src/tokenomics/RevenueRouter.sol";
-import {FeeTreasury} from "../../src/tokenomics/FeeTreasury.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
 
 contract DeployXSTBLSystem is Script {

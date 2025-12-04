@@ -5,10 +5,6 @@ import {StdConfig} from "forge-std/StdConfig.sol";
 import {Script} from "forge-std/Script.sol";
 import {Proxy} from "../../src/core/proxy/Proxy.sol";
 import {XTokenBridge} from "../../src/tokenomics/XTokenBridge.sol";
-import {XSTBL} from "../../src/tokenomics/XSTBL.sol";
-import {RevenueRouter} from "../../src/tokenomics/RevenueRouter.sol";
-import {FeeTreasury} from "../../src/tokenomics/FeeTreasury.sol";
-import {IPlatform} from "../../src/interfaces/IPlatform.sol";
 
 contract DeployXTokenBridge is Script {
     function run() external {
@@ -27,13 +23,16 @@ contract DeployXTokenBridge is Script {
         address platform = config.get("PLATFORM").toAddress();
         require(platform != address(0), "PLATFORM address is zero");
 
-        require(configDeployed.get("XTokenBridge") == address(0), "XTokenBridge already deployed");
+        address endpoint = config.get("LAYER_ZERO_V2_ENDPOINT").toAddress();
+        require(endpoint != address(0), "endpoint is not set");
+
+        require(configDeployed.get("XTokenBridge").toAddress() == address(0), "XTokenBridge already deployed");
 
         // ---------------------- Deploy
         vm.startBroadcast(deployerPrivateKey);
 
         Proxy proxy = new Proxy();
-        proxy.initProxy(address(new XTokenBridge()));
+        proxy.initProxy(address(new XTokenBridge(endpoint)));
 
         XTokenBridge(address(proxy)).initialize(platform, bridge, address(xSTBL));
 

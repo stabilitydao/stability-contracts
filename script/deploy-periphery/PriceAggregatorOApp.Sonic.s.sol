@@ -7,7 +7,7 @@ import {Script} from "forge-std/Script.sol";
 import {Proxy} from "../../src/core/proxy/Proxy.sol";
 import {PriceAggregatorOApp} from "../../src/periphery/PriceAggregatorOApp.sol";
 
-contract DeployPriceAggregatorOApp is Script {
+contract DeployPriceAggregatorOAppSonic is Script {
     using LibVariable for Variable;
 
     function run() external {
@@ -17,7 +17,7 @@ contract DeployPriceAggregatorOApp is Script {
         StdConfig config = new StdConfig("./config.toml", false); // read only config
         StdConfig configDeployed = new StdConfig("./config.d.toml", true); // auto-write deployed addresses
 
-        require(block.chainid == 146, "PriceAggregatorOApp  is used on the Sonic only (the chain where native STBL is deployed)");
+        require(block.chainid == 146, "PriceAggregatorOApp is used on the Sonic only (the chain where native STBL is deployed)");
         require(configDeployed.get("PRICE_AGGREGATOR_OAPP_STBL").toAddress() == address(0), "PriceAggregatorOApp already deployed");
 
         // ---------------------- Deploy
