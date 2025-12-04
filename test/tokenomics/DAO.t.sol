@@ -373,11 +373,14 @@ contract DAOSonicTest is Test {
             vm.prank(user1);
             vm.expectRevert(DAO.NotOtherChainsPowersWhitelisted.selector);
             token.updateOtherChainsPowers(users, powers);
-            skip(1); // in next tx we should have different timestamp because it's used as an epoch counter inside token
 
             vm.prank(multisig);
             token.setWhitelistedForOtherChainsPowers(user1, true);
             assertEq(token.isWhitelistedForOtherChainsPowers(user1), true, "user1 is whitelisted");
+
+            vm.prank(user1);
+            vm.expectRevert(IControllable.IncorrectArrayLength.selector);
+            token.updateOtherChainsPowers(users, new uint[](1));
 
             blockTimestamp = block.timestamp;
             vm.prank(user1);
@@ -633,7 +636,13 @@ contract DAOSonicTest is Test {
 
     //region --------------------------------- Utils
     function _getPowers(IStabilityDAO dao, address user) internal view returns (Powers memory p) {
-        (p.localPower, p.otherPower, p.delegatedLocalPower, p.delegatedOtherPower) = dao.getPowers(user);
+        (p.localPower, p.otherPower) = dao.getPowers(user);
+        (, address[] memory delegators) = dao.delegates(user);
+        for (uint i; i < delegators.length; ++i) {
+            (uint dLocalPower, uint dOtherPower) = dao.getPowers(delegators[i]);
+            p.delegatedLocalPower += dLocalPower;
+            p.delegatedOtherPower += dOtherPower;
+        }
         return p;
     }
 

@@ -280,21 +280,29 @@ contract DAO is Controllable, ERC20Upgradeable, ERC20BurnableUpgradeable, Reentr
     }
 
     /// @inheritdoc IStabilityDAO
-    function getVotes(address user_) public view returns (uint) {
+    function getVotes(address user_) public view returns (uint votes) {
         DaoStorage storage $ = _getDaoStorage();
-        (uint localPower, uint otherPower, uint delegatedLocalPower, uint delegatedOtherPower) = _getPowers($, user_);
-        return
-            ($.delegatedTo[user_] == address(0) ? localPower + otherPower : 0) + delegatedLocalPower
-                + delegatedOtherPower;
+        if ($.delegatedTo[user_] == address(0)) {
+            (uint localPower, uint otherPower) = _getPowers($, user_);
+            votes = localPower + otherPower;
+        }
+
+        if (!$.delegationForbidden) {
+            EnumerableMap.AddressToUintMap storage _otherPowers = $.otherChainsPowers[$.otherChainsEpoch].powers;
+            address[] memory delegators = EnumerableSet.values($.delegators[user_]);
+            uint len = delegators.length;
+            for (uint i; i < len; ++i) {
+                votes += balanceOf(delegators[i]);
+                votes += _otherPowers.contains(delegators[i]) ? _otherPowers.get(delegators[i]) : 0;
+            }
+        }
+
+        return votes;
     }
 
     /// @inheritdoc IStabilityDAO
-    function getPowers(address user_)
-        external
-        view
-        returns (uint localPower, uint otherPower, uint delegatedLocalPower, uint delegatedOtherPower)
-    {
-        (localPower, otherPower, delegatedLocalPower, delegatedOtherPower) = _getPowers(_getDaoStorage(), user_);
+    function getPowers(address user_) external view returns (uint localPower, uint otherPower) {
+        (localPower, otherPower) = _getPowers(_getDaoStorage(), user_);
     }
 
     /// @inheritdoc IStabilityDAO
@@ -344,27 +352,13 @@ contract DAO is Controllable, ERC20Upgradeable, ERC20BurnableUpgradeable, Reentr
     /// @param user_ The address of the user.
     /// @return localPower Power on the current chain. This power can be delegated to other user (delegates.delegatedTo}.
     /// @return otherPower Power on other chains. This power can be delegated to other user (delegates.delegatedTo}.
-    /// @return delegatedLocalPower Power on the current chain delegated to the user by others.
-    /// @return delegatedOtherPower Power on other chains delegated to the user by others.
-    function _getPowers(
-        DaoStorage storage $,
-        address user_
-    ) internal view returns (uint localPower, uint otherPower, uint delegatedLocalPower, uint delegatedOtherPower) {
+    function _getPowers(DaoStorage storage $, address user_) internal view returns (uint localPower, uint otherPower) {
         EnumerableMap.AddressToUintMap storage _otherPowers = $.otherChainsPowers[$.otherChainsEpoch].powers;
 
         localPower = balanceOf(user_);
         otherPower = _otherPowers.contains(user_) ? _otherPowers.get(user_) : 0;
 
-        if (!$.delegationForbidden) {
-            address[] memory delegators = EnumerableSet.values($.delegators[user_]);
-            uint len = delegators.length;
-            for (uint i; i < len; ++i) {
-                delegatedLocalPower += balanceOf(delegators[i]);
-                delegatedOtherPower += _otherPowers.contains(delegators[i]) ? _otherPowers.get(delegators[i]) : 0;
-            }
-        }
-
-        return (localPower, otherPower, delegatedLocalPower, delegatedOtherPower);
+        return (localPower, otherPower);
     }
     //endregion ----------------------------------- Voting power calculation
 
