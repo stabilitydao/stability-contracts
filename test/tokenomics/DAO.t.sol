@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-// import {console} from "forge-std/console.sol";
+import {console} from "forge-std/console.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
 import {IControllable} from "../../src/interfaces/IControllable.sol";
@@ -12,6 +12,7 @@ import {Test} from "forge-std/Test.sol";
 import {DAO} from "../../src/tokenomics/DAO.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Platform} from "../../src/core/Platform.sol";
+import {PriceAggregatorOApp} from "../../src/periphery/PriceAggregatorOApp.sol";
 
 contract DAOSonicTest is Test {
     using SafeERC20 for IERC20;
@@ -19,10 +20,12 @@ contract DAOSonicTest is Test {
     uint public constant FORK_BLOCK = 47854805; // Sep-23-2025 04:02:39 AM +UTC
     address internal multisig;
 
-    /// @notice Power location kinds for getVotes function. 0 - total, 1 - current chain, 2 - other chains
-    uint internal constant POWER_TOTAL_0 = 0;
-    uint internal constant POWER_CURRENT_CHAIN_1 = 1;
-    uint internal constant POWER_OTHER_CHAINS_2 = 2;
+    struct Powers {
+        uint localPower;
+        uint otherPower;
+        uint delegatedLocalPower;
+        uint delegatedOtherPower;
+    }
 
     constructor() {
         vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL"), FORK_BLOCK));
@@ -352,6 +355,7 @@ contract DAOSonicTest is Test {
         address user1 = makeAddr("user1");
         address user2 = makeAddr("user2");
         address user3 = makeAddr("user3");
+        uint blockTimestamp = block.timestamp;
 
         // -------------------------- provide powers for user 1 and user 2 on main chain
         deal(address(token), user1, 150e18);
@@ -369,19 +373,28 @@ contract DAOSonicTest is Test {
             vm.prank(user1);
             vm.expectRevert(DAO.NotOtherChainsPowersWhitelisted.selector);
             token.updateOtherChainsPowers(users, powers);
+            skip(1); // in next tx we should have different timestamp because it's used as an epoch counter inside token
 
             vm.prank(multisig);
             token.setWhitelistedForOtherChainsPowers(user1, true);
             assertEq(token.isWhitelistedForOtherChainsPowers(user1), true, "user1 is whitelisted");
 
+            blockTimestamp = block.timestamp;
             vm.prank(user1);
             token.updateOtherChainsPowers(users, powers);
+
+            // ensure that we cannot call updateOtherChainsPowers on the same block
+            vm.expectRevert(DAO.WrongValue.selector);
+            vm.prank(user1);
+            token.updateOtherChainsPowers(users, powers);
+
+            skip(1); // in next tx we should have different timestamp because it's used as an epoch counter inside token
         }
 
         // -------------------------- check results
         {
             (uint timestamp, address[] memory users, uint[] memory powers) = token.getOtherChainsPowers();
-            assertEq(timestamp, block.timestamp, "timestamp");
+            assertEq(timestamp, blockTimestamp, "timestamp");
             assertEq(users.length, 2, "users length");
             assertEq(powers.length, 2, "powers length");
             assertEq(users[0], user1, "user1 address");
@@ -397,14 +410,16 @@ contract DAOSonicTest is Test {
             uint[] memory powers = new uint[](1);
             powers[0] = 3000e18;
 
+            blockTimestamp = block.timestamp;
             vm.prank(user1);
             token.updateOtherChainsPowers(users, powers);
+            skip(1); // in next tx we should have different timestamp because it's used as an epoch counter inside token
         }
 
         // -------------------------- check results
         {
             (uint timestamp, address[] memory users, uint[] memory powers) = token.getOtherChainsPowers();
-            assertEq(timestamp, block.timestamp, "timestamp");
+            assertEq(timestamp, blockTimestamp, "timestamp");
             assertEq(users.length, 1, "users length");
             assertEq(powers.length, 1, "powers length");
             assertEq(users[0], user3, "user3 address");
@@ -416,66 +431,219 @@ contract DAOSonicTest is Test {
         IStabilityDAO token = _createDAOInstance();
 
         address user1 = makeAddr("user1");
-        address user2 = makeAddr("user2");
+        address user2 = address(0x2);
+        address user3 = makeAddr("user3");
 
         // -------------------------- provide powers for user 1 and user 2 on main chain
         deal(address(token), user1, 150e18);
         deal(address(token), user2, 250e18);
 
         // -------------------------- set power on other chains for user 1 and user 2
+        {
+            address[] memory users = new address[](2);
+            users[0] = user1;
+            users[1] = user2;
+            uint[] memory powers = new uint[](2);
+            powers[0] = 1000e18;
+            powers[1] = 2000e18;
 
-        address[] memory users = new address[](2);
-        users[0] = user1;
-        users[1] = user2;
-        uint[] memory powers = new uint[](2);
-        powers[0] = 1000e18;
-        powers[1] = 2000e18;
+            vm.prank(user1);
+            vm.expectRevert(DAO.NotOtherChainsPowersWhitelisted.selector);
+            token.updateOtherChainsPowers(users, powers);
+            skip(1); // in next tx we should have different timestamp because it's used as an epoch counter inside token
 
-        vm.prank(user1);
-        vm.expectRevert(DAO.NotOtherChainsPowersWhitelisted.selector);
-        token.updateOtherChainsPowers(users, powers);
+            vm.prank(multisig);
+            token.setWhitelistedForOtherChainsPowers(user1, true);
+            assertEq(token.isWhitelistedForOtherChainsPowers(user1), true, "user1 is whitelisted");
 
-        vm.prank(multisig);
-        token.setWhitelistedForOtherChainsPowers(user1, true);
-        assertEq(token.isWhitelistedForOtherChainsPowers(user1), true, "user1 is whitelisted");
+            vm.prank(user1);
+            token.updateOtherChainsPowers(users, powers);
+            skip(1); // in next tx we should have different timestamp because it's used as an epoch counter inside token
+        }
 
-        vm.prank(user1);
-        token.updateOtherChainsPowers(users, powers);
+        // -------------------------- check initial vote powers
+        {
+            assertEq(token.getVotes(user1), 150e18 + 1000e18, "1: getVotes user 1");
+            assertEq(token.getVotes(user2), 250e18 + 2000e18, "1: getVotes user 2");
 
-        // -------------------------- check vote powers
-        assertEq(token.getVotes(user1), 1000e18 + 150e18, "getVotes user 1");
-        assertEq(token.getVotes(user2), 2000e18 + 250e18, "getVotes user 2");
+            Powers memory p1 = _getPowers(token, user1);
+            assertEq(p1.localPower, 150e18, "1: local power of user 1");
+            assertEq(p1.otherPower, 1000e18, "1: other power of user 1");
+            assertEq(p1.delegatedLocalPower, 0, "1: delegated local power of user 1");
+            assertEq(p1.delegatedOtherPower, 0, "1: delegated other power of user 1");
 
-        assertEq(token.getVotesPower(user1, POWER_TOTAL_0), 1000e18 + 150e18, "total power of user 1");
-        assertEq(token.getVotesPower(user2, POWER_TOTAL_0), 2000e18 + 250e18, "total power of user 2");
-
-        assertEq(token.getVotesPower(user1, POWER_CURRENT_CHAIN_1), 150e18, "current power of user 1");
-        assertEq(token.getVotesPower(user2, POWER_CURRENT_CHAIN_1), 250e18, "current power of user 2");
-
-        assertEq(token.getVotesPower(user1, POWER_OTHER_CHAINS_2), 1000e18, "other chains power of user 1");
-        assertEq(token.getVotesPower(user2, POWER_OTHER_CHAINS_2), 2000e18, "other chains power of user 2");
+            Powers memory p2 = _getPowers(token, user2);
+            assertEq(p2.localPower, 250e18, "1: local power of user 2");
+            assertEq(p2.otherPower, 2000e18, "1: other power of user 2");
+            assertEq(p2.delegatedLocalPower, 0, "1: delegated local power of user 2");
+            assertEq(p2.delegatedOtherPower, 0, "1: delegated other power of user 2");
+        }
 
         // -------------------------- user 1 delegates his power to user 2
         vm.prank(user1);
         token.setPowerDelegation(user2);
 
-        // todo
-        //        assertEq(token.getVotes(user1), 0, "getVotes user 1 after delegation");
-        //        assertEq(token.getVotes(user2), 2000e18 + 250e18 + 1000e18 + 150e18, "getVotes user 2 after delegation");
+        {
+            assertEq(token.getVotes(user1), 0, "2: getVotes user 1");
+            assertEq(token.getVotes(user2), 250e18 + 2000e18 + 150e18 + 1000e18, "2: getVotes user 2");
+
+            Powers memory p1 = _getPowers(token, user1);
+            assertEq(p1.localPower, 150e18, "2: local power of user 1");
+            assertEq(p1.otherPower, 1000e18, "2: other power of user 1 (delegated to user 2)");
+            assertEq(p1.delegatedLocalPower, 0, "2: delegated local power of user 1");
+            assertEq(p1.delegatedOtherPower, 0, "2: delegated other power of user 1");
+
+            Powers memory p2 = _getPowers(token, user2);
+            assertEq(p2.localPower, 250e18, "2: local power of user 2");
+            assertEq(p2.otherPower, 2000e18, "2: other power of user 2");
+            assertEq(p2.delegatedLocalPower, 150e18, "2: delegated local power of user 2");
+            assertEq(p2.delegatedOtherPower, 1000e18, "2: delegated other power of user 2");
+        }
+
+        // -------------------------- set power on other chains for user 1 and user 3, user 3 delegates to user 2
+        {
+            vm.prank(user3);
+            token.setPowerDelegation(user2);
+
+            // assume here that user2 has lost his power on other chains
+            // so, user 2 is not included to updateOtherChainsPowers
+
+            address[] memory users = new address[](2);
+            users[0] = user1;
+            users[1] = user3;
+            uint[] memory powers = new uint[](2);
+            powers[0] = 1000e18;
+            powers[1] = 3000e18;
+
+            vm.prank(user1);
+            token.updateOtherChainsPowers(users, powers);
+            skip(1); // in next tx we should have different timestamp because it's used as an epoch counter inside token
+        }
+
+        // -------------------------- check updated vote powers
+        {
+            assertEq(token.getVotes(user1), 0, "3: getVotes user 1");
+            assertEq(token.getVotes(user2), 3000e18 + 250e18 + 150e18 + 1000e18, "3: getVotes user 2");
+            assertEq(token.getVotes(user3), 0, "3: getVotes user 3");
+
+            Powers memory p1 = _getPowers(token, user1);
+            assertEq(p1.localPower, 150e18, "3: local power of user 1");
+            assertEq(p1.otherPower, 1000e18, "3: other power of user 1 (delegated to user 2)");
+            assertEq(p1.delegatedLocalPower, 0, "3: delegated local power of user 1");
+            assertEq(p1.delegatedOtherPower, 0, "3: delegated other power of user 1");
+
+            Powers memory p2 = _getPowers(token, user2);
+            assertEq(p2.localPower, 250e18, "3: local power of user 2");
+            assertEq(p2.otherPower, 0, "3: other power of user 2");
+            assertEq(p2.delegatedLocalPower, 150e18, "3: delegated local power of user 2 (from user 1)");
+            assertEq(p2.delegatedOtherPower, 1000e18 + 3000e18, "3: delegated other power of user 2 (from 1 and 3)");
+
+            Powers memory p3 = _getPowers(token, user3);
+            assertEq(p3.localPower, 0, "3: local power of user 3");
+            assertEq(p3.otherPower, 3000e18, "3: other power of user 3 (delegated to user 2)");
+            assertEq(p3.delegatedLocalPower, 0, "3: delegated local power of user 3");
+            assertEq(p3.delegatedOtherPower, 0, "3: delegated other power of user 3");
+        }
+    }
+
+    function testDistributeBribes() public {
+        // Assume following situation:
+        // Sonic: U1: 100, U2: 200, U3: 300, U4: 400
+        // Delegation on Sonic: U1 => U2, U3 => U2
+        // Plasma: U1: 50, U2: 150, U4: 250
+        // Avalanche: U1: 600, U3: 500
         //
-        //        assertEq(token.getVotesPower(user1, POWER_TOTAL_0), 1000e18 + 150e18, "total power of user 1");
-        //        assertEq(token.getVotesPower(user2, POWER_TOTAL_0), 2000e18 + 250e18, "total power of user 2");
+        // Suppose, U2 votes and receives 1000 bribes
+        // How to distribute the bribes between the users?
         //
-        //        assertEq(token.getVotesPower(user1, POWER_CURRENT_CHAIN_1), 150e18, "current power of user 1");
-        //        assertEq(token.getVotesPower(user2, POWER_CURRENT_CHAIN_1), 250e18, "current power of user 2");
-        //
-        //        assertEq(token.getVotesPower(user1, POWER_OTHER_CHAINS_2), 1000e18, "other chains power of user 1");
-        //        assertEq(token.getVotesPower(user2, POWER_OTHER_CHAINS_2), 2000e18, "other chains power of user 2");
+        // Total number of votes of U2: (U1.sonic + U1.plasma + U1.avalanche) + (U2.sonic + U2.plasma) + (U3.sonic + U3.avalanche)
+        // (100 + 50 + 600) + (200 + 150) + (300 + 500) = 1900
+        // U1: 1000 bribes * 750 / 1900
+        // U2: 1000 bribes * 350 / 1900
+        // U3: 1000 bribes * 800 / 1900
+
+        IStabilityDAO token = _createDAOInstance();
+
+        address user1 = makeAddr("user1");
+        address user2 = makeAddr("user2");
+        address user3 = makeAddr("user3");
+        address user4 = makeAddr("user4");
+
+        // -------------------------- provide powers for user 1 and user 2 on main chain
+        deal(address(token), user1, 100e18);
+        deal(address(token), user2, 200e18);
+        deal(address(token), user3, 300e18);
+        deal(address(token), user4, 400e18);
+
+        // -------------------------- set power on other chains for user 1 and user 2
+        {
+            address[] memory users = new address[](4);
+            users[0] = user1;
+            users[1] = user2;
+            users[2] = user3;
+            users[3] = user4;
+            uint[] memory powers = new uint[](4);
+            powers[0] = 50e18 + 600e18;
+            powers[1] = 150e18;
+            powers[2] = 500e18;
+            powers[3] = 250e18;
+
+            vm.prank(multisig);
+            token.setWhitelistedForOtherChainsPowers(user1, true);
+
+            vm.prank(user1);
+            token.updateOtherChainsPowers(users, powers);
+            skip(1); // in next tx we should have different timestamp because it's used as an epoch counter inside token
+        }
+
+        // -------------------------- users 1 and 3 delegate their powers to user 2
+        vm.prank(user1);
+        token.setPowerDelegation(user2);
+
+        vm.prank(user3);
+        token.setPowerDelegation(user2);
+
+        // -------------------------- distribute bribes
+        Powers memory p1 = _getPowers(token, user1);
+        Powers memory p2 = _getPowers(token, user2);
+        Powers memory p3 = _getPowers(token, user3);
+        (, address[] memory delegators) = token.delegates(user2);
+
+        //        _showPowers(p1);
+        //        _showPowers(p2);
+        //        _showPowers(p3);
+
+        assertEq(delegators.length, 2, "delegators are users 1 and 3");
+        assertEq(delegators[0], user1, "first delegator is user 1");
+        assertEq(delegators[1], user3, "second delegator is user 3");
+
+        assertEq(
+            p2.localPower + p2.otherPower + p2.delegatedLocalPower + p2.delegatedOtherPower,
+            1900e18,
+            "total power of user 2"
+        );
+        assertEq(p1.localPower + p1.otherPower, 750e18, "total power of user 1");
+        assertEq(p2.localPower + p2.otherPower, 350e18, "total power of user 2");
+        assertEq(p3.localPower + p3.otherPower, 800e18, "total power of user 3");
+
+        assertEq(p2.delegatedLocalPower + p2.delegatedOtherPower, 1900e18 - 350e18, "delegated power of user 2");
     }
 
     //endregion --------------------------------- Unit tests
 
     //region --------------------------------- Utils
+    function _getPowers(IStabilityDAO dao, address user) internal view returns (Powers memory p) {
+        (p.localPower, p.otherPower, p.delegatedLocalPower, p.delegatedOtherPower) = dao.getPowers(user);
+        return p;
+    }
+
+    function _showPowers(Powers memory p) internal pure {
+        console.log("localPower", p.localPower);
+        console.log("otherPower", p.otherPower);
+        console.log("delegatedLocalPower", p.delegatedLocalPower);
+        console.log("delegatedOtherPower", p.delegatedOtherPower);
+    }
+
     function _updateConfig(
         IStabilityDAO token,
         address user,

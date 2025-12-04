@@ -53,14 +53,16 @@ interface IStabilityDAO is IERC20, IERC20Metadata {
     /// If user has balance of staked xSTBL below minimalPower, his power is 0
     function getVotes(address user_) external view returns (uint);
 
-    /// @notice Get voting power of a user for a specific kind of power location.
-    /// @param user_ The address of the user
-    /// @param powerLocation_ The kind of power location:
-    ///   0 - total power (same as getVotes(user_))
-    ///   1 - power on current chain
-    ///   2 - power on other chains (sum of all non-current chains)
-    /// The power = user's own (not-delegated) balance of STBL_DAO + balances of all users that delegated to him
-    function getVotesPower(address user_, uint powerLocation_) external view returns (uint);
+    /// @notice Get powers of the given user.
+    /// @param user_ The address of the user.
+    /// @return localPower Power on the current chain. This power can be delegated to other user (delegates.delegatedTo}.
+    /// @return otherPower Power on other chains. This power can be delegated to other user (delegates.delegatedTo}.
+    /// @return delegatedLocalPower Power on the current chain delegated to the user by others.
+    /// @return delegatedOtherPower Power on other chains delegated to the user by others.
+    function getPowers(address user_)
+        external
+        view
+        returns (uint localPower, uint otherPower, uint delegatedLocalPower, uint delegatedOtherPower);
 
     /// @notice Get delegation info of a user
     /// @return delegatedTo The address to whom the user has delegated his voting power (or address(0) if not delegated)
