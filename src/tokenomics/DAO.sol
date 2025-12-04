@@ -113,7 +113,7 @@ contract DAO is Controllable, ERC20Upgradeable, ERC20BurnableUpgradeable, Reentr
     /// @inheritdoc IDAO
     function initialize(
         address platform_,
-        address xToken__,
+        address xToken_,
         address xStaking_,
         DaoParams memory p,
         string memory name_,
@@ -123,7 +123,7 @@ contract DAO is Controllable, ERC20Upgradeable, ERC20BurnableUpgradeable, Reentr
         __ERC20_init(name_, symbol_); // i.e. "Stability DAO", "STBL_DAO"
         DaoStorage storage $ = _getDaoStorage();
         $.xStaking = xStaking_;
-        $.xToken = xToken__;
+        $.xToken = xToken_;
         $.config[0] = p;
     }
 
@@ -205,6 +205,7 @@ contract DAO is Controllable, ERC20Upgradeable, ERC20BurnableUpgradeable, Reentr
         OtherChainsPowers storage poc = $.otherChainsPowers[epoch];
 
         for (uint i; i < len; ++i) {
+            // slither-disable-next-line unused-return
             poc.powers.set(users[i], powers[i]);
         }
 

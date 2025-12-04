@@ -28,6 +28,7 @@ contract XTokenBridge is Controllable, IXTokenBridge, IOAppComposer, ReentrancyG
         0x7331a1638fe957f8dc3395f52254374f52b3cbbdf185d4405a764a49dfb7f400;
 
     /// @notice LayerZero v2 Endpoint address
+    /// slither-disable-next-line naming-convention
     address public immutable LZ_ENDPOINT;
 
     //region --------------------------------- Data types
