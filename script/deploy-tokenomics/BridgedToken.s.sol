@@ -17,7 +17,7 @@ contract DeployBridgedToken is Script {
         StdConfig config = new StdConfig("./config.toml", false); // read only config
         StdConfig configDeployed = new StdConfig("./config.d.toml", true); // auto-write deployed addresses
 
-        require(configDeployed.get("OAPP_STBL").toAddress() == address(0), "OAPP_STBL already deployed");
+        require(configDeployed.get("OAPP_MAIN_TOKEN").toAddress() == address(0), "OAPP_MAIN_TOKEN already deployed");
 
         address endpoint = config.get("LAYER_ZERO_V2_ENDPOINT").toAddress();
         require(endpoint != address(0), "endpoint is not set");
@@ -34,7 +34,7 @@ contract DeployBridgedToken is Script {
         // ---------------------- Write results
         vm.stopBroadcast();
 
-        configDeployed.set("OAPP_STBL", address(proxy));
+        configDeployed.set("OAPP_MAIN_TOKEN", address(proxy));
     }
 
     function testDeployScript() external {}

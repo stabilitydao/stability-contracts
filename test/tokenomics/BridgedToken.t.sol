@@ -18,9 +18,8 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 import {SendParam} from "@layerzerolabs/oft-evm/contracts/interfaces/IOFT.sol";
 // import {InboundPacket, PacketDecoder} from "@layerzerolabs/lz-evm-protocol-v2/../oapp/contracts/precrime/libs/Packet.sol";
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
-import {StabilityOFTAdapter} from "../../src/tokenomics/StabilityOFTAdapter.sol";
+import {TokenOFTAdapter} from "../../src/tokenomics/TokenOFTAdapter.sol";
 import {console, Test} from "forge-std/Test.sol";
-import {UniswapV3Adapter} from "../../src/adapters/UniswapV3Adapter.sol";
 
 contract BridgedTokenTest is Test {
     using OptionsBuilder for bytes;
@@ -37,15 +36,15 @@ contract BridgedTokenTest is Test {
     /// 100_000 => fee = 0.36 S
     uint128 private constant GAS_LIMIT = 65_000;
 
-    StabilityOFTAdapter internal adapter;
+    TokenOFTAdapter internal adapter;
     BridgedToken internal bridgedTokenAvalanche;
     BridgedToken internal bridgedTokenPlasma;
 
     struct ChainResults {
-        uint balanceSenderSTBL;
-        uint balanceContractSTBL;
-        uint balanceReceiverSTBL;
-        uint totalSupplySTBL;
+        uint balanceSenderMainToken;
+        uint balanceContractMainToken;
+        uint balanceReceiverMainToken;
+        uint totalSupplyMainToken;
         uint balanceSenderEther;
     }
 
@@ -81,9 +80,9 @@ contract BridgedTokenTest is Test {
         }
 
         // ------------------- Create adapter and bridged token
-        adapter = StabilityOFTAdapter(BridgeTestLib.setupStabilityOFTAdapterOnSonic(vm, sonic));
-        bridgedTokenAvalanche = BridgedToken(BridgeTestLib.setupSTBLBridged(vm, avalanche));
-        bridgedTokenPlasma = BridgedToken(BridgeTestLib.setupSTBLBridged(vm, plasma));
+        adapter = TokenOFTAdapter(BridgeTestLib.setupTokenOFTAdapterOnSonic(vm, sonic));
+        bridgedTokenAvalanche = BridgedToken(BridgeTestLib.setupBridgedMainToken(vm, avalanche));
+        bridgedTokenPlasma = BridgedToken(BridgeTestLib.setupBridgedMainToken(vm, plasma));
 
         vm.selectFork(avalanche.fork);
         assertEq(bridgedTokenAvalanche.owner(), avalanche.multisig, "multisig is owner");
@@ -185,23 +184,23 @@ contract BridgedTokenTest is Test {
 
     //endregion ------------------------------------- Unit tests for bridgetSTBL
 
-    //region ------------------------------------- Unit tests for StabilityOFTAdapter
-    function testViewStabilityOFTAdapter() public {
+    //region ------------------------------------- Unit tests for TokenOFTAdapter
+    function testViewTokenOFTAdapter() public {
         vm.selectFork(sonic.fork);
 
-        //        console.log("erc7201:stability.StabilityOFTAdapter");
+        //        console.log("erc7201:stability.TokenOFTAdapter");
         //        console.logBytes32(
-        //            keccak256(abi.encode(uint(keccak256("erc7201:stability.StabilityOFTAdapter")) - 1)) & ~bytes32(uint(0xff))
+        //            keccak256(abi.encode(uint(keccak256("erc7201:stability.TokenOFTAdapter")) - 1)) & ~bytes32(uint(0xff))
         //        );
 
-        assertEq(adapter.platform(), SonicConstantsLib.PLATFORM, "StabilityOFTAdapter - platform");
-        assertEq(adapter.owner(), sonic.multisig, "StabilityOFTAdapter - owner");
-        assertEq(adapter.token(), SonicConstantsLib.TOKEN_STBL, "StabilityOFTAdapter - token");
-        assertEq(adapter.approvalRequired(), true, "StabilityOFTAdapter - approvalRequired");
-        assertEq(adapter.sharedDecimals(), BridgeTestLib.SHARED_DECIMALS, "StabilityOFTAdapter - shared decimals");
+        assertEq(adapter.platform(), SonicConstantsLib.PLATFORM, "TokenOFTAdapter - platform");
+        assertEq(adapter.owner(), sonic.multisig, "TokenOFTAdapter - owner");
+        assertEq(adapter.token(), SonicConstantsLib.TOKEN_STBL, "TokenOFTAdapter - token");
+        assertEq(adapter.approvalRequired(), true, "TokenOFTAdapter - approvalRequired");
+        assertEq(adapter.sharedDecimals(), BridgeTestLib.SHARED_DECIMALS, "TokenOFTAdapter - shared decimals");
     }
 
-    function testConfigStabilityOFTAdapter() internal {
+    function testConfigTokenOFTAdapter() internal {
         BridgeTestLib._getConfig(
             vm,
             sonic.fork,
@@ -240,7 +239,7 @@ contract BridgedTokenTest is Test {
         assertEq(adapter.paused(address(this)), false);
     }
 
-    function testStabilityOFTAdapterPeers() public {
+    function testTokenOFTAdapterPeers() public {
         vm.selectFork(avalanche.fork);
 
         vm.prank(address(this));
@@ -255,7 +254,7 @@ contract BridgedTokenTest is Test {
         );
     }
 
-    //endregion ------------------------------------- Unit tests for StabilityOFTAdapter
+    //endregion ------------------------------------- Unit tests for TokenOFTAdapter
 
     //region ------------------------------------- Test: Send from Sonic to Avalanche
     function fixtureDataSA() public returns (TestCaseSendToTarget[] memory) {
@@ -293,8 +292,8 @@ contract BridgedTokenTest is Test {
         // ------------- Sonic.A => Avalanche.B
         Results memory r1 = _testSendFromSonicToBridged(userA, 157e18, 357e18, userB, avalanche);
 
-        assertEq(r1.srcAfter.balanceSenderSTBL, 357e18 - 157e18, "A balance 1");
-        assertEq(r1.targetAfter.balanceReceiverSTBL, 157e18, "B balance 1");
+        assertEq(r1.srcAfter.balanceSenderMainToken, 357e18 - 157e18, "A balance 1");
+        assertEq(r1.targetAfter.balanceReceiverMainToken, 157e18, "B balance 1");
 
         // ------------- Avalanche.B => Avalanche.C
         vm.selectFork(avalanche.fork);
@@ -307,11 +306,11 @@ contract BridgedTokenTest is Test {
         // ------------- Avalanche.C => Sonic.D
         Results memory r2 = _testSendFromBridgedToSonic(userC, 80e18, userD, avalanche);
 
-        assertEq(r2.srcAfter.balanceSenderSTBL, 20e18, "C balance 3");
-        assertEq(r2.targetAfter.balanceReceiverSTBL, 80e18, "D balance 3");
+        assertEq(r2.srcAfter.balanceSenderMainToken, 20e18, "C balance 3");
+        assertEq(r2.targetAfter.balanceReceiverMainToken, 80e18, "D balance 3");
 
-        assertEq(r2.srcAfter.totalSupplySTBL, 57e18 + 20e18, "total supply after all transfers: b + c");
-        assertEq(r2.targetAfter.totalSupplySTBL, r1.srcBefore.totalSupplySTBL, "total supply of STBL wasn't changed");
+        assertEq(r2.srcAfter.totalSupplyMainToken, 57e18 + 20e18, "total supply after all transfers: b + c");
+        assertEq(r2.targetAfter.totalSupplyMainToken, r1.srcBefore.totalSupplyMainToken, "total supply of STBL wasn't changed");
     }
 
     function testSendFromSonicToPlasmaAndBack() public {
@@ -324,8 +323,8 @@ contract BridgedTokenTest is Test {
         // ------------- Sonic.A => Plasma.B
         Results memory r1 = _testSendFromSonicToBridged(userA, 157e18, 357e18, userB, plasma);
 
-        assertEq(r1.srcAfter.balanceSenderSTBL, 357e18 - 157e18, "A balance 1");
-        assertEq(r1.targetAfter.balanceReceiverSTBL, 157e18, "B balance 1");
+        assertEq(r1.srcAfter.balanceSenderMainToken, 357e18 - 157e18, "A balance 1");
+        assertEq(r1.targetAfter.balanceReceiverMainToken, 157e18, "B balance 1");
 
         // ------------- Plasma.B => Plasma.C
         vm.selectFork(plasma.fork);
@@ -338,11 +337,11 @@ contract BridgedTokenTest is Test {
         // ------------- Plasma.C => Sonic.D
         Results memory r2 = _testSendFromBridgedToSonic(userC, 80e18, userD, plasma);
 
-        assertEq(r2.srcAfter.balanceSenderSTBL, 20e18, "C balance 3");
-        assertEq(r2.targetAfter.balanceReceiverSTBL, 80e18, "D balance 3");
+        assertEq(r2.srcAfter.balanceSenderMainToken, 20e18, "C balance 3");
+        assertEq(r2.targetAfter.balanceReceiverMainToken, 80e18, "D balance 3");
 
-        assertEq(r2.srcAfter.totalSupplySTBL, 57e18 + 20e18, "total supply after all transfers: b + c");
-        assertEq(r2.targetAfter.totalSupplySTBL, r1.srcBefore.totalSupplySTBL, "total supply of STBL wasn't changed");
+        assertEq(r2.srcAfter.totalSupplyMainToken, 57e18 + 20e18, "total supply after all transfers: b + c");
+        assertEq(r2.targetAfter.totalSupplyMainToken, r1.srcBefore.totalSupplyMainToken, "total supply of STBL wasn't changed");
     }
 
     function testSendFromAvalancheToPlasmaAndBack() public {
@@ -354,14 +353,14 @@ contract BridgedTokenTest is Test {
         // ------------- Sonic.A => Plasma.B
         Results memory r1 = _testSendFromSonicToBridged(userA, 157e18, 357e18, userB, plasma);
 
-        assertEq(r1.srcAfter.balanceSenderSTBL, 357e18 - 157e18, "A balance 1");
-        assertEq(r1.targetAfter.balanceReceiverSTBL, 157e18, "B balance 1");
+        assertEq(r1.srcAfter.balanceSenderMainToken, 357e18 - 157e18, "A balance 1");
+        assertEq(r1.targetAfter.balanceReceiverMainToken, 157e18, "B balance 1");
 
         // ------------- Plasma.B => Avalanche.C
         Results memory r2 = _testSendFromBridgedToBridged(userB, 57e18, userC, plasma, avalanche);
 
-        assertEq(r2.srcAfter.balanceSenderSTBL, 100e18, "B balance on plasma 2");
-        assertEq(r2.targetAfter.balanceReceiverSTBL, 57e18, "C balance on avalanche 2");
+        assertEq(r2.srcAfter.balanceSenderMainToken, 100e18, "B balance on plasma 2");
+        assertEq(r2.targetAfter.balanceReceiverMainToken, 57e18, "C balance on avalanche 2");
 
         // ------------- Avalanche.C => Plasma.C
         Results memory r3 = _testSendFromBridgedToBridged(userC, 27e18, userC, avalanche, plasma);
@@ -370,14 +369,14 @@ contract BridgedTokenTest is Test {
         //        _showResults(r3.targetBefore);
         //        _showResults(r3.targetAfter);
 
-        assertEq(r3.srcAfter.balanceReceiverSTBL, 30e18, "C balance on avalanche 3");
-        assertEq(r3.targetAfter.balanceSenderSTBL, 27e18, "C balance on plasma 3");
+        assertEq(r3.srcAfter.balanceReceiverMainToken, 30e18, "C balance on avalanche 3");
+        assertEq(r3.targetAfter.balanceSenderMainToken, 27e18, "C balance on plasma 3");
 
         // ------------- Avalanche.C => Sonic.A
         Results memory r4 = _testSendFromBridgedToSonic(userC, 20e18, userC, avalanche);
 
-        assertEq(r4.srcAfter.balanceReceiverSTBL, 10e18, "C balance on Avalanche 4");
-        assertEq(r4.targetAfter.balanceSenderSTBL, 20e18, "C balance on Sonic 4");
+        assertEq(r4.srcAfter.balanceReceiverMainToken, 10e18, "C balance on Avalanche 4");
+        assertEq(r4.targetAfter.balanceSenderMainToken, 20e18, "C balance on Sonic 4");
     }
 
     function testUserPausedOnSonic() public {
@@ -591,13 +590,13 @@ contract BridgedTokenTest is Test {
 
         Results memory r = _testSendFromSonicToBridged(sender, sendAmount, balance0, receiver, avalanche);
 
-        assertEq(r.srcBefore.balanceSenderSTBL, balance0, "sender's initial STBL balance");
-        assertEq(r.srcBefore.balanceContractSTBL, 0, "no tokens in adapter initially");
-        assertEq(r.srcAfter.balanceSenderSTBL, balance0 - sendAmount, "sender's final STBL balance");
-        assertEq(r.srcAfter.balanceContractSTBL, sendAmount, "all tokens are in adapter");
+        assertEq(r.srcBefore.balanceSenderMainToken, balance0, "sender's initial STBL balance");
+        assertEq(r.srcBefore.balanceContractMainToken, 0, "no tokens in adapter initially");
+        assertEq(r.srcAfter.balanceSenderMainToken, balance0 - sendAmount, "sender's final STBL balance");
+        assertEq(r.srcAfter.balanceContractMainToken, sendAmount, "all tokens are in adapter");
 
-        assertEq(r.targetBefore.balanceReceiverSTBL, 0, "receiver has no tokens on avalanche initially");
-        assertEq(r.targetAfter.balanceReceiverSTBL, sendAmount, "receiver has received expected amount");
+        assertEq(r.targetBefore.balanceReceiverMainToken, 0, "receiver has no tokens on avalanche initially");
+        assertEq(r.targetAfter.balanceReceiverMainToken, sendAmount, "receiver has received expected amount");
 
         assertEq(r.srcBefore.balanceSenderEther, r.srcAfter.balanceSenderEther + r.nativeFee, "expected fee");
         vm.revertToState(shapshot);
@@ -880,10 +879,10 @@ contract BridgedTokenTest is Test {
 
     //region ------------------------------------- Internal logic
     function _getBalancesSonic(address sender, address receiver) internal view returns (ChainResults memory res) {
-        res.balanceSenderSTBL = IERC20(SonicConstantsLib.TOKEN_STBL).balanceOf(sender);
-        res.balanceContractSTBL = IERC20(SonicConstantsLib.TOKEN_STBL).balanceOf(address(adapter));
-        res.balanceReceiverSTBL = IERC20(SonicConstantsLib.TOKEN_STBL).balanceOf(receiver);
-        res.totalSupplySTBL = IERC20(SonicConstantsLib.TOKEN_STBL).totalSupply();
+        res.balanceSenderMainToken = IERC20(SonicConstantsLib.TOKEN_STBL).balanceOf(sender);
+        res.balanceContractMainToken = IERC20(SonicConstantsLib.TOKEN_STBL).balanceOf(address(adapter));
+        res.balanceReceiverMainToken = IERC20(SonicConstantsLib.TOKEN_STBL).balanceOf(receiver);
+        res.totalSupplyMainToken = IERC20(SonicConstantsLib.TOKEN_STBL).totalSupply();
         res.balanceSenderEther = sender.balance;
         //        console.log("Sonic.balanceSenderSTBL", res.balanceSenderSTBL);
         //        console.log("Sonic.balanceContractSTBL", res.balanceContractSTBL);
@@ -898,10 +897,10 @@ contract BridgedTokenTest is Test {
         address receiver,
         BridgeTestLib.ChainConfig memory target
     ) internal view returns (ChainResults memory res) {
-        res.balanceSenderSTBL = IERC20(target.oapp).balanceOf(sender);
-        res.balanceContractSTBL = IERC20(target.oapp).balanceOf(address(target.oapp));
-        res.balanceReceiverSTBL = IERC20(target.oapp).balanceOf(receiver);
-        res.totalSupplySTBL = IERC20(target.oapp).totalSupply();
+        res.balanceSenderMainToken = IERC20(target.oapp).balanceOf(sender);
+        res.balanceContractMainToken = IERC20(target.oapp).balanceOf(address(target.oapp));
+        res.balanceReceiverMainToken = IERC20(target.oapp).balanceOf(receiver);
+        res.totalSupplyMainToken = IERC20(target.oapp).totalSupply();
         res.balanceSenderEther = sender.balance;
         //        console.log("Avalanche.balanceSenderSTBL", res.balanceSenderSTBL);
         //        console.log("Avalanche.balanceContractSTBL", res.balanceContractSTBL);
@@ -912,10 +911,10 @@ contract BridgedTokenTest is Test {
     }
 
     function _showResults(ChainResults memory res) internal pure {
-        console.log("balanceSenderSTBL:", res.balanceSenderSTBL);
-        console.log("balanceContractSTBL:", res.balanceContractSTBL);
-        console.log("balanceReceiverSTBL:", res.balanceReceiverSTBL);
-        console.log("totalSupplySTBL:", res.totalSupplySTBL);
+        console.log("balanceSenderSTBL:", res.balanceSenderMainToken);
+        console.log("balanceContractSTBL:", res.balanceContractMainToken);
+        console.log("balanceReceiverSTBL:", res.balanceReceiverMainToken);
+        console.log("totalSupplySTBL:", res.totalSupplyMainToken);
     }
 
     //endregion ------------------------------------- Internal logic

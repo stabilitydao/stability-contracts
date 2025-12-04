@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-interface IXSTBL {
+interface IXToken {
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         DATA TYPES                         */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     struct VestPosition {
-        /// @dev amount of xSTBL
+        /// @dev amount of xToken
         uint amount;
         /// @dev start unix timestamp
         uint start;
@@ -43,14 +43,14 @@ interface IXSTBL {
     /*                      WRITE FUNCTIONS                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    /// @dev Mints xSTBL for each STBL
+    /// @dev Mints xToken for each main-token
     function enter(uint amount_) external;
 
     /// @dev Exit instantly with a penalty
-    /// @param amount_ Amount of xSTBL to exit
+    /// @param amount_ Amount of xToken to exit
     function exit(uint amount_) external returns (uint exitedAmount);
 
-    /// @dev Vesting xSTBL --> STBL functionality
+    /// @dev Vesting xToken --> main token functionality
     function createVest(uint amount_) external;
 
     /// @dev Handles all situations regarding exiting vests
@@ -70,12 +70,12 @@ interface IXSTBL {
     /// @notice Function called by the RevenueRouter to send the rebases once a week
     function rebase() external;
 
-    /// @notice Burn given {amount} of xSTBL for the given {user} and transfer STBL to the SBTL-bridge.
-    /// The {user} will receive same amount of xSTBL on the different chain in return.
+    /// @notice Burn given {amount} of xToken for the given {user} and transfer main-token to the main-token-bridge.
+    /// The {user} will receive same amount of xToken on the different chain in return.
     /// @custom:restricted This function can only be called by XTokenBridge contract.
     function sendToBridge(address user, uint amount) external;
 
-    /// @notice Mint given {amount} of xSTBL for the given {user} after receiving STBL from the SBTL-bridge.
+    /// @notice Mint given {amount} of xToken for the given {user} after receiving main-token from the main-token-bridge.
     /// @custom:restricted This function can only be called by XTokenBridge contract.
     function takeFromBridge(address user, uint amount) external;
 
@@ -95,10 +95,10 @@ interface IXSTBL {
     /// @notice The maximum vesting length
     function MAX_VEST() external view returns (uint);
 
-    /// @notice STBL address
-    function STBL() external view returns (address);
+    /// @notice Main token address (i.e. STBL)
+    function token() external view returns (address);
 
-    /// @notice xSTBL staking contract
+    /// @notice xToken staking contract
     function xStaking() external view returns (address);
 
     /// @notice Revenue distributor contract

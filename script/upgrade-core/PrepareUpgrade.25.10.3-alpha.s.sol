@@ -5,9 +5,9 @@ import {Script} from "forge-std/Script.sol";
 import {Platform} from "../../src/core/Platform.sol";
 import {Proxy} from "../../src/core/proxy/Proxy.sol";
 import {XStaking} from "../../src/tokenomics/XStaking.sol";
-import {XSTBL} from "../../src/tokenomics/XSTBL.sol";
+import {XToken} from "../../src/tokenomics/XToken.sol";
 import {DAO} from "../../src/tokenomics/DAO.sol";
-import {IStabilityDAO} from "../../src/interfaces/IStabilityDAO.sol";
+import {IDAO} from "../../src/interfaces/IDAO.sol";
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 import {RevenueRouter} from "../../src/tokenomics/RevenueRouter.sol";
 
@@ -22,7 +22,7 @@ contract PrepareUpgrade25103alpha is Script {
         new XStaking();
 
         // XSTBL 1.1.0
-        new XSTBL();
+        new XToken();
 
         // Platform 1.6.2: IPlatform.stabilityDAO()
         new Platform();
@@ -38,7 +38,7 @@ contract PrepareUpgrade25103alpha is Script {
                 PLATFORM,
                 SonicConstantsLib.TOKEN_XSTBL,
                 SonicConstantsLib.XSTBL_XSTAKING,
-                IStabilityDAO.DaoParams({
+                IDAO.DaoParams({
                     minimalPower: 4000e18,
                     exitPenalty: 50_00, // 50%, decimals 1e4
                     proposalThreshold: 10_000, // 10%

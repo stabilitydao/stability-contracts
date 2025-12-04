@@ -18,7 +18,7 @@ contract DeployBridgedPriceOracle is Script {
         StdConfig configDeployed = new StdConfig("./config.d.toml", true); // auto-write deployed addresses
 
         require(
-            configDeployed.get("BRIDGED_PRICE_ORACLE_STBL").toAddress() == address(0),
+            configDeployed.get("BRIDGED_PRICE_ORACLE_MAIN_TOKEN").toAddress() == address(0),
             "BridgedPriceOracle already deployed"
         );
 
@@ -34,7 +34,7 @@ contract DeployBridgedPriceOracle is Script {
         vm.stopBroadcast();
 
         // @dev assume here that we deploy price oracle for STBL token
-        configDeployed.set("BRIDGED_PRICE_ORACLE_STBL", address(proxy));
+        configDeployed.set("BRIDGED_PRICE_ORACLE_MAIN_TOKEN", address(proxy));
     }
 
     function testDeployScript() external {}

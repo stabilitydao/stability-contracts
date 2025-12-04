@@ -3,6 +3,6 @@ pragma solidity ^0.8.23;
 
 import {IOFTPausable} from "./IOFTPausable.sol";
 
-interface IStabilityOFTAdapter is IOFTPausable {
+interface ITokenOFTAdapter is IOFTPausable {
     function initialize(address platform_) external;
 }

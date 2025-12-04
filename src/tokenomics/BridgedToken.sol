@@ -7,7 +7,7 @@ import {IPlatform} from "../interfaces/IPlatform.sol";
 import {IBridgedToken} from "../interfaces/IBridgedToken.sol";
 import {IOFTPausable} from "../interfaces/IOFTPausable.sol";
 
-/// @notice Omnichain Fungible Token - bridged version of STBL token from Sonic to other chains
+/// @notice Omnichain Fungible Token - bridged version of main-token from Sonic to other chains
 contract BridgedToken is Controllable, OFTUpgradeable, IBridgedToken {
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         CONSTANTS                          */

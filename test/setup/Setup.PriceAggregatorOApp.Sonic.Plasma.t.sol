@@ -4,7 +4,7 @@ pragma solidity ^0.8.23;
 import {StdConfig} from "forge-std/StdConfig.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
 import {Variable, LibVariable} from "forge-std/LibVariable.sol";
-import {console, Test} from "forge-std/Test.sol";
+import {Test} from "forge-std/Test.sol";
 import {BridgeTestLib} from "../tokenomics/libs/BridgeTestLib.sol";
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 import {PlasmaConstantsLib} from "../../chains/plasma/PlasmaConstantsLib.sol";

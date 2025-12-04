@@ -1,20 +1,20 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import {XSTBL} from "../../src/tokenomics/XSTBL.sol";
+import {XToken} from "../../src/tokenomics/XToken.sol";
 import {BridgeTestLib} from "./libs/BridgeTestLib.sol";
 import {console, Test, Vm} from "forge-std/Test.sol";
 import {XStaking} from "../../src/tokenomics/XStaking.sol";
 import {XTokenBridge} from "../../src/tokenomics/XTokenBridge.sol";
 import {OptionsBuilder} from "@layerzerolabs/oapp-evm/contracts/oapp/libs/OptionsBuilder.sol";
-import {IXSTBL} from "../../src/interfaces/IXSTBL.sol";
+import {IXToken} from "../../src/interfaces/IXToken.sol";
 import {IControllable} from "../../src/interfaces/IControllable.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
 import {IOFTPausable} from "../../src/interfaces/IOFTPausable.sol";
 import {IXTokenBridge} from "../../src/interfaces/IXTokenBridge.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {StabilityOFTAdapter} from "../../src/tokenomics/StabilityOFTAdapter.sol";
+import {TokenOFTAdapter} from "../../src/tokenomics/TokenOFTAdapter.sol";
 import {BridgedToken} from "../../src/tokenomics/BridgedToken.sol";
 import {XStaking} from "../../src/tokenomics/XStaking.sol";
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
@@ -41,7 +41,7 @@ contract XTokenBridgeTest is Test {
     /// @dev Gas limit for executor lzCompose calls
     uint128 private constant GAS_LIMIT_LZCOMPOSE = 150_000;
 
-    StabilityOFTAdapter internal adapter;
+    TokenOFTAdapter internal adapter;
     BridgedToken internal bridgedTokenAvalanche;
     BridgedToken internal bridgedTokenPlasma;
 
@@ -50,12 +50,12 @@ contract XTokenBridgeTest is Test {
     BridgeTestLib.ChainConfig internal plasma;
 
     struct ChainResults {
-        uint balanceUserSTBL;
-        uint balanceUserXSTBL;
-        uint balanceOappSTBL;
-        uint balanceXTokenSTBL;
+        uint balanceUserMainToken;
+        uint balanceUserXToken;
+        uint balanceOappMainToken;
+        uint balanceXTokenMainToken;
         uint balanceUserEther;
-        uint balanceXTokenBridgeSTBL;
+        uint balanceXTokenBridgedMainToken;
     }
 
     struct Results {
@@ -81,27 +81,27 @@ contract XTokenBridgeTest is Test {
         }
 
         // ------------------- Create bridge for STBL
-        adapter = StabilityOFTAdapter(BridgeTestLib.setupStabilityOFTAdapterOnSonic(vm, sonic));
-        bridgedTokenAvalanche = BridgedToken(BridgeTestLib.setupSTBLBridged(vm, avalanche));
-        bridgedTokenPlasma = BridgedToken(BridgeTestLib.setupSTBLBridged(vm, plasma));
+        adapter = TokenOFTAdapter(BridgeTestLib.setupTokenOFTAdapterOnSonic(vm, sonic));
+        bridgedTokenAvalanche = BridgedToken(BridgeTestLib.setupBridgedMainToken(vm, avalanche));
+        bridgedTokenPlasma = BridgedToken(BridgeTestLib.setupBridgedMainToken(vm, plasma));
 
         sonic.oapp = address(adapter);
         avalanche.oapp = address(bridgedTokenAvalanche);
         plasma.oapp = address(bridgedTokenPlasma);
 
-        // ------------------- Upgrade XSTBL on sonic, deploy XSTBL on other chains
+        // ------------------- Upgrade xToken on sonic, deploy xToken on other chains
         _upgradeSonicPlatform();
-        avalanche.xToken = createXSTBL(avalanche);
-        plasma.xToken = createXSTBL(plasma);
+        avalanche.xToken = createXToken(avalanche);
+        plasma.xToken = createXToken(plasma);
 
         // ------------------- Create XTokenBridge
         sonic.xTokenBridge = createXTokenBridge(sonic);
         avalanche.xTokenBridge = createXTokenBridge(avalanche);
         plasma.xTokenBridge = createXTokenBridge(plasma);
 
-        _setXSTBLBridge(sonic);
-        _setXSTBLBridge(avalanche);
-        _setXSTBLBridge(plasma);
+        _setXTokenBridge(sonic);
+        _setXTokenBridge(avalanche);
+        _setXTokenBridge(plasma);
 
         // ------------------- Set up STBL-bridges
         BridgeTestLib.setUpSonicAvalanche(vm, sonic, avalanche);
@@ -185,7 +185,7 @@ contract XTokenBridgeTest is Test {
         address receiver = makeAddr("receiver");
 
         IXTokenBridge xTokenBridge = IXTokenBridge(sonic.xTokenBridge);
-        IERC20 stbl = IERC20(IXSTBL(sonic.xToken).STBL());
+        IERC20 stbl = IERC20(IXToken(sonic.xToken).token());
 
         // ------------------- send some STBL to the xTokenBridge
         deal(address(stbl), address(this), 100e18);
@@ -217,14 +217,14 @@ contract XTokenBridgeTest is Test {
     function testSendBadPaths() public {
         _setUpXTokenBridges();
 
-        // ------------------- provide xSTBL to the user
+        // ------------------- provide xToken to the user
         vm.selectFork(sonic.fork);
         IXTokenBridge xTokenBridge = IXTokenBridge(sonic.xTokenBridge);
 
         deal(SonicConstantsLib.TOKEN_STBL, address(this), 100e18);
 
         IERC20(SonicConstantsLib.TOKEN_STBL).approve(sonic.xToken, 100e18);
-        IXSTBL(sonic.xToken).enter(100e18);
+        IXToken(sonic.xToken).enter(100e18);
 
         // ------------------- incorrect value
         {
@@ -297,14 +297,14 @@ contract XTokenBridgeTest is Test {
 
         XTokenBridge(address(xTokenBridgeProxy)).initialize(address(sonic.platform), sonic.oapp, address(mockedXToken));
 
-        // ------------------- provide xSTBL to the user
+        // ------------------- provide xToken to the user
         vm.selectFork(sonic.fork);
         IXTokenBridge xTokenBridge = IXTokenBridge(address(xTokenBridgeProxy));
 
         deal(SonicConstantsLib.TOKEN_STBL, address(this), 100e18);
 
         IERC20(SonicConstantsLib.TOKEN_STBL).approve(sonic.xToken, 100e18);
-        IXSTBL(sonic.xToken).enter(100e18);
+        IXToken(sonic.xToken).enter(100e18);
 
         // ------------------- chain not supported
         vm.expectRevert(IXTokenBridge.IncorrectAmountReceivedFromXToken.selector);
@@ -342,14 +342,14 @@ contract XTokenBridgeTest is Test {
     function testComposeInvalidSenderXTokenBridge() public {
         _setUpXTokenBridges();
 
-        // --------------- mint XSTBL on Sonic
+        // --------------- mint xToken on Sonic
         vm.selectFork(sonic.fork);
         deal(SonicConstantsLib.TOKEN_STBL, address(this), 100e18);
 
         IERC20(SonicConstantsLib.TOKEN_STBL).approve(sonic.xToken, 100e18);
-        IXSTBL(sonic.xToken).enter(100e18);
+        IXToken(sonic.xToken).enter(100e18);
 
-        // --------------- send XSTBL on sonic
+        // --------------- send xToken on sonic
         vm.selectFork(sonic.fork);
 
         bytes memory options = OptionsBuilder.newOptions().addExecutorLzReceiveOption(GAS_LIMIT_LZRECEIVE, 0)
@@ -434,161 +434,161 @@ contract XTokenBridgeTest is Test {
 
     //endregion ------------------------------------- Unit tests
 
-    //region ------------------------------------- Send XSTBL between chains
-    function testSendXSTBLFromSonicToPlasma() public {
+    //region ------------------------------------- Send xToken between chains
+    function testSendXTokenFromSonicToPlasma() public {
         _setUpXTokenBridges();
 
-        // --------------- mint XSTBL on Sonic
+        // --------------- mint xToken on Sonic
         vm.selectFork(sonic.fork);
         deal(SonicConstantsLib.TOKEN_STBL, address(this), 100e18);
 
         IERC20(SonicConstantsLib.TOKEN_STBL).approve(sonic.xToken, 100e18);
-        IXSTBL(sonic.xToken).enter(100e18);
+        IXToken(sonic.xToken).enter(100e18);
 
-        // --------------- send XSTBL from Sonic to Plasma
-        Results memory r1 = _testSendXSTBL(sonic, plasma, 70e18, 0);
+        // --------------- send xToken from Sonic to Plasma
+        Results memory r1 = _testSendXToken(sonic, plasma, 70e18, 0);
 
-        assertEq(r1.srcBefore.balanceUserXSTBL, 100e18, "sonic: user xSTBL before");
-        assertEq(r1.srcAfter.balanceUserXSTBL, 30e18, "sonic: user xSTBL after");
-        assertEq(r1.targetBefore.balanceUserXSTBL, 0, "plasma: user xSTBL before");
-        assertEq(r1.targetAfter.balanceUserXSTBL, 70e18, "plasma: user xSTBL after");
+        assertEq(r1.srcBefore.balanceUserXToken, 100e18, "sonic: user xToken before");
+        assertEq(r1.srcAfter.balanceUserXToken, 30e18, "sonic: user xToken after");
+        assertEq(r1.targetBefore.balanceUserXToken, 0, "plasma: user xToken before");
+        assertEq(r1.targetAfter.balanceUserXToken, 70e18, "plasma: user xToken after");
 
-        assertEq(r1.srcBefore.balanceXTokenBridgeSTBL, 0, "sonic: xTokenBridge STBL before");
-        assertEq(r1.srcAfter.balanceXTokenBridgeSTBL, 0, "sonic: xTokenBridge STBL after");
-        assertEq(r1.targetBefore.balanceXTokenBridgeSTBL, 0, "plasma: xTokenBridge STBL before");
-        assertEq(r1.targetAfter.balanceXTokenBridgeSTBL, 0, "plasma: xTokenBridge STBL after");
+        assertEq(r1.srcBefore.balanceXTokenBridgedMainToken, 0, "sonic: xTokenBridge main-token before");
+        assertEq(r1.srcAfter.balanceXTokenBridgedMainToken, 0, "sonic: xTokenBridge main-token after");
+        assertEq(r1.targetBefore.balanceXTokenBridgedMainToken, 0, "plasma: xTokenBridge main-token before");
+        assertEq(r1.targetAfter.balanceXTokenBridgedMainToken, 0, "plasma: xTokenBridge main-token after");
 
-        assertEq(r1.srcAfter.balanceXTokenSTBL, r1.srcBefore.balanceXTokenSTBL - 70e18, "sonic: xToken STBL after");
-        assertEq(r1.targetAfter.balanceXTokenSTBL, 70e18, "plasma: STBL staked to XSTBL");
+        assertEq(r1.srcAfter.balanceXTokenMainToken, r1.srcBefore.balanceXTokenMainToken - 70e18, "sonic: xToken main-token after");
+        assertEq(r1.targetAfter.balanceXTokenMainToken, 70e18, "plasma: main-token staked to xToken");
 
-        assertEq(r1.srcAfter.balanceOappSTBL, 70e18, "sonic: expected amount of locked STBL in the bridge");
+        assertEq(r1.srcAfter.balanceOappMainToken, 70e18, "sonic: expected amount of locked main-token in the bridge");
 
-        // --------------- send XSTBL from Sonic to Plasma 2
-        Results memory r2 = _testSendXSTBL(sonic, plasma, 30e18, 1);
+        // --------------- send xToken from Sonic to Plasma 2
+        Results memory r2 = _testSendXToken(sonic, plasma, 30e18, 1);
 
-        assertEq(r2.srcBefore.balanceUserXSTBL, 30e18, "sonic: user xSTBL before 2");
-        assertEq(r2.srcAfter.balanceUserXSTBL, 0, "sonic: user xSTBL after 2");
-        assertEq(r2.targetBefore.balanceUserXSTBL, 70e18, "plasma: user xSTBL before 2");
-        assertEq(r2.targetAfter.balanceUserXSTBL, 100e18, "plasma: user xSTBL after 2");
+        assertEq(r2.srcBefore.balanceUserXToken, 30e18, "sonic: user xToken before 2");
+        assertEq(r2.srcAfter.balanceUserXToken, 0, "sonic: user xToken after 2");
+        assertEq(r2.targetBefore.balanceUserXToken, 70e18, "plasma: user xToken before 2");
+        assertEq(r2.targetAfter.balanceUserXToken, 100e18, "plasma: user xToken after 2");
 
-        assertEq(r2.srcBefore.balanceXTokenBridgeSTBL, 0, "sonic: xTokenBridge STBL before 2");
-        assertEq(r2.srcAfter.balanceXTokenBridgeSTBL, 0, "sonic: xTokenBridge STBL after 2");
-        assertEq(r2.targetBefore.balanceXTokenBridgeSTBL, 0, "plasma: xTokenBridge STBL before 2");
-        assertEq(r2.targetAfter.balanceXTokenBridgeSTBL, 0, "plasma: xTokenBridge STBL after 2");
+        assertEq(r2.srcBefore.balanceXTokenBridgedMainToken, 0, "sonic: xTokenBridge main-token before 2");
+        assertEq(r2.srcAfter.balanceXTokenBridgedMainToken, 0, "sonic: xTokenBridge main-token after 2");
+        assertEq(r2.targetBefore.balanceXTokenBridgedMainToken, 0, "plasma: xTokenBridge main-token before 2");
+        assertEq(r2.targetAfter.balanceXTokenBridgedMainToken, 0, "plasma: xTokenBridge main-token after 2");
 
-        assertEq(r2.srcAfter.balanceXTokenSTBL, r2.srcBefore.balanceXTokenSTBL - 30e18, "sonic: xToken STBL after 2");
-        assertEq(r2.targetAfter.balanceXTokenSTBL, 100e18, "plasma: STBL staked to XSTBL 2");
+        assertEq(r2.srcAfter.balanceXTokenMainToken, r2.srcBefore.balanceXTokenMainToken - 30e18, "sonic: xToken main-token after 2");
+        assertEq(r2.targetAfter.balanceXTokenMainToken, 100e18, "plasma: main-token staked to xToken 2");
 
-        assertEq(r2.srcAfter.balanceOappSTBL, 100e18, "sonic: expected amount of locked STBL in the bridge 2");
+        assertEq(r2.srcAfter.balanceOappMainToken, 100e18, "sonic: expected amount of locked main-token in the bridge 2");
 
-        // --------------- send XSTBL back from Plasma to Sonic
-        Results memory r3 = _testSendXSTBL(plasma, sonic, 100e18, 2);
+        // --------------- send xToken back from Plasma to Sonic
+        Results memory r3 = _testSendXToken(plasma, sonic, 100e18, 2);
 
-        assertEq(r3.srcBefore.balanceUserXSTBL, 100e18, "plasma: user xSTBL before 3");
-        assertEq(r3.srcAfter.balanceUserXSTBL, 0, "plasma: user xSTBL after 3");
-        assertEq(r3.targetBefore.balanceUserXSTBL, 0, "sonic: user xSTBL before 3");
-        assertEq(r3.targetAfter.balanceUserXSTBL, 100e18, "sonic: user xSTBL after 3");
+        assertEq(r3.srcBefore.balanceUserXToken, 100e18, "plasma: user xToken before 3");
+        assertEq(r3.srcAfter.balanceUserXToken, 0, "plasma: user xToken after 3");
+        assertEq(r3.targetBefore.balanceUserXToken, 0, "sonic: user xToken before 3");
+        assertEq(r3.targetAfter.balanceUserXToken, 100e18, "sonic: user xToken after 3");
 
-        assertEq(r3.srcBefore.balanceXTokenBridgeSTBL, 0, "plasma: xTokenBridge STBL before 3");
-        assertEq(r3.srcAfter.balanceXTokenBridgeSTBL, 0, "plasma: xTokenBridge STBL after 3");
-        assertEq(r3.targetBefore.balanceXTokenBridgeSTBL, 0, "sonic: xTokenBridge STBL before 3");
-        assertEq(r3.targetAfter.balanceXTokenBridgeSTBL, 0, "sonic: xTokenBridge STBL after 3");
+        assertEq(r3.srcBefore.balanceXTokenBridgedMainToken, 0, "plasma: xTokenBridge main-token before 3");
+        assertEq(r3.srcAfter.balanceXTokenBridgedMainToken, 0, "plasma: xTokenBridge main-token after 3");
+        assertEq(r3.targetBefore.balanceXTokenBridgedMainToken, 0, "sonic: xTokenBridge main-token before 3");
+        assertEq(r3.targetAfter.balanceXTokenBridgedMainToken, 0, "sonic: xTokenBridge main-token after 3");
 
-        assertEq(r3.srcAfter.balanceXTokenSTBL, 0, "plasma: xToken STBL after 3");
+        assertEq(r3.srcAfter.balanceXTokenMainToken, 0, "plasma: xToken main-token after 3");
         assertEq(
-            r3.targetAfter.balanceXTokenSTBL,
-            r1.srcBefore.balanceXTokenSTBL,
-            "sonic: all STBL were returned back to XSTBL"
+            r3.targetAfter.balanceXTokenMainToken,
+            r1.srcBefore.balanceXTokenMainToken,
+            "sonic: all main-token were returned back to xToken"
         );
 
-        assertEq(r3.srcAfter.balanceOappSTBL, 0, "plasma: expected amount of locked STBL in the bridge 3");
+        assertEq(r3.srcAfter.balanceOappMainToken, 0, "plasma: expected amount of locked main-token in the bridge 3");
     }
 
-    function testSendXSTBLFromAvalancheToPlasma() public {
+    function testSendXTokenFromAvalancheToPlasma() public {
         _setUpXTokenBridges();
 
-        // --------------- mint XSTBL on Sonic
+        // --------------- mint xToken on Sonic
         vm.selectFork(sonic.fork);
         deal(SonicConstantsLib.TOKEN_STBL, address(this), 100e18);
 
         IERC20(SonicConstantsLib.TOKEN_STBL).approve(sonic.xToken, 100e18);
-        IXSTBL(sonic.xToken).enter(100e18);
+        IXToken(sonic.xToken).enter(100e18);
 
-        // --------------- send XSTBL from Sonic to Avalanche
-        _testSendXSTBL(sonic, avalanche, 100e18, 1345);
+        // --------------- send xToken from Sonic to Avalanche
+        _testSendXToken(sonic, avalanche, 100e18, 1345);
 
-        // --------------- send XSTBL from avalanche to Plasma
-        Results memory r1 = _testSendXSTBL(avalanche, plasma, 70e18, 0);
+        // --------------- send xToken from avalanche to Plasma
+        Results memory r1 = _testSendXToken(avalanche, plasma, 70e18, 0);
 
-        assertEq(r1.srcBefore.balanceUserXSTBL, 100e18, "avalanche: user xSTBL before");
-        assertEq(r1.srcAfter.balanceUserXSTBL, 30e18, "avalanche: user xSTBL after");
-        assertEq(r1.targetBefore.balanceUserXSTBL, 0, "plasma: user xSTBL before");
-        assertEq(r1.targetAfter.balanceUserXSTBL, 70e18, "plasma: user xSTBL after");
+        assertEq(r1.srcBefore.balanceUserXToken, 100e18, "avalanche: user xToken before");
+        assertEq(r1.srcAfter.balanceUserXToken, 30e18, "avalanche: user xToken after");
+        assertEq(r1.targetBefore.balanceUserXToken, 0, "plasma: user xToken before");
+        assertEq(r1.targetAfter.balanceUserXToken, 70e18, "plasma: user xToken after");
 
-        assertEq(r1.srcBefore.balanceXTokenBridgeSTBL, 0, "avalanche: xTokenBridge STBL before");
-        assertEq(r1.srcAfter.balanceXTokenBridgeSTBL, 0, "avalanche: xTokenBridge STBL after");
-        assertEq(r1.targetBefore.balanceXTokenBridgeSTBL, 0, "plasma: xTokenBridge STBL before");
-        assertEq(r1.targetAfter.balanceXTokenBridgeSTBL, 0, "plasma: xTokenBridge STBL after");
+        assertEq(r1.srcBefore.balanceXTokenBridgedMainToken, 0, "avalanche: xTokenBridge main-token before");
+        assertEq(r1.srcAfter.balanceXTokenBridgedMainToken, 0, "avalanche: xTokenBridge main-token after");
+        assertEq(r1.targetBefore.balanceXTokenBridgedMainToken, 0, "plasma: xTokenBridge main-token before");
+        assertEq(r1.targetAfter.balanceXTokenBridgedMainToken, 0, "plasma: xTokenBridge main-token after");
 
-        assertEq(r1.srcAfter.balanceXTokenSTBL, r1.srcBefore.balanceXTokenSTBL - 70e18, "avalanche: xToken STBL after");
-        assertEq(r1.targetAfter.balanceXTokenSTBL, 70e18, "plasma: STBL staked to XSTBL");
+        assertEq(r1.srcAfter.balanceXTokenMainToken, r1.srcBefore.balanceXTokenMainToken - 70e18, "avalanche: xToken main-token after");
+        assertEq(r1.targetAfter.balanceXTokenMainToken, 70e18, "plasma: main-token staked to xToken");
 
-        assertEq(r1.srcAfter.balanceOappSTBL, 0, "avalanche: expected amount of locked STBL in the bridge");
+        assertEq(r1.srcAfter.balanceOappMainToken, 0, "avalanche: expected amount of locked STBL in the bridge");
 
-        // --------------- send XSTBL from avalanche to Plasma 2
-        Results memory r2 = _testSendXSTBL(avalanche, plasma, 30e18, 1);
+        // --------------- send xToken from avalanche to Plasma 2
+        Results memory r2 = _testSendXToken(avalanche, plasma, 30e18, 1);
 
-        assertEq(r2.srcBefore.balanceUserXSTBL, 30e18, "avalanche: user xSTBL before 2");
-        assertEq(r2.srcAfter.balanceUserXSTBL, 0, "avalanche: user xSTBL after 2");
-        assertEq(r2.targetBefore.balanceUserXSTBL, 70e18, "plasma: user xSTBL before 2");
-        assertEq(r2.targetAfter.balanceUserXSTBL, 100e18, "plasma: user xSTBL after 2");
+        assertEq(r2.srcBefore.balanceUserXToken, 30e18, "avalanche: user xToken before 2");
+        assertEq(r2.srcAfter.balanceUserXToken, 0, "avalanche: user xToken after 2");
+        assertEq(r2.targetBefore.balanceUserXToken, 70e18, "plasma: user xToken before 2");
+        assertEq(r2.targetAfter.balanceUserXToken, 100e18, "plasma: user xToken after 2");
 
-        assertEq(r2.srcBefore.balanceXTokenBridgeSTBL, 0, "avalanche: xTokenBridge STBL before 2");
-        assertEq(r2.srcAfter.balanceXTokenBridgeSTBL, 0, "avalanche: xTokenBridge STBL after 2");
-        assertEq(r2.targetBefore.balanceXTokenBridgeSTBL, 0, "plasma: xTokenBridge STBL before 2");
-        assertEq(r2.targetAfter.balanceXTokenBridgeSTBL, 0, "plasma: xTokenBridge STBL after 2");
+        assertEq(r2.srcBefore.balanceXTokenBridgedMainToken, 0, "avalanche: xTokenBridge main-token before 2");
+        assertEq(r2.srcAfter.balanceXTokenBridgedMainToken, 0, "avalanche: xTokenBridge main-token after 2");
+        assertEq(r2.targetBefore.balanceXTokenBridgedMainToken, 0, "plasma: xTokenBridge main-token before 2");
+        assertEq(r2.targetAfter.balanceXTokenBridgedMainToken, 0, "plasma: xTokenBridge main-token after 2");
 
         assertEq(
-            r2.srcAfter.balanceXTokenSTBL, r2.srcBefore.balanceXTokenSTBL - 30e18, "avalanche: xToken STBL after 2"
+            r2.srcAfter.balanceXTokenMainToken, r2.srcBefore.balanceXTokenMainToken - 30e18, "avalanche: xToken main-token after 2"
         );
-        assertEq(r2.targetAfter.balanceXTokenSTBL, 100e18, "plasma: STBL staked to XSTBL 2");
+        assertEq(r2.targetAfter.balanceXTokenMainToken, 100e18, "plasma: main-token staked to xToken 2");
 
-        assertEq(r2.srcAfter.balanceOappSTBL, 0, "avalanche: expected amount of locked STBL in the bridge 2");
+        assertEq(r2.srcAfter.balanceOappMainToken, 0, "avalanche: expected amount of locked main-token in the bridge 2");
 
-        // --------------- send XSTBL back from Plasma to avalanche
-        Results memory r3 = _testSendXSTBL(plasma, avalanche, 100e18, 2);
+        // --------------- send xToken back from Plasma to avalanche
+        Results memory r3 = _testSendXToken(plasma, avalanche, 100e18, 2);
 
-        assertEq(r3.srcBefore.balanceUserXSTBL, 100e18, "plasma: user xSTBL before 3");
-        assertEq(r3.srcAfter.balanceUserXSTBL, 0, "plasma: user xSTBL after 3");
-        assertEq(r3.targetBefore.balanceUserXSTBL, 0, "avalanche: user xSTBL before 3");
-        assertEq(r3.targetAfter.balanceUserXSTBL, 100e18, "avalanche: user xSTBL after 3");
+        assertEq(r3.srcBefore.balanceUserXToken, 100e18, "plasma: user xToken before 3");
+        assertEq(r3.srcAfter.balanceUserXToken, 0, "plasma: user xToken after 3");
+        assertEq(r3.targetBefore.balanceUserXToken, 0, "avalanche: user xToken before 3");
+        assertEq(r3.targetAfter.balanceUserXToken, 100e18, "avalanche: user xToken after 3");
 
-        assertEq(r3.srcBefore.balanceXTokenBridgeSTBL, 0, "plasma: xTokenBridge STBL before 3");
-        assertEq(r3.srcAfter.balanceXTokenBridgeSTBL, 0, "plasma: xTokenBridge STBL after 3");
-        assertEq(r3.targetBefore.balanceXTokenBridgeSTBL, 0, "avalanche: xTokenBridge STBL before 3");
-        assertEq(r3.targetAfter.balanceXTokenBridgeSTBL, 0, "avalanche: xTokenBridge STBL after 3");
+        assertEq(r3.srcBefore.balanceXTokenBridgedMainToken, 0, "plasma: xTokenBridge main-token before 3");
+        assertEq(r3.srcAfter.balanceXTokenBridgedMainToken, 0, "plasma: xTokenBridge main-token after 3");
+        assertEq(r3.targetBefore.balanceXTokenBridgedMainToken, 0, "avalanche: xTokenBridge main-token before 3");
+        assertEq(r3.targetAfter.balanceXTokenBridgedMainToken, 0, "avalanche: xTokenBridge main-token after 3");
 
-        assertEq(r3.srcAfter.balanceXTokenSTBL, 0, "plasma: xToken STBL after 3");
+        assertEq(r3.srcAfter.balanceXTokenMainToken, 0, "plasma: xToken main-token after 3");
         assertEq(
-            r3.targetAfter.balanceXTokenSTBL,
-            r1.srcBefore.balanceXTokenSTBL,
-            "avalanche: all STBL were returned back to XSTBL"
+            r3.targetAfter.balanceXTokenMainToken,
+            r1.srcBefore.balanceXTokenMainToken,
+            "avalanche: all STBL were returned back to xToken"
         );
 
-        assertEq(r3.srcAfter.balanceOappSTBL, 0, "plasma: expected amount of locked STBL in the bridge 3");
+        assertEq(r3.srcAfter.balanceOappMainToken, 0, "plasma: expected amount of locked main-token in the bridge 3");
     }
 
     function testReceiveThroughEndpoint() public {
         _setUpXTokenBridges();
 
-        // --------------- provide xSTBL to the user
+        // --------------- provide xToken to the user
         vm.selectFork(sonic.fork);
 
         deal(SonicConstantsLib.TOKEN_STBL, address(this), 100e18);
         IERC20(SonicConstantsLib.TOKEN_STBL).approve(sonic.xToken, 100e18);
-        IXSTBL(sonic.xToken).enter(100e18);
+        IXToken(sonic.xToken).enter(100e18);
 
-        // --------------- send XSTBL on src
+        // --------------- send xToken on src
         bytes memory options = OptionsBuilder.newOptions().addExecutorLzReceiveOption(GAS_LIMIT_LZRECEIVE, 0)
             .addExecutorLzComposeOption(0, GAS_LIMIT_LZCOMPOSE, 0);
         MessagingFee memory msgFee = IXTokenBridge(sonic.xTokenBridge).quoteSend(plasma.endpointId, 1e18, options);
@@ -632,13 +632,13 @@ contract XTokenBridgeTest is Test {
         vm.prank(plasma.endpoint);
         IOAppComposer(plasma.xTokenBridge).lzCompose(plasma.oapp, guidId_, composeMessage, address(0), "");
 
-        assertEq(IERC20(plasma.xToken).balanceOf(address(this)), 1e18, "user should receive 1e18 xSTBL on plasma");
+        assertEq(IERC20(plasma.xToken).balanceOf(address(this)), 1e18, "user should receive 1e18 xToken on plasma");
     }
 
-    //endregion ------------------------------------- Send XSTBL between chains
+    //endregion ------------------------------------- Send xToken between chains
 
     //region ------------------------------------- Unit tests
-    function _testSendXSTBL(
+    function _testSendXToken(
         BridgeTestLib.ChainConfig memory src,
         BridgeTestLib.ChainConfig memory dest,
         uint amount_,
@@ -648,7 +648,7 @@ contract XTokenBridgeTest is Test {
         vm.selectFork(dest.fork);
         r.targetBefore = getBalances(dest, address(this));
 
-        // --------------- send XSTBL on src
+        // --------------- send xToken on src
         vm.selectFork(src.fork);
         r.srcBefore = getBalances(src, address(this));
 
@@ -744,36 +744,38 @@ contract XTokenBridgeTest is Test {
         BridgeTestLib.ChainConfig memory chain,
         address user
     ) internal view returns (ChainResults memory results) {
-        IERC20 stbl = IERC20(IXSTBL(chain.xToken).STBL());
+        IERC20 stbl = IERC20(IXToken(chain.xToken).token());
 
-        results.balanceUserSTBL = stbl.balanceOf(user);
-        results.balanceUserXSTBL = IERC20(chain.xToken).balanceOf(user);
-        results.balanceOappSTBL = stbl.balanceOf(chain.oapp);
-        results.balanceXTokenSTBL = stbl.balanceOf(chain.xToken);
+        results.balanceUserMainToken = stbl.balanceOf(user);
+        results.balanceUserXToken = IERC20(chain.xToken).balanceOf(user);
+        results.balanceOappMainToken = stbl.balanceOf(chain.oapp);
+        results.balanceXTokenMainToken = stbl.balanceOf(chain.xToken);
         results.balanceUserEther = user.balance;
-        results.balanceXTokenBridgeSTBL = stbl.balanceOf(chain.xTokenBridge);
+        results.balanceXTokenBridgedMainToken = stbl.balanceOf(chain.xTokenBridge);
     }
 
-    function createXSTBL(BridgeTestLib.ChainConfig memory chain) internal returns (address) {
+    function createXToken(BridgeTestLib.ChainConfig memory chain) internal returns (address) {
         vm.selectFork(chain.fork);
 
         Proxy xStakingProxy = new Proxy();
         xStakingProxy.initProxy(address(new XStaking()));
 
-        Proxy xSTBLProxy = new Proxy();
-        xSTBLProxy.initProxy(address(new XSTBL()));
+        Proxy xTokenProxy = new Proxy();
+        xTokenProxy.initProxy(address(new XToken()));
 
-        XSTBL(address(xSTBLProxy))
+        XToken(address(xTokenProxy))
             .initialize(
                 address(chain.platform),
                 chain.oapp,
                 address(xStakingProxy),
-                address(0) // revenue router is not used in the tests
+                address(0), // revenue router is not used in the tests
+                "xStability",
+                "xSTBL"
             );
 
-        XStaking(address(xStakingProxy)).initialize(address(chain.platform), address(xSTBLProxy));
+        XStaking(address(xStakingProxy)).initialize(address(chain.platform), address(xTokenProxy));
 
-        return address(xSTBLProxy);
+        return address(xTokenProxy);
     }
 
     function createXTokenBridge(BridgeTestLib.ChainConfig memory chain) internal returns (address) {
@@ -796,12 +798,12 @@ contract XTokenBridgeTest is Test {
 
     function showChainResults(string memory label, ChainResults memory r) internal pure {
         console.log("------------------ %s ------------------", label);
-        console.log("balanceUserSTBL", r.balanceUserSTBL);
-        console.log("balanceUserXSTBL", r.balanceUserXSTBL);
-        console.log("balanceOappSTBL", r.balanceOappSTBL);
-        console.log("balanceXTokenSTBL", r.balanceXTokenSTBL);
+        console.log("balanceUserMainToken", r.balanceUserMainToken);
+        console.log("balanceUserXToken", r.balanceUserXToken);
+        console.log("balanceOappMainToken", r.balanceOappMainToken);
+        console.log("balanceXTokenMainToken", r.balanceXTokenMainToken);
         console.log("balanceUserEther", r.balanceUserEther);
-        console.log("balanceXTokenBridgeSTBL", r.balanceXTokenBridgeSTBL);
+        console.log("balanceXTokenBridgedMainToken", r.balanceXTokenBridgedMainToken);
     }
 
     function _setXTokenBridge(
@@ -822,10 +824,10 @@ contract XTokenBridgeTest is Test {
         IXTokenBridge(chain.xTokenBridge).setXTokenBridge(dstEids, bridges);
     }
 
-    function _setXSTBLBridge(BridgeTestLib.ChainConfig memory chain) internal {
+    function _setXTokenBridge(BridgeTestLib.ChainConfig memory chain) internal {
         vm.selectFork(chain.fork);
         vm.prank(chain.multisig);
-        IXSTBL(chain.xToken).setBridge(chain.xTokenBridge, true);
+        IXToken(chain.xToken).setBridge(chain.xTokenBridge, true);
     }
 
     function _setUpXTokenBridges() internal {
@@ -847,7 +849,7 @@ contract XTokenBridgeTest is Test {
         address[] memory implementations = new address[](1);
 
         proxies[0] = SonicConstantsLib.TOKEN_XSTBL;
-        implementations[0] = address(new XSTBL());
+        implementations[0] = address(new XToken());
 
         //        vm.startPrank(SonicConstantsLib.MULTISIG);
         //        platform.cancelUpgrade();

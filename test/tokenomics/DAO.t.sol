@@ -5,7 +5,7 @@ import {console} from "forge-std/console.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
 import {IControllable} from "../../src/interfaces/IControllable.sol";
-import {IStabilityDAO} from "../../src/interfaces/IStabilityDAO.sol";
+import {IDAO} from "../../src/interfaces/IDAO.sol";
 import {Proxy} from "../../src/core/proxy/Proxy.sol";
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 import {Test} from "forge-std/Test.sol";
@@ -39,7 +39,7 @@ contract DAOSonicTest is Test {
     //region --------------------------------- Unit tests
 
     function testInitializeAndView() public {
-        IStabilityDAO.DaoParams memory p = IStabilityDAO.DaoParams({
+        IDAO.DaoParams memory p = IDAO.DaoParams({
             minimalPower: 4000e18,
             exitPenalty: 50_00,
             quorum: 20_000,
@@ -50,10 +50,10 @@ contract DAOSonicTest is Test {
         Proxy proxy = new Proxy();
         proxy.initProxy(address(new DAO()));
 
-        IStabilityDAO token = IStabilityDAO(address(proxy));
+        IDAO token = IDAO(address(proxy));
         token.initialize(SonicConstantsLib.PLATFORM, address(1), address(2), p, "Stability DAO", "STBL_DAO");
 
-        assertEq(token.xStbl(), address(1));
+        assertEq(token.xToken(), address(1));
         assertEq(token.xStaking(), address(2));
         assertEq(token.name(), "Stability DAO");
         assertEq(token.symbol(), "STBL_DAO");
@@ -68,7 +68,7 @@ contract DAOSonicTest is Test {
 
     function testMintBurn() public {
         address governance = IPlatform(SonicConstantsLib.PLATFORM).governance();
-        IStabilityDAO token = _createDAOInstance();
+        IDAO token = _createDAOInstance();
 
         vm.prank(address(0x123));
         vm.expectRevert(IControllable.IncorrectMsgSender.selector);
@@ -108,7 +108,7 @@ contract DAOSonicTest is Test {
     }
 
     function testUpdateConfig() public {
-        IStabilityDAO.DaoParams memory p1 = IStabilityDAO.DaoParams({
+        IDAO.DaoParams memory p1 = IDAO.DaoParams({
             minimalPower: 4000e18,
             exitPenalty: 50_00, // 50%
             quorum: 20_000, // 20%
@@ -116,7 +116,7 @@ contract DAOSonicTest is Test {
             powerAllocationDelay: 86400
         });
 
-        IStabilityDAO.DaoParams memory p2 = IStabilityDAO.DaoParams({
+        IDAO.DaoParams memory p2 = IDAO.DaoParams({
             minimalPower: 5000e18,
             exitPenalty: 80_00, // 80%
             quorum: 35_000, // 35%
@@ -124,12 +124,12 @@ contract DAOSonicTest is Test {
             powerAllocationDelay: 172800
         });
 
-        IStabilityDAO token = _createDAOInstance(p1);
+        IDAO token = _createDAOInstance(p1);
 
         vm.prank(multisig);
         IPlatform(SonicConstantsLib.PLATFORM).setupStabilityDAO(address(token));
 
-        IStabilityDAO.DaoParams memory config = token.config();
+        IDAO.DaoParams memory config = token.config();
         assertEq(config.minimalPower, p1.minimalPower, "minimalPower");
         assertEq(config.exitPenalty, p1.exitPenalty, "exitPenalty");
         assertEq(config.proposalThreshold, p1.proposalThreshold, "proposalThreshold");
@@ -162,14 +162,14 @@ contract DAOSonicTest is Test {
     }
 
     function testUpdateConfigBadPaths() public {
-        IStabilityDAO.DaoParams memory p1 = IStabilityDAO.DaoParams({
+        IDAO.DaoParams memory p1 = IDAO.DaoParams({
             minimalPower: 4000e18,
             exitPenalty: 50_00, // 50%
             quorum: 20_000, // 20%
             proposalThreshold: 10_000, // 10%
             powerAllocationDelay: 86400
         });
-        IStabilityDAO token = _createDAOInstance(p1);
+        IDAO token = _createDAOInstance(p1);
 
         p1.proposalThreshold = 100_000; // 100%
 
@@ -193,7 +193,7 @@ contract DAOSonicTest is Test {
     }
 
     function testNonTransferable() public {
-        IStabilityDAO token = _createDAOInstance();
+        IDAO token = _createDAOInstance();
 
         vm.prank(token.xStaking());
         token.mint(address(0x123), 1e18);
@@ -217,7 +217,7 @@ contract DAOSonicTest is Test {
     function testSetPowerDelegation() public {
         address user1 = address(1);
         address user2 = address(2);
-        IStabilityDAO dao = _createDAOInstance();
+        IDAO dao = _createDAOInstance();
 
         // ---------------------------- Initial state
         vm.prank(dao.xStaking());
@@ -290,7 +290,7 @@ contract DAOSonicTest is Test {
     }
 
     function testDelegationForbidden() public {
-        IStabilityDAO token = _createDAOInstance();
+        IDAO token = _createDAOInstance();
 
         // ---------------------- initially user delegates power to other user
         assertEq(token.delegationForbidden(), false, "delegation is allowed initially");
@@ -329,7 +329,7 @@ contract DAOSonicTest is Test {
 
     // solidity
     function testWhitelistedForOtherChainsPowers() public {
-        IStabilityDAO token = _createDAOInstance();
+        IDAO token = _createDAOInstance();
         address user = address(0x123);
 
         assertEq(token.isWhitelistedForOtherChainsPowers(user), false, "initially not whitelisted");
@@ -349,7 +349,7 @@ contract DAOSonicTest is Test {
 
     // solidity
     function testUpdateOtherChainsPowers() public {
-        IStabilityDAO token = _createDAOInstance();
+        IDAO token = _createDAOInstance();
 
         address user1 = makeAddr("user1");
         address user2 = makeAddr("user2");
@@ -430,7 +430,7 @@ contract DAOSonicTest is Test {
     }
 
     function testGetVotesPower() public {
-        IStabilityDAO token = _createDAOInstance();
+        IDAO token = _createDAOInstance();
 
         address user1 = makeAddr("user1");
         address user2 = address(0x2);
@@ -564,7 +564,7 @@ contract DAOSonicTest is Test {
         // U2: 1000 bribes * 350 / 1900
         // U3: 1000 bribes * 800 / 1900
 
-        IStabilityDAO token = _createDAOInstance();
+        IDAO token = _createDAOInstance();
 
         address user1 = makeAddr("user1");
         address user2 = makeAddr("user2");
@@ -634,7 +634,7 @@ contract DAOSonicTest is Test {
     //endregion --------------------------------- Unit tests
 
     //region --------------------------------- Utils
-    function _getPowers(IStabilityDAO dao, address user) internal view returns (Powers memory p) {
+    function _getPowers(IDAO dao, address user) internal view returns (Powers memory p) {
         (p.localPower, p.otherPower) = dao.getPowers(user);
         (, address[] memory delegators) = dao.delegates(user);
         for (uint i; i < delegators.length; ++i) {
@@ -653,10 +653,10 @@ contract DAOSonicTest is Test {
     }
 
     function _updateConfig(
-        IStabilityDAO token,
+        IDAO token,
         address user,
-        IStabilityDAO.DaoParams memory p2
-    ) internal returns (IStabilityDAO.DaoParams memory dest) {
+        IDAO.DaoParams memory p2
+    ) internal returns (IDAO.DaoParams memory dest) {
         uint snapshot = vm.snapshotState();
         vm.prank(user);
         token.updateConfig(p2);
@@ -666,8 +666,8 @@ contract DAOSonicTest is Test {
         return dest;
     }
 
-    function _createDAOInstance() internal returns (IStabilityDAO) {
-        IStabilityDAO.DaoParams memory p = IStabilityDAO.DaoParams({
+    function _createDAOInstance() internal returns (IDAO) {
+        IDAO.DaoParams memory p = IDAO.DaoParams({
             minimalPower: 4000e18,
             exitPenalty: 80_00,
             quorum: 15_000,
@@ -677,10 +677,10 @@ contract DAOSonicTest is Test {
         return _createDAOInstance(p);
     }
 
-    function _createDAOInstance(IStabilityDAO.DaoParams memory p) internal returns (IStabilityDAO) {
+    function _createDAOInstance(IDAO.DaoParams memory p) internal returns (IDAO) {
         Proxy proxy = new Proxy();
         proxy.initProxy(address(new DAO()));
-        IStabilityDAO token = IStabilityDAO(address(proxy));
+        IDAO token = IDAO(address(proxy));
         token.initialize(
             SonicConstantsLib.PLATFORM,
             SonicConstantsLib.TOKEN_STBL,

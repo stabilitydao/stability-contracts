@@ -4,11 +4,11 @@ pragma solidity ^0.8.22;
 import {OFTAdapterUpgradeable} from "@layerzerolabs/oft-evm-upgradeable/contracts/oft/OFTAdapterUpgradeable.sol";
 import {IControllable, Controllable} from "../core/base/Controllable.sol";
 import {IPlatform} from "../interfaces/IPlatform.sol";
-import {IStabilityOFTAdapter} from "../interfaces/IStabilityOFTAdapter.sol";
+import {ITokenOFTAdapter} from "../interfaces/ITokenOFTAdapter.sol";
 import {IOFTPausable} from "../interfaces/IOFTPausable.sol";
 
-/// @notice Omnichain Fungible Token Adapter for exist STBL token
-contract StabilityOFTAdapter is Controllable, OFTAdapterUpgradeable, IStabilityOFTAdapter {
+/// @notice Omnichain Fungible Token Adapter for exist main-token
+contract TokenOFTAdapter is Controllable, OFTAdapterUpgradeable, ITokenOFTAdapter {
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         CONSTANTS                          */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -16,12 +16,11 @@ contract StabilityOFTAdapter is Controllable, OFTAdapterUpgradeable, IStabilityO
     /// @inheritdoc IControllable
     string public constant VERSION = "1.0.0";
 
-    // keccak256(abi.encode(uint(keccak256("erc7201:stability.StabilityOFTAdapter")) - 1)) & ~bytes32(uint(0xff));
-    bytes32 internal constant STABILITY_OFT_ADAPTER_STORAGE_LOCATION =
-        0xc2fe35575ba2043e2e48d6fdb6b1fc90678ceafd17da235789a1487ce75a9a00;
+    // keccak256(abi.encode(uint(keccak256("erc7201:stability.TokenOFTAdapter")) - 1)) & ~bytes32(uint(0xff));
+    bytes32 internal constant TOKEN_OFT_ADAPTER_STORAGE_LOCATION = 0xa644c5e388c18df754c7a15986d33976363be2bae99e7e86772378f965c5c200;
 
-    /// @custom:storage-location erc7201:stability.StabilityOFTAdapter
-    struct StabilityOftAdapterStorage {
+    /// @custom:storage-location erc7201:stability.TokenOFTAdapter
+    struct TokenOftAdapterStorage {
         /// @notice Paused state for addresses
         mapping(address => bool) paused;
     }
@@ -34,7 +33,7 @@ contract StabilityOFTAdapter is Controllable, OFTAdapterUpgradeable, IStabilityO
         _disableInitializers();
     }
 
-    /// @inheritdoc IStabilityOFTAdapter
+    /// @inheritdoc ITokenOFTAdapter
     function initialize(address platform_) public initializer {
         address _delegate = IPlatform(platform_).multisig();
 
@@ -49,7 +48,7 @@ contract StabilityOFTAdapter is Controllable, OFTAdapterUpgradeable, IStabilityO
 
     /// @inheritdoc IOFTPausable
     function paused(address account_) external view returns (bool) {
-        return getStabilityOftAdapterStorage().paused[account_];
+        return getTokenOftAdapterStorage().paused[account_];
     }
 
     //endregion --------------------------------- Initializers and view
@@ -61,7 +60,7 @@ contract StabilityOFTAdapter is Controllable, OFTAdapterUpgradeable, IStabilityO
 
     /// @inheritdoc IOFTPausable
     function setPaused(address account, bool paused_) external onlyOperator {
-        StabilityOftAdapterStorage storage $ = getStabilityOftAdapterStorage();
+        TokenOftAdapterStorage storage $ = getTokenOftAdapterStorage();
         $.paused[account] = paused_;
 
         emit Pause(account, paused_);
@@ -103,15 +102,15 @@ contract StabilityOFTAdapter is Controllable, OFTAdapterUpgradeable, IStabilityO
     //endregion --------------------------------- Overrides
 
     //region --------------------------------- Internal logic
-    function getStabilityOftAdapterStorage() internal pure returns (StabilityOftAdapterStorage storage $) {
+    function getTokenOftAdapterStorage() internal pure returns (TokenOftAdapterStorage storage $) {
         //slither-disable-next-line assembly
         assembly {
-            $.slot := STABILITY_OFT_ADAPTER_STORAGE_LOCATION
+            $.slot := TOKEN_OFT_ADAPTER_STORAGE_LOCATION
         }
     }
 
     function _requireNotPaused(address account) internal view {
-        StabilityOftAdapterStorage storage $ = getStabilityOftAdapterStorage();
+        TokenOftAdapterStorage storage $ = getTokenOftAdapterStorage();
         require(!$.paused[account] && !$.paused[address(this)], Paused());
     }
 

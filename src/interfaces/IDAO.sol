@@ -4,14 +4,14 @@ pragma solidity ^0.8.28;
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
-interface IStabilityDAO is IERC20, IERC20Metadata {
+interface IDAO is IERC20, IERC20Metadata {
     /// @notice Parameters of Stability DAO
     /// @dev For details see https://stabilitydao.gitbook.io/stability/stability-dao/governance#current-parameters
     struct DaoParams {
-        /// @notice Minimal amount of xSTBL tokens required to have STBL_DAO tokens, decimals 18
+        /// @notice Minimal amount of xToken tokens required to have DAO-token tokens, decimals 18
         uint minimalPower;
-        /// @notice xSTBL instant exit penalty, decimals 1e4, i.e. 50_00 = 50%
-        /// Set 0 to use default value XSTBL.DEFAULT_SLASHING_PENALTY
+        /// @notice xToken instant exit penalty, decimals 1e4, i.e. 50_00 = 50%
+        /// Set 0 to use default value xToken.DEFAULT_SLASHING_PENALTY
         uint exitPenalty;
         /// @notice Min percent of power that a user should have to be able to create new proposal. Decimals 1e5, i.e. 50_000 = 50%
         uint proposalThreshold;
@@ -26,16 +26,16 @@ interface IStabilityDAO is IERC20, IERC20Metadata {
     /// @notice Current DAO config
     function config() external view returns (DaoParams memory);
 
-    /// @notice Address of xSTBL token
-    function xStbl() external view returns (address);
+    /// @notice Address of xToken token
+    function xToken() external view returns (address);
 
     /// @notice Address of xStaking contract
     function xStaking() external view returns (address);
 
-    /// @notice Minimal amount of xSTBL tokens required to have STBL_DAO tokens, decimals 18
+    /// @notice Minimal amount of xToken tokens required to have DAO-token tokens, decimals 18
     function minimalPower() external view returns (uint);
 
-    /// @notice xSTBL instant exit penalty (slashing penalty), decimals 1e4, i.e. 50_00 = 50%
+    /// @notice xToken instant exit penalty (slashing penalty), decimals 1e4, i.e. 50_00 = 50%
     function exitPenalty() external view returns (uint);
 
     /// @notice Min percent of power that a user should have to be able to create a new proposal, decimals 1e5, i.e. 50_000 = 50%
@@ -49,8 +49,8 @@ interface IStabilityDAO is IERC20, IERC20Metadata {
     function powerAllocationDelay() external view returns (uint);
 
     /// @notice Get total power of a user.
-    /// The power = user's own (not-delegated) balance of STBL_DAO + balances of all users that delegated to him
-    /// If user has balance of staked xSTBL below minimalPower, his power is 0
+    /// The power = user's own (not-delegated) balance of DAO-token + balances of all users that delegated to him
+    /// If user has balance of staked xToken below minimalPower, his power is 0
     function getVotes(address user_) external view returns (uint);
 
     /// @notice Get current power values for the given user.
@@ -81,7 +81,7 @@ interface IStabilityDAO is IERC20, IERC20Metadata {
     /// @dev Init
     function initialize(
         address platform_,
-        address xStbl_,
+        address xToken_,
         address xStaking_,
         DaoParams memory config_,
         string memory name_,
@@ -89,7 +89,7 @@ interface IStabilityDAO is IERC20, IERC20Metadata {
     ) external;
 
     /// @notice Update DAO config
-    /// XStaking.syncStabilityDAOBalances() must be called after changing of minimalPower value
+    /// XStaking.syncDAOBalances() must be called after changing of minimalPower value
     /// @custom:restricted To multisig or governance
     function updateConfig(DaoParams memory p) external;
 

@@ -22,7 +22,7 @@ contract DeployPriceAggregatorOAppSonic is Script {
             "PriceAggregatorOApp is used on the Sonic only (the chain where native STBL is deployed)"
         );
         require(
-            configDeployed.get("PRICE_AGGREGATOR_OAPP_STBL").toAddress() == address(0),
+            configDeployed.get("PRICE_AGGREGATOR_OAPP_MAIN_TOKEN").toAddress() == address(0),
             "PriceAggregatorOApp already deployed"
         );
 
@@ -38,8 +38,8 @@ contract DeployPriceAggregatorOAppSonic is Script {
         // ---------------------- Write results
         vm.stopBroadcast();
 
-        // @dev assume here that we deploy price oracle for STBL token
-        configDeployed.set("PRICE_AGGREGATOR_OAPP_STBL", address(proxy));
+        // @dev assume here that we deploy price oracle for main-token
+        configDeployed.set("PRICE_AGGREGATOR_OAPP_MAIN_TOKEN", address(proxy));
     }
 
     function testDeployScript() external {}

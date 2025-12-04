@@ -6,7 +6,7 @@ import {OFTComposeMsgCodec} from "@layerzerolabs/oft-evm/contracts/libs/OFTCompo
 import {IControllable, Controllable} from "../core/base/Controllable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IOFTPausable} from "../interfaces/IOFTPausable.sol";
-import {IXSTBL} from "../interfaces/IXSTBL.sol";
+import {IXToken} from "../interfaces/IXToken.sol";
 import {IXTokenBridge} from "../interfaces/IXTokenBridge.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {SendParam, MessagingFee, OFTReceipt} from "@layerzerolabs/oft-evm/contracts/interfaces/IOFT.sol";
@@ -40,7 +40,7 @@ contract XTokenBridge is Controllable, IXTokenBridge, IOAppComposer, ReentrancyG
         /// @notice LayerZero Omnichain Fungible Token (OFT) bridge address
         address bridge;
 
-        /// @notice xSTBL address
+        /// @notice xToken address
         address xToken;
 
         /// @notice xTokenBridge addresses for destination chains
@@ -160,21 +160,20 @@ contract XTokenBridge is Controllable, IXTokenBridge, IOAppComposer, ReentrancyG
         // ----------------- ensure that sender is not paused (the bridge is not able to check it on its own)
         require(!IOFTPausable(_bridge).paused(msg.sender), SenderPaused());
 
-        // ----------------- prepare STBL amount to send through the bridge
-        /// @dev xSTBL
+        // ----------------- prepare main-token amount to send through the bridge
         address _xToken = $.xToken;
 
-        /// @dev STBL
-        address token = IXSTBL(_xToken).STBL();
+        /// @dev main-token address (STBL)
+        address token = IXToken(_xToken).token();
 
         {
-            IXSTBL(_xToken).sendToBridge(msg.sender, amount);
+            IXToken(_xToken).sendToBridge(msg.sender, amount);
             require(IERC20(token).balanceOf(address(this)) >= amount, IncorrectAmountReceivedFromXToken());
         }
 
         IERC20(token).forceApprove(_bridge, amount);
 
-        // ----------------- send STBL through the bridge
+        // ----------------- send main-token through the bridge
         /// @dev Receiver - address of this contract in another chain
         address receiver = $.xTokenBridges[dstEid_];
         require(receiver != address(0), ChainNotSupported());
@@ -211,7 +210,7 @@ contract XTokenBridge is Controllable, IXTokenBridge, IOAppComposer, ReentrancyG
     /*                     IOAppComposer                          */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    /// @notice Handles composed messages from the OFT: staking received STBL to xSTBL for the recipient
+    /// @notice Handles composed messages from the OFT: staking received main-token to xToken for the recipient
     /// @param oApp_ Address of the originating OApp (must be trusted OFT)
     /// @param guid_ Unique identifier for this message
     /// @param message_ Encoded message containing compose data.
@@ -246,9 +245,9 @@ contract XTokenBridge is Controllable, IXTokenBridge, IOAppComposer, ReentrancyG
         require(recipient != address(0), IncorrectReceiver()); // just for safety
         require(amountLD != 0, ZeroAmount()); // just for safety
 
-        // ---------------- stake STBL for the user
-        IERC20(IXSTBL($.xToken).STBL()).forceApprove($.xToken, amountLD);
-        IXSTBL($.xToken).takeFromBridge(recipient, amountLD);
+        // ---------------- stake main-token for the user
+        IERC20(IXToken($.xToken).token()).forceApprove($.xToken, amountLD);
+        IXToken($.xToken).takeFromBridge(recipient, amountLD);
         // we don't check result user balance here to reduce gas consumption
 
         emit Staked(recipient, srcEid, amountLD, guid_);

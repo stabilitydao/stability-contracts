@@ -14,11 +14,11 @@ contract DeployXTokenBridge is Script {
         StdConfig config = new StdConfig("./config.toml", false); // read only config
         StdConfig configDeployed = new StdConfig("./config.d.toml", true); // auto-write deployed addresses
 
-        address bridge = configDeployed.get("OAPP_STBL").toAddress();
+        address bridge = configDeployed.get("OAPP_MAIN_TOKEN").toAddress();
         require(bridge != address(0), "OAPP is zero");
 
-        address xSTBL = configDeployed.get("XSTBL").toAddress();
-        require(xSTBL != address(0), "XSTBL address is zero");
+        address xToken = configDeployed.get("xToken").toAddress();
+        require(xToken != address(0), "XSTBL address is zero");
 
         address platform = config.get("PLATFORM").toAddress();
         require(platform != address(0), "PLATFORM address is zero");
@@ -34,7 +34,7 @@ contract DeployXTokenBridge is Script {
         Proxy proxy = new Proxy();
         proxy.initProxy(address(new XTokenBridge(endpoint)));
 
-        XTokenBridge(address(proxy)).initialize(platform, bridge, address(xSTBL));
+        XTokenBridge(address(proxy)).initialize(platform, bridge, address(xToken));
 
         // ---------------------- Write results
         vm.stopBroadcast();

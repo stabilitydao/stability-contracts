@@ -3,7 +3,7 @@ pragma solidity ^0.8.23;
 
 import {console, Vm} from "forge-std/Test.sol";
 import {BridgedToken} from "../../../src/tokenomics/BridgedToken.sol";
-import {StabilityOFTAdapter} from "../../../src/tokenomics/StabilityOFTAdapter.sol";
+import {TokenOFTAdapter} from "../../../src/tokenomics/TokenOFTAdapter.sol";
 import {IPlatform} from "../../../src/interfaces/IPlatform.sol";
 import {IOAppCore} from "@layerzerolabs/oapp-evm/contracts/oapp/interfaces/IOAppCore.sol";
 import {SonicConstantsLib} from "../../../chains/sonic/SonicConstantsLib.sol";
@@ -66,7 +66,7 @@ library BridgeTestLib {
         uint fork;
         address multisig;
 
-        /// @notice STBL-bridge
+        /// @notice main-token-bridge
         address oapp;
         address xToken;
 
@@ -81,26 +81,26 @@ library BridgeTestLib {
     }
 
     //region ------------------------------------- Create contracts
-    function setupSTBLBridged(Vm vm, BridgeTestLib.ChainConfig memory chain) internal returns (address) {
+    function setupBridgedMainToken(Vm vm, BridgeTestLib.ChainConfig memory chain) internal returns (address) {
         vm.selectFork(chain.fork);
 
         Proxy proxy = new Proxy();
         proxy.initProxy(address(new BridgedToken(chain.endpoint)));
-        BridgedToken bridgedStbl = BridgedToken(address(proxy));
-        bridgedStbl.initialize(address(chain.platform), "Stability STBL", "STBL");
+        BridgedToken bridgedMainToken = BridgedToken(address(proxy));
+        bridgedMainToken.initialize(address(chain.platform), "Stability STBL", "STBL");
 
-        return address(bridgedStbl);
+        return address(bridgedMainToken);
     }
 
-    function setupStabilityOFTAdapterOnSonic(Vm vm, BridgeTestLib.ChainConfig memory sonic) internal returns (address) {
+    function setupTokenOFTAdapterOnSonic(Vm vm, BridgeTestLib.ChainConfig memory sonic) internal returns (address) {
         vm.selectFork(sonic.fork);
 
         Proxy proxy = new Proxy();
-        proxy.initProxy(address(new StabilityOFTAdapter(SonicConstantsLib.TOKEN_STBL, sonic.endpoint)));
-        StabilityOFTAdapter stblOFTAdapter = StabilityOFTAdapter(address(proxy));
-        stblOFTAdapter.initialize(address(sonic.platform));
+        proxy.initProxy(address(new TokenOFTAdapter(SonicConstantsLib.TOKEN_STBL, sonic.endpoint)));
+        TokenOFTAdapter tokenOFTAdapter = TokenOFTAdapter(address(proxy));
+        tokenOFTAdapter.initialize(address(sonic.platform));
 
-        return address(stblOFTAdapter);
+        return address(tokenOFTAdapter);
     }
 
     //endregion ------------------------------------- Create contracts

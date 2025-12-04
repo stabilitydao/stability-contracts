@@ -45,14 +45,14 @@ interface IXTokenBridge {
     /// @notice LayerZero Omnichain Fungible Token (OFT) bridge address
     function bridge() external view returns (address);
 
-    /// @notice xSTBL address
+    /// @notice xToken (i.e. xSTBL) address
     function xToken() external view returns (address);
 
     /// @notice Get the xTokenBridge address for the given destination chain
     /// @param dstEid_ Destination chain endpoint ID
     function xTokenBridge(uint32 dstEid_) external view returns (address);
 
-    /// @notice Quote the gas needed to pay for sending `amount` of xSTBL to given target chain.
+    /// @notice Quote the gas needed to pay for sending `amount` of xToken to given target chain.
     /// Paying using ZRO token (Layer Zero token) is not supported.
     /// @param dstEid_ Destination chain endpoint ID
     /// @param amount Amount of tokens to send (local decimals)
@@ -70,7 +70,7 @@ interface IXTokenBridge {
     /// @notice Initialize the XTokenBridge
     /// @param platform_ Address of the platform contract
     /// @param bridge_ Address of the LayerZero OFT bridge contract
-    /// @param xToken_ Address of the xSTBL token contract
+    /// @param xToken_ Address of the xToken token contract
     function initialize(address platform_, address bridge_, address xToken_) external;
 
     /// @notice Sets the xTokenBridge address for the given destination chain

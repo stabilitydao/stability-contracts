@@ -6,7 +6,7 @@ import {ERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/
 import {
     ERC20BurnableUpgradeable
 } from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20BurnableUpgradeable.sol";
-import {IStabilityDAO} from "../interfaces/IStabilityDAO.sol";
+import {IDAO} from "../interfaces/IDAO.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import {EnumerableMap} from "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
 import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
@@ -14,7 +14,7 @@ import {ConstantsLib} from "../core/libs/ConstantsLib.sol";
 
 /// @title Stability DAO Token contract
 /// Amount of tokens for each user represents their voting power in the DAO.
-/// Only users with high enough amount of staked xSTBL have DAO-tokens.
+/// Only users with high enough amount of staked xToken have DAO-tokens.
 /// Tokens are non-transferable and can be only minted and burned by XStaking contract.
 /// @author Omriss (https://github.com/omriss)
 /// Changelog:
@@ -22,7 +22,7 @@ import {ConstantsLib} from "../core/libs/ConstantsLib.sol";
 ///         initialize() has two new params: name and symbol. Contract renamed from StabilityDAO to DAO
 ///         Allow to forbid delegation - #424
 ///  1.0.1: userPower is renamed to getVotes (compatibility with OpenZeppelin's ERC20Votes) - #423
-contract DAO is Controllable, ERC20Upgradeable, ERC20BurnableUpgradeable, ReentrancyGuardUpgradeable, IStabilityDAO {
+contract DAO is Controllable, ERC20Upgradeable, ERC20BurnableUpgradeable, ReentrancyGuardUpgradeable, IDAO {
     using EnumerableMap for EnumerableMap.AddressToUintMap;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -32,12 +32,13 @@ contract DAO is Controllable, ERC20Upgradeable, ERC20BurnableUpgradeable, Reentr
     /// @inheritdoc IControllable
     string public constant VERSION = "1.1.0";
 
+    /// @dev Name "erc7201:stability.StabilityDAO" is used historically
     // keccak256(abi.encode(uint(keccak256("erc7201:stability.StabilityDAO")) - 1)) & ~bytes32(uint(0xff));
-    bytes32 private constant _STABILITY_DAO_TOKEN_STORAGE_LOCATION =
+    bytes32 private constant _DAO_TOKEN_STORAGE_LOCATION =
         0xb41400b8ab7d5c4f4647f6397fc72c137345511eb9c9a0082de7fe729c2ae200; // StabilityDAO name is used historically
 
-    /// @dev Same to XSTBL.DENOMINATOR
-    uint internal constant DENOMINATOR_XSTBL = 10_000;
+    /// @dev Same to xToken.DENOMINATOR
+    uint internal constant DENOMINATOR_XTOKEN = 10_000;
 
     //region ----------------------------------- Data types
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -55,8 +56,8 @@ contract DAO is Controllable, ERC20Upgradeable, ERC20BurnableUpgradeable, Reentr
     struct DaoStorage {
         /// @dev Mapping is used to be able to add new fields to DaoParams struct in future, only config[0] is used
         mapping(uint => DaoParams) config;
-        /// @notice Address of XSTBL token
-        address xStbl;
+        /// @notice Address of xToken
+        address xToken;
         /// @notice Address of xStaking contract
         address xStaking;
         /// @notice Address to which a user has delegated his vote power
@@ -109,20 +110,20 @@ contract DAO is Controllable, ERC20Upgradeable, ERC20BurnableUpgradeable, Reentr
     /*                      INITIALIZATION                        */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    /// @inheritdoc IStabilityDAO
+    /// @inheritdoc IDAO
     function initialize(
         address platform_,
-        address xStbl_,
+        address xToken__,
         address xStaking_,
         DaoParams memory p,
         string memory name_,
         string memory symbol_
     ) public initializer {
         __Controllable_init(platform_);
-        __ERC20_init(name_, symbol_); // "Stability DAO", "STBL_DAO"
+        __ERC20_init(name_, symbol_); // i.e. "Stability DAO", "STBL_DAO"
         DaoStorage storage $ = _getDaoStorage();
         $.xStaking = xStaking_;
-        $.xStbl = xStbl_;
+        $.xToken = xToken__;
         $.config[0] = p;
     }
 
@@ -133,21 +134,21 @@ contract DAO is Controllable, ERC20Upgradeable, ERC20BurnableUpgradeable, Reentr
     /*                      RESTRICTED ACTIONS                    */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    /// @inheritdoc IStabilityDAO
+    /// @inheritdoc IDAO
     function mint(address account, uint amount) external onlyXStaking {
         _mint(account, amount);
     }
 
-    /// @inheritdoc IStabilityDAO
+    /// @inheritdoc IDAO
     function burn(address account, uint amount) external onlyXStaking {
         _burn(account, amount);
     }
 
-    /// @inheritdoc IStabilityDAO
+    /// @inheritdoc IDAO
     function updateConfig(DaoParams memory p) external onlyGovernanceOrMultisig {
         DaoStorage storage $ = _getDaoStorage();
 
-        require(p.exitPenalty < DENOMINATOR_XSTBL, WrongValue());
+        require(p.exitPenalty < DENOMINATOR_XTOKEN, WrongValue());
         require(p.quorum < ConstantsLib.DENOMINATOR && p.proposalThreshold < ConstantsLib.DENOMINATOR, WrongValue());
 
         $.config[0] = p;
@@ -155,7 +156,7 @@ contract DAO is Controllable, ERC20Upgradeable, ERC20BurnableUpgradeable, Reentr
         emit ConfigUpdated(p);
     }
 
-    /// @inheritdoc IStabilityDAO
+    /// @inheritdoc IDAO
     function setPowerDelegation(address to) external nonReentrant {
         // anyone can call this function
 
@@ -181,7 +182,7 @@ contract DAO is Controllable, ERC20Upgradeable, ERC20BurnableUpgradeable, Reentr
         }
     }
 
-    /// @inheritdoc IStabilityDAO
+    /// @inheritdoc IDAO
     function setWhitelistedForOtherChainsPowers(address user, bool whitelisted) external onlyGovernanceOrMultisig {
         DaoStorage storage $ = _getDaoStorage();
         $.otherChainsPowersWhitelist[user] = whitelisted;
@@ -189,7 +190,7 @@ contract DAO is Controllable, ERC20Upgradeable, ERC20BurnableUpgradeable, Reentr
         emit WhitelistOtherChainsPowers(user, whitelisted);
     }
 
-    /// @inheritdoc IStabilityDAO
+    /// @inheritdoc IDAO
     function updateOtherChainsPowers(address[] memory users, uint[] memory powers) external {
         DaoStorage storage $ = _getDaoStorage();
         require($.otherChainsPowersWhitelist[msg.sender], NotOtherChainsPowersWhitelisted());
@@ -210,7 +211,7 @@ contract DAO is Controllable, ERC20Upgradeable, ERC20BurnableUpgradeable, Reentr
         emit PowersOtherChainsUpdated(block.timestamp);
     }
 
-    /// @inheritdoc IStabilityDAO
+    /// @inheritdoc IDAO
     function setDelegationForbidden(bool forbidden) external onlyGovernanceOrMultisig {
         DaoStorage storage $ = _getDaoStorage();
         $.delegationForbidden = forbidden;
@@ -239,47 +240,47 @@ contract DAO is Controllable, ERC20Upgradeable, ERC20BurnableUpgradeable, Reentr
     /*                      VIEW FUNCTIONS                        */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    /// @inheritdoc IStabilityDAO
+    /// @inheritdoc IDAO
     function config() public view returns (DaoParams memory) {
         return _getDaoStorage().config[0];
     }
 
-    /// @inheritdoc IStabilityDAO
-    function xStbl() public view returns (address) {
-        return _getDaoStorage().xStbl;
+    /// @inheritdoc IDAO
+    function xToken() public view returns (address) {
+        return _getDaoStorage().xToken;
     }
 
-    /// @inheritdoc IStabilityDAO
+    /// @inheritdoc IDAO
     function xStaking() public view returns (address) {
         return _getDaoStorage().xStaking;
     }
 
-    /// @inheritdoc IStabilityDAO
+    /// @inheritdoc IDAO
     function minimalPower() external view returns (uint) {
         return _getDaoStorage().config[0].minimalPower;
     }
 
-    /// @inheritdoc IStabilityDAO
+    /// @inheritdoc IDAO
     function exitPenalty() external view returns (uint) {
         return _getDaoStorage().config[0].exitPenalty;
     }
 
-    /// @inheritdoc IStabilityDAO
+    /// @inheritdoc IDAO
     function proposalThreshold() external view returns (uint) {
         return _getDaoStorage().config[0].proposalThreshold;
     }
 
-    /// @inheritdoc IStabilityDAO
+    /// @inheritdoc IDAO
     function quorum() external view returns (uint) {
         return _getDaoStorage().config[0].quorum;
     }
 
-    /// @inheritdoc IStabilityDAO
+    /// @inheritdoc IDAO
     function powerAllocationDelay() external view returns (uint) {
         return _getDaoStorage().config[0].powerAllocationDelay;
     }
 
-    /// @inheritdoc IStabilityDAO
+    /// @inheritdoc IDAO
     function getVotes(address user_) public view returns (uint votes) {
         DaoStorage storage $ = _getDaoStorage();
         if ($.delegatedTo[user_] == address(0)) {
@@ -300,18 +301,18 @@ contract DAO is Controllable, ERC20Upgradeable, ERC20BurnableUpgradeable, Reentr
         return votes;
     }
 
-    /// @inheritdoc IStabilityDAO
+    /// @inheritdoc IDAO
     function getPowers(address user_) external view returns (uint localPower, uint otherPower) {
         (localPower, otherPower) = _getPowers(_getDaoStorage(), user_);
     }
 
-    /// @inheritdoc IStabilityDAO
+    /// @inheritdoc IDAO
     function delegates(address user_) external view returns (address delegatedTo, address[] memory delegators) {
         DaoStorage storage $ = _getDaoStorage();
         return ($.delegatedTo[user_], EnumerableSet.values($.delegators[user_]));
     }
 
-    /// @inheritdoc IStabilityDAO
+    /// @inheritdoc IDAO
     function getOtherChainsPowers()
         external
         view
@@ -334,12 +335,12 @@ contract DAO is Controllable, ERC20Upgradeable, ERC20BurnableUpgradeable, Reentr
         timestamp = epoch;
     }
 
-    /// @inheritdoc IStabilityDAO
+    /// @inheritdoc IDAO
     function isWhitelistedForOtherChainsPowers(address user_) external view returns (bool) {
         return _getDaoStorage().otherChainsPowersWhitelist[user_];
     }
 
-    /// @inheritdoc IStabilityDAO
+    /// @inheritdoc IDAO
     function delegationForbidden() external view returns (bool) {
         return _getDaoStorage().delegationForbidden;
     }
@@ -374,7 +375,7 @@ contract DAO is Controllable, ERC20Upgradeable, ERC20BurnableUpgradeable, Reentr
     function _getDaoStorage() internal pure returns (DaoStorage storage $) {
         //slither-disable-next-line assembly
         assembly {
-            $.slot := _STABILITY_DAO_TOKEN_STORAGE_LOCATION
+            $.slot := _DAO_TOKEN_STORAGE_LOCATION
         }
     }
     //endregion ----------------------------------- Internal logic

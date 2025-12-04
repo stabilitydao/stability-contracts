@@ -5,10 +5,10 @@ import {StdConfig} from "forge-std/StdConfig.sol";
 import {Script} from "forge-std/Script.sol";
 import {Proxy} from "../../src/core/proxy/Proxy.sol";
 import {XStaking} from "../../src/tokenomics/XStaking.sol";
-import {XSTBL} from "../../src/tokenomics/XSTBL.sol";
+import {XToken} from "../../src/tokenomics/XToken.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
 
-contract DeployXSTBLSystem is Script {
+contract DeployXTokenSystem is Script {
     function run() external {
         uint deployerPrivateKey = vm.envUint("PRIVATE_KEY");
 
@@ -17,9 +17,9 @@ contract DeployXSTBLSystem is Script {
         StdConfig configDeployed = new StdConfig("./config.d.toml", true); // auto-write deployed addresses
 
         // Native STBL is deployed on Sonic. All other chains use bridged versions of STBL
-        address stbl =
+        address mainToken =
             block.chainid == 146 ? config.get("TOKEN_STBL").toAddress() : configDeployed.get("OAPP_STBL").toAddress();
-        require(stbl != address(0), "STBL address is zero");
+        require(mainToken != address(0), "STBL address is zero");
 
         address platform = config.get("PLATFORM").toAddress();
         require(platform != address(0), "PLATFORM address is zero");
@@ -27,7 +27,7 @@ contract DeployXSTBLSystem is Script {
         address revenueRouter = address(IPlatform(platform).revenueRouter());
         require(revenueRouter != address(0), "RevenueRouter address is zero");
 
-        require(config.get("XSTBL").toAddress() == address(0), "XSTBL is already deployed");
+        require(config.get("xToken").toAddress() == address(0), "xToken is already deployed");
         require(config.get("xStaking").toAddress() == address(0), "xStaking is already deployed");
 
         // ---------------------- Deploy
@@ -37,15 +37,15 @@ contract DeployXSTBLSystem is Script {
         xStakingProxy.initProxy(address(new XStaking()));
 
         Proxy xSTBLProxy = new Proxy();
-        xSTBLProxy.initProxy(address(new XSTBL()));
+        xSTBLProxy.initProxy(address(new XToken()));
 
         XStaking(address(xStakingProxy)).initialize(platform, address(xSTBLProxy));
-        XSTBL(address(xSTBLProxy)).initialize(platform, stbl, address(xStakingProxy), revenueRouter);
+        XToken(address(xSTBLProxy)).initialize(platform, mainToken, address(xStakingProxy), revenueRouter, "xStability", "xSTBL");
 
         // ---------------------- Write results
         vm.stopBroadcast();
 
-        configDeployed.set("XSTBL", address(xSTBLProxy));
+        configDeployed.set("xToken", address(xSTBLProxy));
         configDeployed.set("xStaking", address(xStakingProxy));
     }
 
