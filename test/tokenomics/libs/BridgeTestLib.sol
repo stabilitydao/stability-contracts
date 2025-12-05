@@ -26,6 +26,8 @@ library BridgeTestLib {
     uint32 internal constant CONFIG_TYPE_EXECUTOR = 1;
     uint32 internal constant CONFIG_TYPE_ULN = 2;
 
+    uint32 internal constant MAX_MESSAGE_SIZE = 256;
+
     // --------------- DVN config: List of DVN providers must be equal on both source and target chains
 
     // https://docs.layerzero.network/v2/deployments/chains/sonic
@@ -78,6 +80,7 @@ library BridgeTestLib {
         address executor;
 
         address xTokenBridge;
+        address delegator;
     }
 
     //region ------------------------------------- Create contracts
@@ -87,7 +90,7 @@ library BridgeTestLib {
         Proxy proxy = new Proxy();
         proxy.initProxy(address(new BridgedToken(chain.endpoint)));
         BridgedToken bridgedMainToken = BridgedToken(address(proxy));
-        bridgedMainToken.initialize(address(chain.platform), "Stability STBL", "STBL");
+        bridgedMainToken.initialize(address(chain.platform), "Stability STBL", "STBL", chain.delegator);
 
         return address(bridgedMainToken);
     }
@@ -98,7 +101,7 @@ library BridgeTestLib {
         Proxy proxy = new Proxy();
         proxy.initProxy(address(new TokenOFTAdapter(SonicConstantsLib.TOKEN_STBL, sonic.endpoint)));
         TokenOFTAdapter tokenOFTAdapter = TokenOFTAdapter(address(proxy));
-        tokenOFTAdapter.initialize(address(sonic.platform));
+        tokenOFTAdapter.initialize(address(sonic.platform), sonic.delegator);
 
         return address(tokenOFTAdapter);
     }
@@ -106,7 +109,11 @@ library BridgeTestLib {
     //endregion ------------------------------------- Create contracts
 
     //region ------------------------------------- Chains
-    function createConfigSonic(Vm vm, uint forkId) internal returns (BridgeTestLib.ChainConfig memory) {
+    function createConfigSonic(
+        Vm vm,
+        uint forkId,
+        address delegator
+    ) internal returns (BridgeTestLib.ChainConfig memory) {
         vm.selectFork(forkId);
         return BridgeTestLib.ChainConfig({
             fork: forkId,
@@ -119,11 +126,16 @@ library BridgeTestLib {
             platform: SonicConstantsLib.PLATFORM,
             executor: SonicConstantsLib.LAYER_ZERO_V2_EXECUTOR,
             xToken: SonicConstantsLib.TOKEN_XSTBL,
-            xTokenBridge: address(0)
+            xTokenBridge: address(0),
+            delegator: delegator
         });
     }
 
-    function createConfigAvalanche(Vm vm, uint forkId) internal returns (BridgeTestLib.ChainConfig memory) {
+    function createConfigAvalanche(
+        Vm vm,
+        uint forkId,
+        address delegator
+    ) internal returns (BridgeTestLib.ChainConfig memory) {
         vm.selectFork(forkId);
         return BridgeTestLib.ChainConfig({
             fork: forkId,
@@ -136,11 +148,16 @@ library BridgeTestLib {
             platform: AvalancheConstantsLib.PLATFORM,
             executor: AvalancheConstantsLib.LAYER_ZERO_V2_EXECUTOR,
             xToken: address(0),
-            xTokenBridge: address(0)
+            xTokenBridge: address(0),
+            delegator: delegator
         });
     }
 
-    function createConfigPlasma(Vm vm, uint forkId) internal returns (BridgeTestLib.ChainConfig memory) {
+    function createConfigPlasma(
+        Vm vm,
+        uint forkId,
+        address delegator
+    ) internal returns (BridgeTestLib.ChainConfig memory) {
         vm.selectFork(forkId);
         return BridgeTestLib.ChainConfig({
             fork: forkId,
@@ -153,7 +170,8 @@ library BridgeTestLib {
             platform: PlasmaConstantsLib.PLATFORM,
             executor: PlasmaConstantsLib.LAYER_ZERO_V2_EXECUTOR,
             xToken: address(0),
-            xTokenBridge: address(0)
+            xTokenBridge: address(0),
+            delegator: delegator
         });
     }
 
@@ -165,24 +183,45 @@ library BridgeTestLib {
         BridgeTestLib.ChainConfig memory sonic,
         BridgeTestLib.ChainConfig memory avalanche
     ) internal {
-        // ------------------- Set up layer zero on Sonic
-        _setupLayerZeroConfig(vm, sonic, avalanche, true);
+        // ------------------- Set up sending chain for Sonic:Plasma
+        vm.selectFork(sonic.fork);
+        vm.startPrank(sonic.delegator);
 
-        address[] memory requiredDVNs = new address[](1); // list must be sorted
-        //            requiredDVNs[0] = SONIC_DVN_NETHERMIND_PULL;
-        requiredDVNs[0] = SONIC_DVN_LAYER_ZERO_PULL;
-        //            requiredDVNs[2] = SONIC_DVN_HORIZEN_PULL;
-        _setSendConfig(vm, sonic, avalanche, requiredDVNs, MIN_BLOCK_CONFIRMATIONS_SEND_SONIC);
-        _setReceiveConfig(vm, avalanche, sonic, requiredDVNs, MIN_BLOCK_CONFIRMATIONS_RECEIVE_TARGET);
+        {
+            address[] memory requiredDVNs = new address[](1);
+            requiredDVNs[0] = SONIC_DVN_LAYER_ZERO_PUSH;
 
-        // ------------------- Set up receiving chain for Sonic:Avalanche
-        _setupLayerZeroConfig(vm, avalanche, sonic, true);
-        requiredDVNs = new address[](1); // list must be sorted
-        requiredDVNs[0] = AVALANCHE_DVN_LAYER_ZERO_PULL;
-        //            requiredDVNs[1] = AVALANCHE_DVN_NETHERMIND_PULL;
-        //            requiredDVNs[2] = AVALANCHE_DVN_HORIZON_PULL;
-        _setSendConfig(vm, avalanche, sonic, requiredDVNs, MIN_BLOCK_CONFIRMATIONS_SEND_TARGET);
-        _setReceiveConfig(vm, sonic, avalanche, requiredDVNs, MIN_BLOCK_CONFIRMATIONS_RECEIVE_SONIC);
+            _setupOAppOnChain(
+                sonic,
+                avalanche,
+                requiredDVNs,
+                MIN_BLOCK_CONFIRMATIONS_SEND_SONIC,
+                MAX_MESSAGE_SIZE,
+                MIN_BLOCK_CONFIRMATIONS_RECEIVE_TARGET
+            );
+        }
+        vm.stopPrank();
+
+        // ------------------- Set up sending chain for Avalanche:Plasma
+        vm.selectFork(avalanche.fork);
+        vm.startPrank(avalanche.delegator);
+
+        {
+            address[] memory requiredDVNs = new address[](1);
+            requiredDVNs[0] = AVALANCHE_DVN_LAYER_ZERO_PUSH;
+            //            requiredDVNs[1] = AVALANCHE_DVN_NETHERMIND_PULL;
+            //            requiredDVNs[2] = AVALANCHE_DVN_HORIZON_PULL;
+            _setupOAppOnChain(
+                avalanche,
+                sonic,
+                requiredDVNs,
+                MIN_BLOCK_CONFIRMATIONS_SEND_TARGET,
+                MAX_MESSAGE_SIZE,
+                MIN_BLOCK_CONFIRMATIONS_RECEIVE_TARGET
+            );
+        }
+
+        vm.stopPrank();
 
         // ------------------- set peers
         _setPeers(vm, sonic, avalanche);
@@ -194,23 +233,44 @@ library BridgeTestLib {
         BridgeTestLib.ChainConfig memory plasma
     ) internal {
         // ------------------- Set up sending chain for Sonic:Plasma
-        _setupLayerZeroConfig(vm, sonic, plasma, true);
+        vm.selectFork(sonic.fork);
+        vm.startPrank(sonic.delegator);
 
-        address[] memory requiredDVNs = new address[](1); // list must be sorted
-        //            requiredDVNs[0] = SONIC_DVN_NETHERMIND_PULL;
-        requiredDVNs[0] = SONIC_DVN_LAYER_ZERO_PUSH;
-        //            requiredDVNs[2] = SONIC_DVN_HORIZEN_PULL;
-        _setSendConfig(vm, sonic, plasma, requiredDVNs, MIN_BLOCK_CONFIRMATIONS_SEND_SONIC);
-        _setReceiveConfig(vm, plasma, sonic, requiredDVNs, MIN_BLOCK_CONFIRMATIONS_RECEIVE_TARGET);
+        {
+            address[] memory requiredDVNs = new address[](1);
+            requiredDVNs[0] = SONIC_DVN_LAYER_ZERO_PUSH;
+
+            _setupOAppOnChain(
+                sonic,
+                plasma,
+                requiredDVNs,
+                MIN_BLOCK_CONFIRMATIONS_SEND_SONIC,
+                MAX_MESSAGE_SIZE,
+                MIN_BLOCK_CONFIRMATIONS_RECEIVE_TARGET
+            );
+        }
+        vm.stopPrank();
 
         // ------------------- Set up receiving chain for Sonic:Plasma
-        _setupLayerZeroConfig(vm, plasma, sonic, true);
-        requiredDVNs = new address[](1); // list must be sorted
-        requiredDVNs[0] = PLASMA_DVN_LAYER_ZERO_PUSH;
-        //        requiredDVNs[1] = PLASMA_DVN_NETHERMIND;
-        //        requiredDVNs[2] = PLASMA_DVN_HORIZON;
-        _setSendConfig(vm, plasma, sonic, requiredDVNs, MIN_BLOCK_CONFIRMATIONS_SEND_TARGET);
-        _setReceiveConfig(vm, plasma, sonic, requiredDVNs, MIN_BLOCK_CONFIRMATIONS_RECEIVE_TARGET);
+        vm.selectFork(plasma.fork);
+        vm.startPrank(plasma.delegator);
+
+        {
+            address[] memory requiredDVNs = new address[](1);
+            requiredDVNs[0] = PLASMA_DVN_LAYER_ZERO_PUSH;
+            //        requiredDVNs[1] = PLASMA_DVN_NETHERMIND;
+            //        requiredDVNs[2] = PLASMA_DVN_HORIZON;
+
+            _setupOAppOnChain(
+                plasma,
+                sonic,
+                requiredDVNs,
+                MIN_BLOCK_CONFIRMATIONS_SEND_TARGET,
+                MAX_MESSAGE_SIZE,
+                MIN_BLOCK_CONFIRMATIONS_RECEIVE_TARGET
+            );
+        }
+        vm.stopPrank();
 
         // ------------------- set peers
         _setPeers(vm, sonic, plasma);
@@ -222,19 +282,41 @@ library BridgeTestLib {
         BridgeTestLib.ChainConfig memory plasma
     ) internal {
         // ------------------- Set up sending chain for Avalanche:Plasma
-        _setupLayerZeroConfig(vm, avalanche, plasma, true);
+        vm.selectFork(avalanche.fork);
+        vm.startPrank(avalanche.delegator);
 
-        address[] memory requiredDVNs = new address[](1);
-        requiredDVNs[0] = AVALANCHE_DVN_LAYER_ZERO_PUSH;
-        _setSendConfig(vm, avalanche, plasma, requiredDVNs, MIN_BLOCK_CONFIRMATIONS_SEND_TARGET);
+        {
+            address[] memory requiredDVNs = new address[](1);
+            requiredDVNs[0] = AVALANCHE_DVN_LAYER_ZERO_PUSH;
+            //            requiredDVNs[1] = AVALANCHE_DVN_NETHERMIND_PULL;
+            //            requiredDVNs[2] = AVALANCHE_DVN_HORIZON_PULL;
+            _setupOAppOnChain(
+                avalanche,
+                plasma,
+                requiredDVNs,
+                MIN_BLOCK_CONFIRMATIONS_SEND_TARGET,
+                MAX_MESSAGE_SIZE,
+                MIN_BLOCK_CONFIRMATIONS_RECEIVE_TARGET
+            );
+        }
+        vm.stopPrank();
 
         // ------------------- Set up receiving chain for Avalanche:Plasma
-        _setupLayerZeroConfig(vm, plasma, avalanche, true);
-        requiredDVNs = new address[](1);
-        requiredDVNs[0] = PLASMA_DVN_LAYER_ZERO_PUSH;
-        _setReceiveConfig(vm, plasma, avalanche, requiredDVNs, MIN_BLOCK_CONFIRMATIONS_RECEIVE_TARGET);
-
-        _setSendConfig(vm, plasma, avalanche, requiredDVNs, MIN_BLOCK_CONFIRMATIONS_SEND_TARGET);
+        vm.selectFork(plasma.fork);
+        vm.startPrank(plasma.delegator);
+        {
+            address[] memory requiredDVNs = new address[](1);
+            requiredDVNs[0] = PLASMA_DVN_LAYER_ZERO_PUSH;
+            _setupOAppOnChain(
+                plasma,
+                avalanche,
+                requiredDVNs,
+                MIN_BLOCK_CONFIRMATIONS_SEND_TARGET,
+                MAX_MESSAGE_SIZE,
+                MIN_BLOCK_CONFIRMATIONS_RECEIVE_TARGET
+            );
+        }
+        vm.stopPrank();
 
         // ------------------- set peers
         _setPeers(vm, avalanche, plasma);
@@ -242,18 +324,37 @@ library BridgeTestLib {
 
     //endregion ------------------------------------- Setup bridges
 
+    //region ------------------------------------- Delegator
+    function _setupOAppOnChain(
+        BridgeTestLib.ChainConfig memory src,
+        BridgeTestLib.ChainConfig memory dest,
+        address[] memory requiredDVNs,
+        uint64 confirmations,
+        uint32 maxMessageSize,
+        uint64 receiveConfirmations
+    ) internal {
+        // assume here that fork and msg.sender are already correct
+        bool bothWays = receiveConfirmations != 0;
+
+        _setupLayerZeroConfig(src, dest, bothWays);
+        _setSendConfig(src, dest, requiredDVNs, confirmations, maxMessageSize);
+        if (bothWays) {
+            _setReceiveConfig(src, dest, requiredDVNs, receiveConfirmations);
+        }
+    }
+
+    //endregion ------------------------------------- Delegator
+
     //region ------------------------------------- Layer zero utils
     function _setupLayerZeroConfig(
-        Vm vm,
         BridgeTestLib.ChainConfig memory src,
         BridgeTestLib.ChainConfig memory dst,
         bool setupBothWays
     ) internal {
-        vm.selectFork(src.fork);
+        // assume that fork and msg.sender are already correct
 
         if (src.sendLib != address(0)) {
             // Set send library for outbound messages
-            vm.prank(src.multisig);
             ILayerZeroEndpointV2(src.endpoint)
                 .setSendLibrary(
                     src.oapp, // OApp address
@@ -264,7 +365,6 @@ library BridgeTestLib {
 
         // Set receive library for inbound messages
         if (setupBothWays) {
-            vm.prank(src.multisig);
             ILayerZeroEndpointV2(src.endpoint)
                 .setReceiveLibrary(
                     src.oapp, // OApp address
@@ -293,13 +393,13 @@ library BridgeTestLib {
     /// @param requiredDVNs  Array of DVN validator addresses
     /// @param confirmations  Minimum block confirmations
     function _setSendConfig(
-        Vm vm,
         BridgeTestLib.ChainConfig memory src,
         BridgeTestLib.ChainConfig memory dst,
         address[] memory requiredDVNs,
-        uint64 confirmations
+        uint64 confirmations,
+        uint32 maxMessageSize
     ) internal {
-        vm.selectFork(src.fork);
+        // assume that fork and msg.sender are already correct
 
         // ---------------------- ULN (DVN) configuration ----------------------
         UlnConfig memory uln = UlnConfig({
@@ -312,7 +412,7 @@ library BridgeTestLib {
         });
 
         ExecutorConfig memory exec = ExecutorConfig({
-            maxMessageSize: 256, // max bytes per cross-chain message
+            maxMessageSize: maxMessageSize, // max bytes per cross-chain message
             executor: src.executor // address that pays destination execution fees
         });
 
@@ -323,7 +423,6 @@ library BridgeTestLib {
         params[0] = SetConfigParam({eid: dst.endpointId, configType: CONFIG_TYPE_EXECUTOR, config: encodedExec});
         params[1] = SetConfigParam({eid: dst.endpointId, configType: CONFIG_TYPE_ULN, config: encodedUln});
 
-        vm.prank(src.multisig);
         ILayerZeroEndpointV2(src.endpoint).setConfig(src.oapp, src.sendLib, params);
     }
 
@@ -332,13 +431,12 @@ library BridgeTestLib {
     /// @param requiredDVNs  Array of DVN validator addresses
     /// @param confirmations Minimum block confirmations for ULN
     function _setReceiveConfig(
-        Vm vm,
         BridgeTestLib.ChainConfig memory src,
         BridgeTestLib.ChainConfig memory dst,
         address[] memory requiredDVNs,
         uint64 confirmations
     ) internal {
-        vm.selectFork(src.fork);
+        // assume that fork and msg.sender are already correct
 
         // ---------------------- ULN (DVN) configuration ----------------------
         UlnConfig memory uln = UlnConfig({
@@ -353,7 +451,6 @@ library BridgeTestLib {
         SetConfigParam[] memory params = new SetConfigParam[](1);
         params[0] = SetConfigParam({eid: dst.endpointId, configType: CONFIG_TYPE_ULN, config: abi.encode(uln)});
 
-        vm.prank(src.multisig);
         ILayerZeroEndpointV2(src.endpoint).setConfig(src.oapp, src.receiveLib, params);
     }
 

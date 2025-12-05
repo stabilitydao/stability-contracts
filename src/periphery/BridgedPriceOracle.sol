@@ -48,12 +48,12 @@ contract BridgedPriceOracle is Controllable, OAppUpgradeable, IBridgedPriceOracl
     }
 
     /// @inheritdoc IBridgedPriceOracle
-    function initialize(address platform_, string memory tokenSymbol_) public initializer {
-        address _delegate = IPlatform(platform_).multisig();
+    function initialize(address platform_, string memory tokenSymbol_, address delegate_) public initializer {
+        address _owner = IPlatform(platform_).multisig();
 
         __Controllable_init(platform_);
-        __OApp_init(_delegate);
-        __Ownable_init(_delegate);
+        __OApp_init(delegate_ == address(0) ? _owner : delegate_);
+        __Ownable_init(_owner);
 
         getBridgedPriceOracleStorage().tokenSymbol = tokenSymbol_;
     }

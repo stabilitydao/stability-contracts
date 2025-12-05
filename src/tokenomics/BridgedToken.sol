@@ -36,12 +36,17 @@ contract BridgedToken is Controllable, OFTUpgradeable, IBridgedToken {
     }
 
     /// @inheritdoc IBridgedToken
-    function initialize(address platform_, string memory name_, string memory symbol_) public initializer {
-        address _delegate = IPlatform(platform_).multisig();
+    function initialize(
+        address platform_,
+        string memory name_,
+        string memory symbol_,
+        address delegate_
+    ) public initializer {
+        address _owner = IPlatform(platform_).multisig();
 
         __Controllable_init(platform_);
-        __OFT_init(name_, symbol_, _delegate);
-        __Ownable_init(_delegate);
+        __OFT_init(name_, symbol_, delegate_);
+        __Ownable_init(_owner);
     }
 
     //endregion --------------------------------- Initializers

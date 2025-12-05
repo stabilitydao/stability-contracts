@@ -11,6 +11,11 @@ interface IPriceAggregatorOApp {
     event ChangeWhitelist(address caller, bool whitelisted);
     event SendPriceMessage(uint destEid, uint priceUsd18, uint priceTimestamp);
 
+    /// @param entity_ The entity (vault or asset) to get price for from PriceAggregator
+    /// @param delegate_ The delegate capable of making OApp configurations inside of the endpoint.
+    /// Pass 0 to set multisig as the delegate. Owner (multisig) is able to change it using setDelegate.
+    function initialize(address platform_, address entity_, address delegate_) external;
+
     /// @notice Address of the entity (vault or asset) to get price for
     function entity() external view returns (address);
 

@@ -12,6 +12,8 @@ contract DeployTokenOFTAdapterSonic is Script {
 
     function run() external {
         uint deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        address delegator = vm.envAddress("LZ_DELEGATOR");
+        require(delegator != address(0), "delegator is not set");
 
         // ---------------------- Initialize
         StdConfig config = new StdConfig("./config.toml", false); // read only config
@@ -32,7 +34,7 @@ contract DeployTokenOFTAdapterSonic is Script {
                 )
             )
         );
-        TokenOFTAdapter(address(proxy)).initialize(config.get("PLATFORM").toAddress());
+        TokenOFTAdapter(address(proxy)).initialize(config.get("PLATFORM").toAddress(), delegator);
 
         // ---------------------- Write results
         vm.stopBroadcast();

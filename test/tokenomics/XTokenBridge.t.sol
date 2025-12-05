@@ -49,6 +49,8 @@ contract XTokenBridgeTest is Test {
     BridgeTestLib.ChainConfig internal avalanche;
     BridgeTestLib.ChainConfig internal plasma;
 
+    address private constant TEST_DELEGATOR = address(0x999);
+
     struct ChainResults {
         uint balanceUserMainToken;
         uint balanceUserXToken;
@@ -75,9 +77,9 @@ contract XTokenBridgeTest is Test {
             uint forkAvalanche = vm.createFork(vm.envString("AVALANCHE_RPC_URL"), AVALANCHE_FORK_BLOCK);
             uint forkPlasma = vm.createFork(vm.envString("PLASMA_RPC_URL"), PLASMA_FORK_BLOCK);
 
-            sonic = BridgeTestLib.createConfigSonic(vm, forkSonic);
-            avalanche = BridgeTestLib.createConfigAvalanche(vm, forkAvalanche);
-            plasma = BridgeTestLib.createConfigPlasma(vm, forkPlasma);
+            sonic = BridgeTestLib.createConfigSonic(vm, forkSonic, TEST_DELEGATOR);
+            avalanche = BridgeTestLib.createConfigAvalanche(vm, forkAvalanche, TEST_DELEGATOR);
+            plasma = BridgeTestLib.createConfigPlasma(vm, forkPlasma, TEST_DELEGATOR);
         }
 
         // ------------------- Create bridge for STBL
