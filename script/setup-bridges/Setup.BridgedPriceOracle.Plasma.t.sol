@@ -5,11 +5,10 @@ import {StdConfig} from "forge-std/StdConfig.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
 import {Variable, LibVariable} from "forge-std/LibVariable.sol";
 import {Test} from "forge-std/Test.sol";
-import {BridgeTestLib} from "../tokenomics/libs/BridgeTestLib.sol";
+import {BridgeTestLib} from "../../test/tokenomics/libs/BridgeTestLib.sol"; // todo
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 import {PlasmaConstantsLib} from "../../chains/plasma/PlasmaConstantsLib.sol";
 import {IPriceAggregatorOApp} from "../../src/interfaces/IPriceAggregatorOApp.sol";
-import {BridgeTestLib} from "../../test/tokenomics/libs/BridgeTestLib.sol";
 
 contract BridgedPriceOracleSetupPlasmaScript is Test {
     using LibVariable for Variable;

@@ -8,8 +8,8 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 contract MockXToken {
     using SafeERC20 for IERC20;
 
-    address internal immutable _token;
-    uint internal immutable _amountToSend;
+    address internal _token;
+    uint internal _amountToSend;
 
     constructor(address token_, uint amountToSend) {
         _token = token_;
