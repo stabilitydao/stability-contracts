@@ -49,6 +49,8 @@ contract XTokenBridgeTest is Test {
     BridgeTestLib.ChainConfig internal avalanche;
     BridgeTestLib.ChainConfig internal plasma;
 
+    address private constant TEST_DELEGATOR = address(0x999);
+
     struct ChainResults {
         uint balanceUserMainToken;
         uint balanceUserXToken;
@@ -75,9 +77,9 @@ contract XTokenBridgeTest is Test {
             uint forkAvalanche = vm.createFork(vm.envString("AVALANCHE_RPC_URL"), AVALANCHE_FORK_BLOCK);
             uint forkPlasma = vm.createFork(vm.envString("PLASMA_RPC_URL"), PLASMA_FORK_BLOCK);
 
-            sonic = BridgeTestLib.createConfigSonic(vm, forkSonic);
-            avalanche = BridgeTestLib.createConfigAvalanche(vm, forkAvalanche);
-            plasma = BridgeTestLib.createConfigPlasma(vm, forkPlasma);
+            sonic = BridgeTestLib.createConfigSonic(vm, forkSonic, TEST_DELEGATOR);
+            avalanche = BridgeTestLib.createConfigAvalanche(vm, forkAvalanche, TEST_DELEGATOR);
+            plasma = BridgeTestLib.createConfigPlasma(vm, forkPlasma, TEST_DELEGATOR);
         }
 
         // ------------------- Create bridge for STBL
@@ -458,7 +460,11 @@ contract XTokenBridgeTest is Test {
         assertEq(r1.targetBefore.balanceXTokenBridgedMainToken, 0, "plasma: xTokenBridge main-token before");
         assertEq(r1.targetAfter.balanceXTokenBridgedMainToken, 0, "plasma: xTokenBridge main-token after");
 
-        assertEq(r1.srcAfter.balanceXTokenMainToken, r1.srcBefore.balanceXTokenMainToken - 70e18, "sonic: xToken main-token after");
+        assertEq(
+            r1.srcAfter.balanceXTokenMainToken,
+            r1.srcBefore.balanceXTokenMainToken - 70e18,
+            "sonic: xToken main-token after"
+        );
         assertEq(r1.targetAfter.balanceXTokenMainToken, 70e18, "plasma: main-token staked to xToken");
 
         assertEq(r1.srcAfter.balanceOappMainToken, 70e18, "sonic: expected amount of locked main-token in the bridge");
@@ -476,10 +482,16 @@ contract XTokenBridgeTest is Test {
         assertEq(r2.targetBefore.balanceXTokenBridgedMainToken, 0, "plasma: xTokenBridge main-token before 2");
         assertEq(r2.targetAfter.balanceXTokenBridgedMainToken, 0, "plasma: xTokenBridge main-token after 2");
 
-        assertEq(r2.srcAfter.balanceXTokenMainToken, r2.srcBefore.balanceXTokenMainToken - 30e18, "sonic: xToken main-token after 2");
+        assertEq(
+            r2.srcAfter.balanceXTokenMainToken,
+            r2.srcBefore.balanceXTokenMainToken - 30e18,
+            "sonic: xToken main-token after 2"
+        );
         assertEq(r2.targetAfter.balanceXTokenMainToken, 100e18, "plasma: main-token staked to xToken 2");
 
-        assertEq(r2.srcAfter.balanceOappMainToken, 100e18, "sonic: expected amount of locked main-token in the bridge 2");
+        assertEq(
+            r2.srcAfter.balanceOappMainToken, 100e18, "sonic: expected amount of locked main-token in the bridge 2"
+        );
 
         // --------------- send xToken back from Plasma to Sonic
         Results memory r3 = _testSendXToken(plasma, sonic, 100e18, 2);
@@ -530,7 +542,11 @@ contract XTokenBridgeTest is Test {
         assertEq(r1.targetBefore.balanceXTokenBridgedMainToken, 0, "plasma: xTokenBridge main-token before");
         assertEq(r1.targetAfter.balanceXTokenBridgedMainToken, 0, "plasma: xTokenBridge main-token after");
 
-        assertEq(r1.srcAfter.balanceXTokenMainToken, r1.srcBefore.balanceXTokenMainToken - 70e18, "avalanche: xToken main-token after");
+        assertEq(
+            r1.srcAfter.balanceXTokenMainToken,
+            r1.srcBefore.balanceXTokenMainToken - 70e18,
+            "avalanche: xToken main-token after"
+        );
         assertEq(r1.targetAfter.balanceXTokenMainToken, 70e18, "plasma: main-token staked to xToken");
 
         assertEq(r1.srcAfter.balanceOappMainToken, 0, "avalanche: expected amount of locked STBL in the bridge");
@@ -549,7 +565,9 @@ contract XTokenBridgeTest is Test {
         assertEq(r2.targetAfter.balanceXTokenBridgedMainToken, 0, "plasma: xTokenBridge main-token after 2");
 
         assertEq(
-            r2.srcAfter.balanceXTokenMainToken, r2.srcBefore.balanceXTokenMainToken - 30e18, "avalanche: xToken main-token after 2"
+            r2.srcAfter.balanceXTokenMainToken,
+            r2.srcBefore.balanceXTokenMainToken - 30e18,
+            "avalanche: xToken main-token after 2"
         );
         assertEq(r2.targetAfter.balanceXTokenMainToken, 100e18, "plasma: main-token staked to xToken 2");
 

@@ -133,7 +133,8 @@ contract RevenueRouterTestSonic is Test {
         feeTreasuryProxy.initProxy(address(new FeeTreasury()));
         FeeTreasury(address(feeTreasuryProxy)).initialize(PLATFORM, IPlatform(PLATFORM).multisig());
         XStaking(address(xStakingProxy)).initialize(PLATFORM, address(xTokenProxy));
-        XToken(address(xTokenProxy)).initialize(PLATFORM, STBL, address(xStakingProxy), address(revenueRouterProxy), "xStability", "xSTBL");
+        XToken(address(xTokenProxy))
+            .initialize(PLATFORM, STBL, address(xStakingProxy), address(revenueRouterProxy), "xStability", "xSTBL");
         RevenueRouter(address(revenueRouterProxy)).initialize(PLATFORM, address(xTokenProxy), address(feeTreasuryProxy));
         xToken = IXToken(address(xTokenProxy));
         xStaking = IXStaking(address(xStakingProxy));

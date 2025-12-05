@@ -46,12 +46,13 @@ contract PriceAggregatorOApp is Controllable, OAppUpgradeable, IPriceAggregatorO
         _disableInitializers();
     }
 
-    function initialize(address platform_, address entity_) public initializer {
-        address _delegate = IPlatform(platform_).multisig();
+    /// @inheritdoc IPriceAggregatorOApp
+    function initialize(address platform_, address entity_, address delegate_) public initializer {
+        address _owner = IPlatform(platform_).multisig();
 
         __Controllable_init(platform_);
-        __OApp_init(_delegate);
-        __Ownable_init(_delegate);
+        __OApp_init(delegate_ == address(0) ? _owner : delegate_);
+        __Ownable_init(_owner);
 
         getPriceAggregatorOAppStorage().entity = entity_;
     }

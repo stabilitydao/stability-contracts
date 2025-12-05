@@ -26,7 +26,8 @@ contract DeployXTokenSystemSonic is Script {
         feeTreasuryProxy.initProxy(address(new FeeTreasury()));
         FeeTreasury(address(feeTreasuryProxy)).initialize(PLATFORM, IPlatform(PLATFORM).multisig());
         XStaking(address(xStakingProxy)).initialize(PLATFORM, address(xSTBLProxy));
-        XToken(address(xSTBLProxy)).initialize(PLATFORM, STBL, address(xStakingProxy), address(revenueRouterProxy), "xStability", "xSTBL");
+        XToken(address(xSTBLProxy))
+            .initialize(PLATFORM, STBL, address(xStakingProxy), address(revenueRouterProxy), "xStability", "xSTBL");
         RevenueRouter(address(revenueRouterProxy)).initialize(PLATFORM, address(xSTBLProxy), address(feeTreasuryProxy));
         vm.stopBroadcast();
     }

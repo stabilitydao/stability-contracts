@@ -39,7 +39,9 @@ contract XTokenTest is Test, MockSetup {
         FeeTreasury(address(feeTreasuryProxy)).initialize(address(platform), platform.multisig());
         XStaking(address(xStakingProxy)).initialize(address(platform), address(xTokenProxy));
         XToken(address(xTokenProxy))
-            .initialize(address(platform), stbl, address(xStakingProxy), address(revenueRouterProxy), "xStability", "xSTBL");
+            .initialize(
+                address(platform), stbl, address(xStakingProxy), address(revenueRouterProxy), "xStability", "xSTBL"
+            );
         RevenueRouter(address(revenueRouterProxy))
             .initialize(address(platform), address(xTokenProxy), address(feeTreasuryProxy));
         xToken = IXToken(address(xTokenProxy));
@@ -242,7 +244,9 @@ contract XTokenTest is Test, MockSetup {
         }
 
         assertEq(IERC20(address(xToken)).balanceOf(user), 60e18, "user xToken balance after sendToBridge");
-        assertEq(IERC20(address(tokenA)).balanceOf(address(xToken)), 60e18, "locked main-token balance after sendToBridge");
+        assertEq(
+            IERC20(address(tokenA)).balanceOf(address(xToken)), 60e18, "locked main-token balance after sendToBridge"
+        );
         assertEq(IERC20(address(tokenA)).balanceOf(user), 0, "user main-token balance after sendToBridge");
         assertEq(IERC20(address(tokenA)).balanceOf(bridge), 40e18, "bridge main-token balance after sendToBridge");
 
@@ -268,7 +272,9 @@ contract XTokenTest is Test, MockSetup {
         }
 
         assertEq(IERC20(address(xToken)).balanceOf(user), 100e18, "user xToken balance after takeFromBridge");
-        assertEq(IERC20(address(tokenA)).balanceOf(address(xToken)), 100e18, "locked main-token balance after takeFromBridge");
+        assertEq(
+            IERC20(address(tokenA)).balanceOf(address(xToken)), 100e18, "locked main-token balance after takeFromBridge"
+        );
         assertEq(IERC20(address(tokenA)).balanceOf(user), 0, "user main-token balance after takeFromBridge");
         assertEq(IERC20(address(tokenA)).balanceOf(bridge), 0, "bridge main-token balance after takeFromBridge");
     }

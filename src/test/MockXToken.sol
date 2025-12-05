@@ -11,12 +11,12 @@ contract MockXToken {
     address internal _token;
     uint internal _amountToSend;
 
-    constructor(address token, uint amountToSend) {
-        _token = token;
+    constructor(address token_, uint amountToSend) {
+        _token = token_;
         _amountToSend = amountToSend;
     }
 
-    function STBL() external view returns (address) {
+    function token() external view returns (address) {
         return _token;
     }
 

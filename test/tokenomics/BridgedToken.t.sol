@@ -40,6 +40,8 @@ contract BridgedTokenTest is Test {
     BridgedToken internal bridgedTokenAvalanche;
     BridgedToken internal bridgedTokenPlasma;
 
+    address private constant TEST_DELEGATOR = address(0x9999);
+
     struct ChainResults {
         uint balanceSenderMainToken;
         uint balanceContractMainToken;
@@ -74,9 +76,9 @@ contract BridgedTokenTest is Test {
             uint forkAvalanche = vm.createFork(vm.envString("AVALANCHE_RPC_URL"), AVALANCHE_FORK_BLOCK);
             uint forkPlasma = vm.createFork(vm.envString("PLASMA_RPC_URL"), PLASMA_FORK_BLOCK);
 
-            sonic = BridgeTestLib.createConfigSonic(vm, forkSonic);
-            avalanche = BridgeTestLib.createConfigAvalanche(vm, forkAvalanche);
-            plasma = BridgeTestLib.createConfigPlasma(vm, forkPlasma);
+            sonic = BridgeTestLib.createConfigSonic(vm, forkSonic, TEST_DELEGATOR);
+            avalanche = BridgeTestLib.createConfigAvalanche(vm, forkAvalanche, TEST_DELEGATOR);
+            plasma = BridgeTestLib.createConfigPlasma(vm, forkPlasma, TEST_DELEGATOR);
         }
 
         // ------------------- Create adapter and bridged token
@@ -310,7 +312,11 @@ contract BridgedTokenTest is Test {
         assertEq(r2.targetAfter.balanceReceiverMainToken, 80e18, "D balance 3");
 
         assertEq(r2.srcAfter.totalSupplyMainToken, 57e18 + 20e18, "total supply after all transfers: b + c");
-        assertEq(r2.targetAfter.totalSupplyMainToken, r1.srcBefore.totalSupplyMainToken, "total supply of STBL wasn't changed");
+        assertEq(
+            r2.targetAfter.totalSupplyMainToken,
+            r1.srcBefore.totalSupplyMainToken,
+            "total supply of STBL wasn't changed"
+        );
     }
 
     function testSendFromSonicToPlasmaAndBack() public {
@@ -341,7 +347,11 @@ contract BridgedTokenTest is Test {
         assertEq(r2.targetAfter.balanceReceiverMainToken, 80e18, "D balance 3");
 
         assertEq(r2.srcAfter.totalSupplyMainToken, 57e18 + 20e18, "total supply after all transfers: b + c");
-        assertEq(r2.targetAfter.totalSupplyMainToken, r1.srcBefore.totalSupplyMainToken, "total supply of STBL wasn't changed");
+        assertEq(
+            r2.targetAfter.totalSupplyMainToken,
+            r1.srcBefore.totalSupplyMainToken,
+            "total supply of STBL wasn't changed"
+        );
     }
 
     function testSendFromAvalancheToPlasmaAndBack() public {

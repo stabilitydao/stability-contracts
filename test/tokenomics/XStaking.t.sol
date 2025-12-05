@@ -39,7 +39,9 @@ contract XStakingTest is Test, MockSetup {
         FeeTreasury(address(feeTreasuryProxy)).initialize(address(platform), platform.multisig());
         XStaking(address(xStakingProxy)).initialize(address(platform), address(xTokenProxy));
         XToken(address(xTokenProxy))
-            .initialize(address(platform), mainToken, address(xStakingProxy), address(revenueRouterProxy), "xStability", "xSTBL");
+            .initialize(
+                address(platform), mainToken, address(xStakingProxy), address(revenueRouterProxy), "xStability", "xSTBL"
+            );
         RevenueRouter(address(revenueRouterProxy))
             .initialize(address(platform), address(xTokenProxy), address(feeTreasuryProxy));
         xToken = IXToken(address(xTokenProxy));
@@ -264,9 +266,7 @@ contract XStakingTest is Test, MockSetup {
 
         assertEq(dao.getVotes(users[0]), 0, "1: User 0 delegated his power to user 1");
         assertEq(
-            dao.getVotes(users[1]),
-            amounts[1] / 2 + amounts[0] / 2,
-            "1: balance user 1 + delegated power of user 0"
+            dao.getVotes(users[1]), amounts[1] / 2 + amounts[0] / 2, "1: balance user 1 + delegated power of user 0"
         );
         assertEq(dao.getVotes(users[2]), amounts[2] / 2, "1: balance user 2");
 
@@ -277,9 +277,7 @@ contract XStakingTest is Test, MockSetup {
         assertEq(dao.getVotes(users[0]), 0, "2: User 0 delegated his power to user 1");
         assertEq(dao.getVotes(users[1]), amounts[0] / 2, "2: delegated power of user 0");
         assertEq(
-            dao.getVotes(users[2]),
-            amounts[2] / 2 + amounts[1] / 2,
-            "2: balance user 2 + delegated power of user 1"
+            dao.getVotes(users[2]), amounts[2] / 2 + amounts[1] / 2, "2: balance user 2 + delegated power of user 1"
         );
 
         // ------------------------------- A: 2 => 1
@@ -287,9 +285,7 @@ contract XStakingTest is Test, MockSetup {
         dao.setPowerDelegation(users[1]);
 
         assertEq(dao.getVotes(users[0]), 0, "A: no power");
-        assertEq(
-            dao.getVotes(users[1]), amounts[0] / 2 + amounts[2] / 2, "A: delegated power of users 0 and 2"
-        );
+        assertEq(dao.getVotes(users[1]), amounts[0] / 2 + amounts[2] / 2, "A: delegated power of users 0 and 2");
         assertEq(dao.getVotes(users[2]), amounts[1] / 2, "A: delegated power of user 1");
 
         {

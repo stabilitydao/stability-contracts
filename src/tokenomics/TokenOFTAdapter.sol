@@ -17,7 +17,8 @@ contract TokenOFTAdapter is Controllable, OFTAdapterUpgradeable, ITokenOFTAdapte
     string public constant VERSION = "1.0.0";
 
     // keccak256(abi.encode(uint(keccak256("erc7201:stability.TokenOFTAdapter")) - 1)) & ~bytes32(uint(0xff));
-    bytes32 internal constant TOKEN_OFT_ADAPTER_STORAGE_LOCATION = 0xa644c5e388c18df754c7a15986d33976363be2bae99e7e86772378f965c5c200;
+    bytes32 internal constant TOKEN_OFT_ADAPTER_STORAGE_LOCATION =
+        0xa644c5e388c18df754c7a15986d33976363be2bae99e7e86772378f965c5c200;
 
     /// @custom:storage-location erc7201:stability.TokenOFTAdapter
     struct TokenOftAdapterStorage {
@@ -34,12 +35,12 @@ contract TokenOFTAdapter is Controllable, OFTAdapterUpgradeable, ITokenOFTAdapte
     }
 
     /// @inheritdoc ITokenOFTAdapter
-    function initialize(address platform_) public initializer {
-        address _delegate = IPlatform(platform_).multisig();
+    function initialize(address platform_, address delegate_) public initializer {
+        address _owner = IPlatform(platform_).multisig();
 
         __Controllable_init(platform_);
-        __OFTAdapter_init(_delegate);
-        __Ownable_init(_delegate);
+        __OApp_init(delegate_ == address(0) ? _owner : delegate_);
+        __Ownable_init(_owner);
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/

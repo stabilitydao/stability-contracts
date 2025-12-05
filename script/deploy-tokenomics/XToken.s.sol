@@ -40,7 +40,8 @@ contract DeployXTokenSystem is Script {
         xSTBLProxy.initProxy(address(new XToken()));
 
         XStaking(address(xStakingProxy)).initialize(platform, address(xSTBLProxy));
-        XToken(address(xSTBLProxy)).initialize(platform, mainToken, address(xStakingProxy), revenueRouter, "xStability", "xSTBL");
+        XToken(address(xSTBLProxy))
+            .initialize(platform, mainToken, address(xStakingProxy), revenueRouter, "xStability", "xSTBL");
 
         // ---------------------- Write results
         vm.stopBroadcast();

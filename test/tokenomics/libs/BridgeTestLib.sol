@@ -78,6 +78,7 @@ library BridgeTestLib {
         address executor;
 
         address xTokenBridge;
+        address delegator;
     }
 
     //region ------------------------------------- Create contracts
@@ -87,7 +88,7 @@ library BridgeTestLib {
         Proxy proxy = new Proxy();
         proxy.initProxy(address(new BridgedToken(chain.endpoint)));
         BridgedToken bridgedMainToken = BridgedToken(address(proxy));
-        bridgedMainToken.initialize(address(chain.platform), "Stability STBL", "STBL");
+        bridgedMainToken.initialize(address(chain.platform), "Stability STBL", "STBL", chain.delegator);
 
         return address(bridgedMainToken);
     }
@@ -98,7 +99,7 @@ library BridgeTestLib {
         Proxy proxy = new Proxy();
         proxy.initProxy(address(new TokenOFTAdapter(SonicConstantsLib.TOKEN_STBL, sonic.endpoint)));
         TokenOFTAdapter tokenOFTAdapter = TokenOFTAdapter(address(proxy));
-        tokenOFTAdapter.initialize(address(sonic.platform));
+        tokenOFTAdapter.initialize(address(sonic.platform), sonic.delegator);
 
         return address(tokenOFTAdapter);
     }
@@ -106,7 +107,11 @@ library BridgeTestLib {
     //endregion ------------------------------------- Create contracts
 
     //region ------------------------------------- Chains
-    function createConfigSonic(Vm vm, uint forkId) internal returns (BridgeTestLib.ChainConfig memory) {
+    function createConfigSonic(
+        Vm vm,
+        uint forkId,
+        address delegator
+    ) internal returns (BridgeTestLib.ChainConfig memory) {
         vm.selectFork(forkId);
         return BridgeTestLib.ChainConfig({
             fork: forkId,
@@ -119,11 +124,16 @@ library BridgeTestLib {
             platform: SonicConstantsLib.PLATFORM,
             executor: SonicConstantsLib.LAYER_ZERO_V2_EXECUTOR,
             xToken: SonicConstantsLib.TOKEN_XSTBL,
-            xTokenBridge: address(0)
+            xTokenBridge: address(0),
+            delegator: delegator
         });
     }
 
-    function createConfigAvalanche(Vm vm, uint forkId) internal returns (BridgeTestLib.ChainConfig memory) {
+    function createConfigAvalanche(
+        Vm vm,
+        uint forkId,
+        address delegator
+    ) internal returns (BridgeTestLib.ChainConfig memory) {
         vm.selectFork(forkId);
         return BridgeTestLib.ChainConfig({
             fork: forkId,
@@ -136,11 +146,16 @@ library BridgeTestLib {
             platform: AvalancheConstantsLib.PLATFORM,
             executor: AvalancheConstantsLib.LAYER_ZERO_V2_EXECUTOR,
             xToken: address(0),
-            xTokenBridge: address(0)
+            xTokenBridge: address(0),
+            delegator: delegator
         });
     }
 
-    function createConfigPlasma(Vm vm, uint forkId) internal returns (BridgeTestLib.ChainConfig memory) {
+    function createConfigPlasma(
+        Vm vm,
+        uint forkId,
+        address delegator
+    ) internal returns (BridgeTestLib.ChainConfig memory) {
         vm.selectFork(forkId);
         return BridgeTestLib.ChainConfig({
             fork: forkId,
@@ -153,7 +168,8 @@ library BridgeTestLib {
             platform: PlasmaConstantsLib.PLATFORM,
             executor: PlasmaConstantsLib.LAYER_ZERO_V2_EXECUTOR,
             xToken: address(0),
-            xTokenBridge: address(0)
+            xTokenBridge: address(0),
+            delegator: delegator
         });
     }
 
@@ -253,7 +269,7 @@ library BridgeTestLib {
 
         if (src.sendLib != address(0)) {
             // Set send library for outbound messages
-            vm.prank(src.multisig);
+            vm.prank(src.delegator);
             ILayerZeroEndpointV2(src.endpoint)
                 .setSendLibrary(
                     src.oapp, // OApp address
@@ -264,7 +280,7 @@ library BridgeTestLib {
 
         // Set receive library for inbound messages
         if (setupBothWays) {
-            vm.prank(src.multisig);
+            vm.prank(src.delegator);
             ILayerZeroEndpointV2(src.endpoint)
                 .setReceiveLibrary(
                     src.oapp, // OApp address
@@ -323,7 +339,7 @@ library BridgeTestLib {
         params[0] = SetConfigParam({eid: dst.endpointId, configType: CONFIG_TYPE_EXECUTOR, config: encodedExec});
         params[1] = SetConfigParam({eid: dst.endpointId, configType: CONFIG_TYPE_ULN, config: encodedUln});
 
-        vm.prank(src.multisig);
+        vm.prank(src.delegator);
         ILayerZeroEndpointV2(src.endpoint).setConfig(src.oapp, src.sendLib, params);
     }
 
@@ -353,7 +369,7 @@ library BridgeTestLib {
         SetConfigParam[] memory params = new SetConfigParam[](1);
         params[0] = SetConfigParam({eid: dst.endpointId, configType: CONFIG_TYPE_ULN, config: abi.encode(uln)});
 
-        vm.prank(src.multisig);
+        vm.prank(src.delegator);
         ILayerZeroEndpointV2(src.endpoint).setConfig(src.oapp, src.receiveLib, params);
     }
 

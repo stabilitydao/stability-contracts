@@ -12,6 +12,8 @@ contract DeployBridgedPriceOracle is Script {
 
     function run() external {
         uint deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        address delegator = vm.envAddress("LZ_DELEGATOR");
+        require(delegator != address(0), "delegator is not set");
 
         // ---------------------- Initialize
         StdConfig config = new StdConfig("./config.toml", false); // read only config
@@ -28,7 +30,7 @@ contract DeployBridgedPriceOracle is Script {
         proxy.initProxy(address(new BridgedPriceOracle(config.get("LAYER_ZERO_V2_ENDPOINT").toAddress())));
 
         // @dev assume here that we deploy price oracle for STBL token
-        BridgedPriceOracle(address(proxy)).initialize(config.get("PLATFORM").toAddress(), "STBL");
+        BridgedPriceOracle(address(proxy)).initialize(config.get("PLATFORM").toAddress(), "STBL", delegator);
 
         // ---------------------- Write results
         vm.stopBroadcast();

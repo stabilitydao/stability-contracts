@@ -19,6 +19,8 @@ contract PriceAggregatorOAppSetupTest is Test {
     BridgeTestLib.ChainConfig internal sonic;
     BridgeTestLib.ChainConfig internal plasma;
 
+    address private constant TEST_DELEGATOR = address(0x9999);
+
     constructor() {
         uint forkSonic = vm.createFork(vm.envString("SONIC_RPC_URL"), SONIC_FORK_BLOCK);
         uint forkPlasma = vm.createFork(vm.envString("PLASMA_RPC_URL"), PLASMA_FORK_BLOCK);
@@ -67,7 +69,8 @@ contract PriceAggregatorOAppSetupTest is Test {
             platform: SonicConstantsLib.PLATFORM,
             executor: SonicConstantsLib.LAYER_ZERO_V2_EXECUTOR,
             xToken: xToken,
-            xTokenBridge: xTokenBridge
+            xTokenBridge: xTokenBridge,
+            delegator: TEST_DELEGATOR
         });
     }
 
@@ -97,7 +100,8 @@ contract PriceAggregatorOAppSetupTest is Test {
             platform: PlasmaConstantsLib.PLATFORM,
             executor: PlasmaConstantsLib.LAYER_ZERO_V2_EXECUTOR,
             xToken: address(0),
-            xTokenBridge: address(0)
+            xTokenBridge: address(0),
+            delegator: TEST_DELEGATOR
         });
     }
 }

@@ -19,5 +19,7 @@ interface IBridgedPriceOracle is IAggregatorInterfaceMinimal {
     function tokenSymbol() external view returns (string memory);
 
     /// @notice Initialize with platform and token symbol
-    function initialize(address platform_, string memory tokenSymbol_) external;
+    /// @param delegate_ The delegate capable of making OApp configurations inside of the endpoint.
+    /// Pass 0 to set multisig as the delegate. Owner (multisig) is able to change it using setDelegate.
+    function initialize(address platform_, string memory tokenSymbol_, address delegate_) external;
 }

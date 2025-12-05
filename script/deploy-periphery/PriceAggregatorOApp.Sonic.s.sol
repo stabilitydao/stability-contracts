@@ -12,6 +12,8 @@ contract DeployPriceAggregatorOAppSonic is Script {
 
     function run() external {
         uint deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        address delegator = vm.envAddress("LZ_DELEGATOR");
+        require(delegator != address(0), "delegator is not set");
 
         // ---------------------- Initialize
         StdConfig config = new StdConfig("./config.toml", false); // read only config
@@ -33,7 +35,7 @@ contract DeployPriceAggregatorOAppSonic is Script {
 
         // @dev assume here that we deploy price oracle for STBL token
         PriceAggregatorOApp(address(proxy))
-            .initialize(config.get("PLATFORM").toAddress(), config.get("TOKEN_STBL").toAddress());
+            .initialize(config.get("PLATFORM").toAddress(), config.get("TOKEN_STBL").toAddress(), delegator);
 
         // ---------------------- Write results
         vm.stopBroadcast();

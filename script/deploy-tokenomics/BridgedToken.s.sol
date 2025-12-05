@@ -12,6 +12,8 @@ contract DeployBridgedToken is Script {
 
     function run() external {
         uint deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        address delegator = vm.envAddress("LZ_DELEGATOR");
+        require(delegator != address(0), "delegator is not set");
 
         // ---------------------- Initialize
         StdConfig config = new StdConfig("./config.toml", false); // read only config
@@ -29,7 +31,7 @@ contract DeployBridgedToken is Script {
         vm.startBroadcast(deployerPrivateKey);
         Proxy proxy = new Proxy();
         proxy.initProxy(address(new BridgedToken(endpoint)));
-        BridgedToken(address(proxy)).initialize(platform, "Stability STBL", "STBL");
+        BridgedToken(address(proxy)).initialize(platform, "Stability STBL", "STBL", delegator);
 
         // ---------------------- Write results
         vm.stopBroadcast();

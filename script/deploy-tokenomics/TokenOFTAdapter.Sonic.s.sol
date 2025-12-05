@@ -12,6 +12,8 @@ contract DeployTokenOFTAdapterSonic is Script {
 
     function run() external {
         uint deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        address delegator = vm.envAddress("LZ_DELEGATOR");
+        require(delegator != address(0), "delegator is not set");
 
         // ---------------------- Initialize
         StdConfig config = new StdConfig("./config.toml", false); // read only config
@@ -19,8 +21,7 @@ contract DeployTokenOFTAdapterSonic is Script {
 
         require(configDeployed.get("OAPP_MAIN_TOKEN").toAddress() == address(0), "OAPP_MAIN_TOKEN already deployed");
         require(
-            block.chainid == 146,
-            "TokenOFTAdapter is used on the Sonic only (the chain where native STBL is deployed)"
+            block.chainid == 146, "TokenOFTAdapter is used on the Sonic only (the chain where native STBL is deployed)"
         );
 
         // ---------------------- Deploy
@@ -33,7 +34,7 @@ contract DeployTokenOFTAdapterSonic is Script {
                 )
             )
         );
-        TokenOFTAdapter(address(proxy)).initialize(config.get("PLATFORM").toAddress());
+        TokenOFTAdapter(address(proxy)).initialize(config.get("PLATFORM").toAddress(), delegator);
 
         // ---------------------- Write results
         vm.stopBroadcast();
