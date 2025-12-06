@@ -20,7 +20,7 @@ contract DeployBridgedPriceOracle is Script {
         StdConfig configDeployed = new StdConfig("./config.d.toml", true); // auto-write deployed addresses
 
         require(
-            configDeployed.get("BRIDGED_PRICE_ORACLE_MAIN_TOKEN").toAddress() == address(0),
+            uint(configDeployed.get("BRIDGED_PRICE_ORACLE_MAIN_TOKEN").ty.kind) == 0,
             "BridgedPriceOracle already deployed"
         );
 

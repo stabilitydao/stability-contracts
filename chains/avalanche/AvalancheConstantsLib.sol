@@ -74,6 +74,12 @@ library AvalancheConstantsLib {
     address public constant LAYER_ZERO_V2_BLOCKED_MESSAGE_LIBRARY = 0x1ccBf0db9C192d969de57E25B3fF09A25bb1D862;
     address public constant LAYER_ZERO_V2_DEAD_DVN = 0x90cCA24D1338Bd284C25776D9c12f96764Bde5e1;
 
+    // https://docs.layerzero.network/v2/deployments/chains/avalanche
+    address internal constant AVALANCHE_DVN_LAYER_ZERO_PULL = 0x0Ffe02DF012299A370D5dd69298A5826EAcaFdF8; // LayerZero Labs (lzRead)
+    address internal constant AVALANCHE_DVN_LAYER_ZERO_PUSH = 0x962F502A63F5FBeB44DC9ab932122648E8352959;
+    address internal constant AVALANCHE_DVN_NETHERMIND_PULL = 0x1308151a7ebaC14f435d3Ad5fF95c34160D539A5; // Nethermind (lzRead)
+    address internal constant AVALANCHE_DVN_HORIZON_PULL = 0x1a5Df1367F21d55B13D5E2f8778AD644BC97aC6d; // Horizen (lzRead)
+
     // DeX aggregators
     /// @notice Aggregator router V6
     /// @dev https://portal.1inch.dev/documentation/contracts/aggregation-protocol/aggregation-introduction

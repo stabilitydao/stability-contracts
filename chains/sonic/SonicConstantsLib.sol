@@ -606,4 +606,11 @@ library SonicConstantsLib {
     address public constant LAYER_ZERO_V2_BLOCKED_MESSAGE_LIBRARY = 0xC1cE56B2099cA68720592583C7984CAb4B6d7E7a;
     address public constant LAYER_ZERO_V2_DEAD_DVN = 0x6788f52439ACA6BFF597d3eeC2DC9a44B8FEE842;
 
+    // https://docs.layerzero.network/v2/deployments/chains/sonic
+    address internal constant SONIC_DVN_NETHERMIND_PULL = 0x3b0531eB02Ab4aD72e7a531180beeF9493a00dD2; // Nethermind (lzRead)
+    address internal constant SONIC_DVN_LAYER_ZERO_PULL = 0x78f607fc38e071cEB8630B7B12c358eE01C31E96; // LayerZero Labs (lzRead)
+    address internal constant SONIC_DVN_LAYER_ZERO_PUSH = 0x282b3386571f7f794450d5789911a9804FA346b4;
+    address internal constant SONIC_DVN_HORIZEN_PUSH = 0x54dD79f5cE72b51FCBbcb170Dd01E32034323565;
+    address internal constant SONIC_DVN_HORIZEN_PULL = 0xCA764b512E2d2fD15fcA1c0a38F7cFE9153148F0; // Horizen (lzRead)
+
 }

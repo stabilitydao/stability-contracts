@@ -49,4 +49,10 @@ library PlasmaConstantsLib {
     address public constant LAYER_ZERO_V2_EXECUTOR = 0x4208D6E27538189bB48E603D6123A94b8Abe0A0b;
     address public constant LAYER_ZERO_V2_BLOCKED_MESSAGE_LIBRARY = 0xC1cE56B2099cA68720592583C7984CAb4B6d7E7a;
     address public constant LAYER_ZERO_V2_DEAD_DVN = 0x6788f52439ACA6BFF597d3eeC2DC9a44B8FEE842;
+
+    // https://docs.layerzero.network/v2/deployments/chains/plasma
+    address internal constant PLASMA_DVN_LAYER_ZERO_PUSH = 0x282b3386571f7f794450d5789911a9804FA346b4; // LayerZero Labs (push based)
+    address internal constant PLASMA_DVN_NETHERMIND_PUSH = 0xa51cE237FaFA3052D5d3308Df38A024724Bb1274; // Nethermind (push based)
+    address internal constant PLASMA_DVN_HORIZON_PUSH = 0xd4CE45957FBCb88b868ad2c759C7DB9BC2741e56; // Horizen (push based)
+
 }

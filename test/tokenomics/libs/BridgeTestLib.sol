@@ -28,25 +28,6 @@ library BridgeTestLib {
 
     uint32 internal constant MAX_MESSAGE_SIZE = 256;
 
-    // --------------- DVN config: List of DVN providers must be equal on both source and target chains
-
-    // https://docs.layerzero.network/v2/deployments/chains/sonic
-    address internal constant SONIC_DVN_NETHERMIND_PULL = 0x3b0531eB02Ab4aD72e7a531180beeF9493a00dD2; // Nethermind (lzRead)
-    address internal constant SONIC_DVN_LAYER_ZERO_PULL = 0x78f607fc38e071cEB8630B7B12c358eE01C31E96; // LayerZero Labs (lzRead)
-    address internal constant SONIC_DVN_LAYER_ZERO_PUSH = 0x282b3386571f7f794450d5789911a9804FA346b4;
-    address internal constant SONIC_DVN_HORIZEN_PULL = 0xCA764b512E2d2fD15fcA1c0a38F7cFE9153148F0; // Horizen (lzRead)
-
-    // https://docs.layerzero.network/v2/deployments/chains/avalanche
-    address internal constant AVALANCHE_DVN_LAYER_ZERO_PULL = 0x0Ffe02DF012299A370D5dd69298A5826EAcaFdF8; // LayerZero Labs (lzRead)
-    address internal constant AVALANCHE_DVN_LAYER_ZERO_PUSH = 0x962F502A63F5FBeB44DC9ab932122648E8352959;
-    address internal constant AVALANCHE_DVN_NETHERMIND_PULL = 0x1308151a7ebaC14f435d3Ad5fF95c34160D539A5; // Nethermind (lzRead)
-    address internal constant AVALANCHE_DVN_HORIZON_PULL = 0x1a5Df1367F21d55B13D5E2f8778AD644BC97aC6d; // Horizen (lzRead)
-
-    // https://docs.layerzero.network/v2/deployments/chains/plasma
-    address internal constant PLASMA_DVN_LAYER_ZERO_PUSH = 0x282b3386571f7f794450d5789911a9804FA346b4; // LayerZero Labs (push based)
-    address internal constant PLASMA_DVN_NETHERMIND_PUSH = 0xa51cE237FaFA3052D5d3308Df38A024724Bb1274; // Nethermind (push based)
-    address internal constant PLASMA_DVN_HORIZON_PUSH = 0xd4CE45957FBCb88b868ad2c759C7DB9BC2741e56; // Horizen (push based)
-
     // --------------- Confirmations: send >= receive, see https://docs.layerzero.network/v2/developers/evm/configuration/dvn-executor-config
 
     /// @dev Minimum block confirmations to wait on Sonic
@@ -188,12 +169,13 @@ library BridgeTestLib {
         vm.startPrank(sonic.delegator);
 
         {
-            address[] memory requiredDVNs = new address[](1);
-            requiredDVNs[0] = SONIC_DVN_LAYER_ZERO_PUSH;
+            address[] memory requiredDVNs = new address[](2);
+            requiredDVNs[0] = SonicConstantsLib.SONIC_DVN_LAYER_ZERO_PUSH;
+            requiredDVNs[1] = SonicConstantsLib.SONIC_DVN_HORIZEN_PUSH;
 
             _setupOAppOnChain(
                 sonic,
-                avalanche,
+                avalanche.endpointId,
                 requiredDVNs,
                 MIN_BLOCK_CONFIRMATIONS_SEND_SONIC,
                 MAX_MESSAGE_SIZE,
@@ -208,12 +190,12 @@ library BridgeTestLib {
 
         {
             address[] memory requiredDVNs = new address[](1);
-            requiredDVNs[0] = AVALANCHE_DVN_LAYER_ZERO_PUSH;
+            requiredDVNs[0] = AvalancheConstantsLib.AVALANCHE_DVN_LAYER_ZERO_PUSH;
             //            requiredDVNs[1] = AVALANCHE_DVN_NETHERMIND_PULL;
             //            requiredDVNs[2] = AVALANCHE_DVN_HORIZON_PULL;
             _setupOAppOnChain(
                 avalanche,
-                sonic,
+                sonic.endpointId,
                 requiredDVNs,
                 MIN_BLOCK_CONFIRMATIONS_SEND_TARGET,
                 MAX_MESSAGE_SIZE,
@@ -238,11 +220,11 @@ library BridgeTestLib {
 
         {
             address[] memory requiredDVNs = new address[](1);
-            requiredDVNs[0] = SONIC_DVN_LAYER_ZERO_PUSH;
+            requiredDVNs[0] = SonicConstantsLib.SONIC_DVN_LAYER_ZERO_PUSH;
 
             _setupOAppOnChain(
                 sonic,
-                plasma,
+                plasma.endpointId,
                 requiredDVNs,
                 MIN_BLOCK_CONFIRMATIONS_SEND_SONIC,
                 MAX_MESSAGE_SIZE,
@@ -256,14 +238,14 @@ library BridgeTestLib {
         vm.startPrank(plasma.delegator);
 
         {
-            address[] memory requiredDVNs = new address[](1);
-            requiredDVNs[0] = PLASMA_DVN_LAYER_ZERO_PUSH;
-            //        requiredDVNs[1] = PLASMA_DVN_NETHERMIND;
+            address[] memory requiredDVNs = new address[](2);
+            requiredDVNs[0] = PlasmaConstantsLib.PLASMA_DVN_LAYER_ZERO_PUSH;
+            requiredDVNs[1] = PlasmaConstantsLib.PLASMA_DVN_NETHERMIND_PUSH;
             //        requiredDVNs[2] = PLASMA_DVN_HORIZON;
 
             _setupOAppOnChain(
                 plasma,
-                sonic,
+                sonic.endpointId,
                 requiredDVNs,
                 MIN_BLOCK_CONFIRMATIONS_SEND_TARGET,
                 MAX_MESSAGE_SIZE,
@@ -287,12 +269,12 @@ library BridgeTestLib {
 
         {
             address[] memory requiredDVNs = new address[](1);
-            requiredDVNs[0] = AVALANCHE_DVN_LAYER_ZERO_PUSH;
+            requiredDVNs[0] = AvalancheConstantsLib.AVALANCHE_DVN_LAYER_ZERO_PUSH;
             //            requiredDVNs[1] = AVALANCHE_DVN_NETHERMIND_PULL;
             //            requiredDVNs[2] = AVALANCHE_DVN_HORIZON_PULL;
             _setupOAppOnChain(
                 avalanche,
-                plasma,
+                plasma.endpointId,
                 requiredDVNs,
                 MIN_BLOCK_CONFIRMATIONS_SEND_TARGET,
                 MAX_MESSAGE_SIZE,
@@ -306,10 +288,10 @@ library BridgeTestLib {
         vm.startPrank(plasma.delegator);
         {
             address[] memory requiredDVNs = new address[](1);
-            requiredDVNs[0] = PLASMA_DVN_LAYER_ZERO_PUSH;
+            requiredDVNs[0] = PlasmaConstantsLib.PLASMA_DVN_LAYER_ZERO_PUSH;
             _setupOAppOnChain(
                 plasma,
-                avalanche,
+                avalanche.endpointId,
                 requiredDVNs,
                 MIN_BLOCK_CONFIRMATIONS_SEND_TARGET,
                 MAX_MESSAGE_SIZE,
@@ -327,7 +309,7 @@ library BridgeTestLib {
     //region ------------------------------------- Delegator
     function _setupOAppOnChain(
         BridgeTestLib.ChainConfig memory src,
-        BridgeTestLib.ChainConfig memory dest,
+        uint32 dstEndpointId,
         address[] memory requiredDVNs,
         uint64 confirmations,
         uint32 maxMessageSize,
@@ -336,10 +318,10 @@ library BridgeTestLib {
         // assume here that fork and msg.sender are already correct
         bool bothWays = receiveConfirmations != 0;
 
-        _setupLayerZeroConfig(src, dest, bothWays);
-        _setSendConfig(src, dest, requiredDVNs, confirmations, maxMessageSize);
+        _setupLayerZeroConfig(src, dstEndpointId, bothWays);
+        _setSendConfig(src, dstEndpointId, requiredDVNs, confirmations, maxMessageSize);
         if (bothWays) {
-            _setReceiveConfig(src, dest, requiredDVNs, receiveConfirmations);
+            _setReceiveConfig(src, dstEndpointId, requiredDVNs, receiveConfirmations);
         }
     }
 
@@ -348,7 +330,7 @@ library BridgeTestLib {
     //region ------------------------------------- Layer zero utils
     function _setupLayerZeroConfig(
         BridgeTestLib.ChainConfig memory src,
-        BridgeTestLib.ChainConfig memory dst,
+        uint32 dstEndpointId,
         bool setupBothWays
     ) internal {
         // assume that fork and msg.sender are already correct
@@ -358,7 +340,7 @@ library BridgeTestLib {
             ILayerZeroEndpointV2(src.endpoint)
                 .setSendLibrary(
                     src.oapp, // OApp address
-                    dst.endpointId, // Destination chain EID
+                    dstEndpointId, // Destination chain EID
                     src.sendLib // SendUln302 address
                 );
         }
@@ -368,7 +350,7 @@ library BridgeTestLib {
             ILayerZeroEndpointV2(src.endpoint)
                 .setReceiveLibrary(
                     src.oapp, // OApp address
-                    dst.endpointId, // Source chain EID
+                    dstEndpointId, // Source chain EID
                     src.receiveLib, // ReceiveUln302 address
                     0 // Grace period for library switch
                 );
@@ -394,7 +376,7 @@ library BridgeTestLib {
     /// @param confirmations  Minimum block confirmations
     function _setSendConfig(
         BridgeTestLib.ChainConfig memory src,
-        BridgeTestLib.ChainConfig memory dst,
+        uint32 dstEndpointId,
         address[] memory requiredDVNs,
         uint64 confirmations,
         uint32 maxMessageSize
@@ -420,8 +402,8 @@ library BridgeTestLib {
         bytes memory encodedExec = abi.encode(exec);
 
         SetConfigParam[] memory params = new SetConfigParam[](2);
-        params[0] = SetConfigParam({eid: dst.endpointId, configType: CONFIG_TYPE_EXECUTOR, config: encodedExec});
-        params[1] = SetConfigParam({eid: dst.endpointId, configType: CONFIG_TYPE_ULN, config: encodedUln});
+        params[0] = SetConfigParam({eid: dstEndpointId, configType: CONFIG_TYPE_EXECUTOR, config: encodedExec});
+        params[1] = SetConfigParam({eid: dstEndpointId, configType: CONFIG_TYPE_ULN, config: encodedUln});
 
         ILayerZeroEndpointV2(src.endpoint).setConfig(src.oapp, src.sendLib, params);
     }
@@ -432,7 +414,7 @@ library BridgeTestLib {
     /// @param confirmations Minimum block confirmations for ULN
     function _setReceiveConfig(
         BridgeTestLib.ChainConfig memory src,
-        BridgeTestLib.ChainConfig memory dst,
+        uint32 dstEndpointId,
         address[] memory requiredDVNs,
         uint64 confirmations
     ) internal {
@@ -449,7 +431,7 @@ library BridgeTestLib {
         });
 
         SetConfigParam[] memory params = new SetConfigParam[](1);
-        params[0] = SetConfigParam({eid: dst.endpointId, configType: CONFIG_TYPE_ULN, config: abi.encode(uln)});
+        params[0] = SetConfigParam({eid: dstEndpointId, configType: CONFIG_TYPE_ULN, config: abi.encode(uln)});
 
         ILayerZeroEndpointV2(src.endpoint).setConfig(src.oapp, src.receiveLib, params);
     }

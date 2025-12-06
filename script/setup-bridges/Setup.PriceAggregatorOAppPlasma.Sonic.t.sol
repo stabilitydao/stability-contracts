@@ -35,17 +35,17 @@ contract PriceAggregatorOAppPlasmaSetupSonicScript is Test {
         StdConfig configDeployed = new StdConfig("./config.d.toml", false);
 
         BridgeTestLib.ChainConfig memory sonic = _createConfigSonic(configDeployed, delegator);
-        BridgeTestLib.ChainConfig memory plasma = _createConfigPlasma(configDeployed, delegator);
 
         // ---------------------- Setup
         vm.startBroadcast(deployerPrivateKey);
 
-        address[] memory requiredDVNs = new address[](1);
-        requiredDVNs[0] = BridgeTestLib.SONIC_DVN_LAYER_ZERO_PUSH;
+        address[] memory requiredDVNs = new address[](2);
+        requiredDVNs[0] = SonicConstantsLib.SONIC_DVN_LAYER_ZERO_PUSH;
+        requiredDVNs[1] = SonicConstantsLib.SONIC_DVN_HORIZEN_PUSH;
 
         BridgeTestLib._setupOAppOnChain(
             sonic,
-            plasma,
+            PlasmaConstantsLib.LAYER_ZERO_V2_ENDPOINT_ID,
             requiredDVNs,
             MIN_BLOCK_CONFIRMATIONS_SEND_SONIC,
             MAX_MESSAGE_SIZE,
@@ -61,14 +61,14 @@ contract PriceAggregatorOAppPlasmaSetupSonicScript is Test {
         StdConfig configDeployed,
         address delegator_
     ) internal view returns (BridgeTestLib.ChainConfig memory) {
-        address oapp = configDeployed.get(SONIC_CHAIN_ID, "PRICE_AGGREGATOR_OAPP_STBL").toAddress();
-        require(oapp != address(0), "Price aggregator is not deployed on Sonic");
+        require(uint(configDeployed.get(SONIC_CHAIN_ID, "PRICE_AGGREGATOR_OAPP_MAIN_TOKEN").ty.kind) != 0, "Price aggregator is not deployed on Sonic");
+        address oapp = configDeployed.get(SONIC_CHAIN_ID, "PRICE_AGGREGATOR_OAPP_MAIN_TOKEN").toAddress();
 
-        address xToken = configDeployed.get(SONIC_CHAIN_ID, "XSTBL").toAddress();
-        require(xToken != address(0), "XSTBL is not deployed on Sonic");
+        require(uint(configDeployed.get(SONIC_CHAIN_ID, "xToken").ty.kind) != 0, "xToken is not deployed on Sonic");
+        address xToken = configDeployed.get(SONIC_CHAIN_ID, "xToken").toAddress();
 
-        address xTokenBridge = configDeployed.get(SONIC_CHAIN_ID, "XTokenBridge").toAddress();
-        require(xTokenBridge != address(0), "XTokenBridge is not deployed on Sonic");
+//        require(uint(configDeployed.get(SONIC_CHAIN_ID, "XTokenBridge").ty.kind) != 0, "XTokenBridge is not deployed on Sonic");
+//        address xTokenBridge = configDeployed.get(SONIC_CHAIN_ID, "XTokenBridge").toAddress();
 
         return BridgeTestLib.ChainConfig({
             fork: 0,
@@ -81,36 +81,7 @@ contract PriceAggregatorOAppPlasmaSetupSonicScript is Test {
             platform: SonicConstantsLib.PLATFORM,
             executor: SonicConstantsLib.LAYER_ZERO_V2_EXECUTOR,
             xToken: xToken,
-            xTokenBridge: xTokenBridge,
-            delegator: delegator_
-        });
-    }
-
-    function _createConfigPlasma(
-        StdConfig configDeployed,
-        address delegator_
-    ) internal view returns (BridgeTestLib.ChainConfig memory) {
-        address oapp = configDeployed.get(PLASMA_CHAIN_ID, "BRIDGED_PRICE_ORACLE_STBL").toAddress();
-        require(oapp != address(0), "Price aggregator is not deployed on Plasma");
-
-        address xToken = configDeployed.get(PLASMA_CHAIN_ID, "XSTBL").toAddress();
-        require(xToken != address(0), "XSTBL is not deployed on Plasma");
-
-        address xTokenBridge = configDeployed.get(PLASMA_CHAIN_ID, "XTokenBridge").toAddress();
-        require(xTokenBridge != address(0), "XTokenBridge is not deployed on Plasma");
-
-        return BridgeTestLib.ChainConfig({
-            fork: 0,
-            multisig: IPlatform(PlasmaConstantsLib.PLATFORM).multisig(),
-            oapp: oapp,
-            endpointId: PlasmaConstantsLib.LAYER_ZERO_V2_ENDPOINT_ID,
-            endpoint: PlasmaConstantsLib.LAYER_ZERO_V2_ENDPOINT,
-            sendLib: PlasmaConstantsLib.LAYER_ZERO_V2_SEND_ULN_302,
-            receiveLib: PlasmaConstantsLib.LAYER_ZERO_V2_RECEIVE_ULN_302,
-            platform: PlasmaConstantsLib.PLATFORM,
-            executor: PlasmaConstantsLib.LAYER_ZERO_V2_EXECUTOR,
-            xToken: xToken,
-            xTokenBridge: xTokenBridge,
+            xTokenBridge: address(0), // xTokenBridge, // not required here
             delegator: delegator_
         });
     }
