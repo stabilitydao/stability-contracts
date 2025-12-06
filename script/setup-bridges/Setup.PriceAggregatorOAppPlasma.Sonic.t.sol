@@ -7,7 +7,6 @@ import {Variable, LibVariable} from "forge-std/LibVariable.sol";
 import {Test} from "forge-std/Test.sol";
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 import {PlasmaConstantsLib} from "../../chains/plasma/PlasmaConstantsLib.sol";
-import {IPriceAggregatorOApp} from "../../src/interfaces/IPriceAggregatorOApp.sol";
 import {BridgeTestLib} from "../../test/tokenomics/libs/BridgeTestLib.sol"; // todo
 
 contract PriceAggregatorOAppPlasmaSetupSonicScript is Test {
@@ -32,7 +31,7 @@ contract PriceAggregatorOAppPlasmaSetupSonicScript is Test {
         require(block.chainid == SONIC_CHAIN_ID, "PriceAggregatorOApp is deployed on Sonic only");
 
         // ---------------------- Initialize
-        StdConfig config = new StdConfig("./config.toml", false);
+        // StdConfig config = new StdConfig("./config.toml", false);
         StdConfig configDeployed = new StdConfig("./config.d.toml", false);
 
         BridgeTestLib.ChainConfig memory sonic = _createConfigSonic(configDeployed, delegator);
@@ -61,7 +60,7 @@ contract PriceAggregatorOAppPlasmaSetupSonicScript is Test {
     function _createConfigSonic(
         StdConfig configDeployed,
         address delegator_
-    ) internal returns (BridgeTestLib.ChainConfig memory) {
+    ) internal view returns (BridgeTestLib.ChainConfig memory) {
         address oapp = configDeployed.get(SONIC_CHAIN_ID, "PRICE_AGGREGATOR_OAPP_STBL").toAddress();
         require(oapp != address(0), "Price aggregator is not deployed on Sonic");
 
@@ -90,7 +89,7 @@ contract PriceAggregatorOAppPlasmaSetupSonicScript is Test {
     function _createConfigPlasma(
         StdConfig configDeployed,
         address delegator_
-    ) internal returns (BridgeTestLib.ChainConfig memory) {
+    ) internal view returns (BridgeTestLib.ChainConfig memory) {
         address oapp = configDeployed.get(PLASMA_CHAIN_ID, "BRIDGED_PRICE_ORACLE_STBL").toAddress();
         require(oapp != address(0), "Price aggregator is not deployed on Plasma");
 
