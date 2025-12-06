@@ -61,14 +61,17 @@ contract PriceAggregatorOAppPlasmaSetupSonicScript is Test {
         StdConfig configDeployed,
         address delegator_
     ) internal view returns (BridgeTestLib.ChainConfig memory) {
-        require(uint(configDeployed.get(SONIC_CHAIN_ID, "PRICE_AGGREGATOR_OAPP_MAIN_TOKEN").ty.kind) != 0, "Price aggregator is not deployed on Sonic");
+        require(
+            uint(configDeployed.get(SONIC_CHAIN_ID, "PRICE_AGGREGATOR_OAPP_MAIN_TOKEN").ty.kind) != 0,
+            "Price aggregator is not deployed on Sonic"
+        );
         address oapp = configDeployed.get(SONIC_CHAIN_ID, "PRICE_AGGREGATOR_OAPP_MAIN_TOKEN").toAddress();
 
         require(uint(configDeployed.get(SONIC_CHAIN_ID, "xToken").ty.kind) != 0, "xToken is not deployed on Sonic");
         address xToken = configDeployed.get(SONIC_CHAIN_ID, "xToken").toAddress();
 
-//        require(uint(configDeployed.get(SONIC_CHAIN_ID, "XTokenBridge").ty.kind) != 0, "XTokenBridge is not deployed on Sonic");
-//        address xTokenBridge = configDeployed.get(SONIC_CHAIN_ID, "XTokenBridge").toAddress();
+        //        require(uint(configDeployed.get(SONIC_CHAIN_ID, "XTokenBridge").ty.kind) != 0, "XTokenBridge is not deployed on Sonic");
+        //        address xTokenBridge = configDeployed.get(SONIC_CHAIN_ID, "XTokenBridge").toAddress();
 
         return BridgeTestLib.ChainConfig({
             fork: 0,

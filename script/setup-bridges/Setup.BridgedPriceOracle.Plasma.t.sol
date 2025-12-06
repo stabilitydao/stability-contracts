@@ -62,15 +62,18 @@ contract BridgedPriceOracleSetupPlasmaScript is Test {
         StdConfig configDeployed,
         address delegator_
     ) internal view returns (BridgeTestLib.ChainConfig memory) {
-        require(uint(configDeployed.get(PLASMA_CHAIN_ID, "BRIDGED_PRICE_ORACLE_MAIN_TOKEN").ty.kind) != 0 , "Price aggregator is not deployed on Plasma");
+        require(
+            uint(configDeployed.get(PLASMA_CHAIN_ID, "BRIDGED_PRICE_ORACLE_MAIN_TOKEN").ty.kind) != 0,
+            "Price aggregator is not deployed on Plasma"
+        );
         address oapp = configDeployed.get(PLASMA_CHAIN_ID, "BRIDGED_PRICE_ORACLE_MAIN_TOKEN").toAddress();
 
-// we don't use following data in thi script
-//        require(uint(configDeployed.get(PLASMA_CHAIN_ID, "xToken").ty.kind) != 0, "xToken is not deployed on Plasma");
-//        address xToken = configDeployed.get(PLASMA_CHAIN_ID, "xToken").toAddress();
-//
-//        require(uint(configDeployed.get(PLASMA_CHAIN_ID, "XTokenBridge").ty.kind) != 0, "XTokenBridge is not deployed on Plasma");
-//        address xTokenBridge = configDeployed.get(PLASMA_CHAIN_ID, "XTokenBridge").toAddress();
+        // we don't use following data in thi script
+        //        require(uint(configDeployed.get(PLASMA_CHAIN_ID, "xToken").ty.kind) != 0, "xToken is not deployed on Plasma");
+        //        address xToken = configDeployed.get(PLASMA_CHAIN_ID, "xToken").toAddress();
+        //
+        //        require(uint(configDeployed.get(PLASMA_CHAIN_ID, "XTokenBridge").ty.kind) != 0, "XTokenBridge is not deployed on Plasma");
+        //        address xTokenBridge = configDeployed.get(PLASMA_CHAIN_ID, "XTokenBridge").toAddress();
 
         return BridgeTestLib.ChainConfig({
             fork: 0,
