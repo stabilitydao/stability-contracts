@@ -64,6 +64,21 @@ library AvalancheConstantsLib {
     address public constant SILO_MANAGED_VAULT_AUSD_VARLAMOURE = 0x3d7B0c3997E48fA3FC96cd057d1fb4E5F891835B;
     address public constant SILO_MANAGED_VAULT_USDt_VARLAMOURE = 0x6c09bfdc1df45D6c4Ff78Dc9F1C13aF29eB335d4;
 
+    // ---------------------------------- LayerZero-v2 https://docs.layerzero.network/v2/deployments/chains/avalanche
+    uint32 public constant LAYER_ZERO_V2_ENDPOINT_ID = 30106;
+    address public constant LAYER_ZERO_V2_ENDPOINT = 0x1a44076050125825900e736c501f859c50fE728c;
+    address public constant LAYER_ZERO_V2_SEND_ULN_302 = 0x197D1333DEA5Fe0D6600E9b396c7f1B1cFCc558a;
+    address public constant LAYER_ZERO_V2_RECEIVE_ULN_302 = 0xbf3521d309642FA9B1c91A08609505BA09752c61;
+    address public constant LAYER_ZERO_V2_READ_LIB_1002 = 0x8839D3f169f473193423b402BDC4B5c51daAABDc;
+    address public constant LAYER_ZERO_V2_EXECUTOR = 0x90E595783E43eb89fF07f63d27B8430e6B44bD9c;
+    address public constant LAYER_ZERO_V2_BLOCKED_MESSAGE_LIBRARY = 0x1ccBf0db9C192d969de57E25B3fF09A25bb1D862;
+    address public constant LAYER_ZERO_V2_DEAD_DVN = 0x90cCA24D1338Bd284C25776D9c12f96764Bde5e1;
+
+    // https://docs.layerzero.network/v2/deployments/chains/avalanche
+    address internal constant AVALANCHE_DVN_LAYER_ZERO_PULL = 0x0Ffe02DF012299A370D5dd69298A5826EAcaFdF8; // LayerZero Labs (lzRead)
+    address internal constant AVALANCHE_DVN_LAYER_ZERO_PUSH = 0x962F502A63F5FBeB44DC9ab932122648E8352959;
+    address internal constant AVALANCHE_DVN_NETHERMIND_PULL = 0x1308151a7ebaC14f435d3Ad5fF95c34160D539A5; // Nethermind (lzRead)
+    address internal constant AVALANCHE_DVN_HORIZON_PULL = 0x1a5Df1367F21d55B13D5E2f8778AD644BC97aC6d; // Horizen (lzRead)
 
     // DeX aggregators
     /// @notice Aggregator router V6

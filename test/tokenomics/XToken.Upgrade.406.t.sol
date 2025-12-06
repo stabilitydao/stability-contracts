@@ -7,14 +7,14 @@ import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IRevenueRouter} from "../../src/tokenomics/RevenueRouter.sol";
-import {IXSTBL} from "../../src/interfaces/IXSTBL.sol";
-import {IStabilityDAO} from "../../src/interfaces/IStabilityDAO.sol";
-import {XSTBL} from "../../src/tokenomics/XSTBL.sol";
+import {IXToken} from "../../src/interfaces/IXToken.sol";
+import {IDAO} from "../../src/interfaces/IDAO.sol";
+import {XToken} from "../../src/tokenomics/XToken.sol";
 import {Platform} from "../../src/core/Platform.sol";
 import {Proxy} from "../../src/core/proxy/Proxy.sol";
-import {StabilityDAO} from "../../src/tokenomics/StabilityDAO.sol";
+import {DAO} from "../../src/tokenomics/DAO.sol";
 
-contract XstblUpgrade406SonicTest is Test {
+contract XTokenUpgrade406SonicTest is Test {
     uint public constant FORK_BLOCK = 50689527; // Oct-15-2025 05:17:06 AM +UTC
     address public constant PLATFORM = SonicConstantsLib.PLATFORM;
     IRevenueRouter internal revenueRouter;
@@ -25,35 +25,35 @@ contract XstblUpgrade406SonicTest is Test {
     }
 
     function testUpgradeXSTBLVesting() public {
-        IXSTBL xstbl = IXSTBL(SonicConstantsLib.TOKEN_XSTBL);
+        IXToken xToken = IXToken(SonicConstantsLib.TOKEN_XSTBL);
 
         _upgradePlatform();
-        IStabilityDAO daoToken = _setupStblDao();
+        IDAO daoToken = _setupStblDao();
 
         uint baseAmount = 100e18;
 
         // -------------- get STBL on balance
         deal(SonicConstantsLib.TOKEN_STBL, address(this), baseAmount);
 
-        // -------------- enter to xSTBL
-        IERC20(SonicConstantsLib.TOKEN_STBL).approve(address(xstbl), type(uint).max);
-        xstbl.enter(baseAmount);
-        uint xstblBalance = IERC20(address(xstbl)).balanceOf(address(this));
-        assertEq(xstblBalance, baseAmount, "xstbl balance after enter");
+        // -------------- enter to xToken
+        IERC20(SonicConstantsLib.TOKEN_STBL).approve(address(xToken), type(uint).max);
+        xToken.enter(baseAmount);
+        uint xTokenBalance = IERC20(address(xToken)).balanceOf(address(this));
+        assertEq(xTokenBalance, baseAmount, "xToken balance after enter");
 
         // -------------- create vest
-        xstbl.createVest(baseAmount);
-        assertEq(xstbl.usersTotalVests(address(this)), 1, "now user has a vest");
+        xToken.createVest(baseAmount);
+        assertEq(xToken.usersTotalVests(address(this)), 1, "now user has a vest");
 
         // -------------- wait min period (14 days) to be able to exit vest w/o cancellation
         skip(14 days);
 
         // -------------- try to exit vest with penalty 50% and check results
-        (uint exitedAmount50, uint pendingRebaseDelta50) = _tryToExitVest(xstbl, address(this), 0);
+        (uint exitedAmount50, uint pendingRebaseDelta50) = _tryToExitVest(xToken, address(this), 0);
 
         // -------------- change penalty to 80%
         {
-            IStabilityDAO.DaoParams memory p = daoToken.config();
+            IDAO.DaoParams memory p = daoToken.config();
             p.exitPenalty = 80_00;
 
             vm.prank(SonicConstantsLib.MULTISIG);
@@ -61,7 +61,7 @@ contract XstblUpgrade406SonicTest is Test {
         }
 
         // -------------- try to exit vest with penalty 80% and check results
-        (uint exitedAmount20, uint pendingRebaseDelta80) = _tryToExitVest(xstbl, address(this), 0);
+        (uint exitedAmount20, uint pendingRebaseDelta80) = _tryToExitVest(xToken, address(this), 0);
 
         // -------------- check results (14 days of 180 were passed)
         assertEq(exitedAmount50, baseAmount * (100 - 50) / 100 + baseAmount * 50 / 100 * 14 / 180, "exitedAmount50");
@@ -71,27 +71,27 @@ contract XstblUpgrade406SonicTest is Test {
         assertEq(exitedAmount20 + pendingRebaseDelta80, baseAmount, "80: total 100%");
     }
 
-    function testUpgradeXSTBLExit() public {
-        IXSTBL xstbl = IXSTBL(SonicConstantsLib.TOKEN_XSTBL);
+    function testUpgradeXTokenExit() public {
+        IXToken xToken = IXToken(SonicConstantsLib.TOKEN_XSTBL);
         _upgradePlatform();
-        IStabilityDAO daoToken = _setupStblDao();
+        IDAO daoToken = _setupStblDao();
 
         uint baseAmount = 100e18;
         // -------------- get STBL on balance
         deal(SonicConstantsLib.TOKEN_STBL, address(this), baseAmount);
 
-        // -------------- enter to xSTBL
-        IERC20(SonicConstantsLib.TOKEN_STBL).approve(address(xstbl), type(uint).max);
-        xstbl.enter(baseAmount);
-        uint xstblBalance = IERC20(address(xstbl)).balanceOf(address(this));
-        assertEq(xstblBalance, baseAmount, "xstbl balance after enter");
+        // -------------- enter to xToken
+        IERC20(SonicConstantsLib.TOKEN_STBL).approve(address(xToken), type(uint).max);
+        xToken.enter(baseAmount);
+        uint xTokenBalance = IERC20(address(xToken)).balanceOf(address(this));
+        assertEq(xTokenBalance, baseAmount, "xToken balance after enter");
 
         // -------------- try to exit vest with penalty 50% and check results
-        (uint exitedAmount50, uint pendingRebaseDelta50) = _tryToExit(xstbl, address(this), baseAmount);
+        (uint exitedAmount50, uint pendingRebaseDelta50) = _tryToExit(xToken, address(this), baseAmount);
 
         // -------------- change penalty to 80%
         {
-            IStabilityDAO.DaoParams memory p = daoToken.config();
+            IDAO.DaoParams memory p = daoToken.config();
             p.exitPenalty = 80_00;
 
             vm.prank(SonicConstantsLib.MULTISIG);
@@ -99,7 +99,7 @@ contract XstblUpgrade406SonicTest is Test {
         }
 
         // -------------- try to exit vest with penalty 80% and check results
-        (uint exitedAmount20, uint pendingRebaseDelta80) = _tryToExit(xstbl, address(this), baseAmount);
+        (uint exitedAmount20, uint pendingRebaseDelta80) = _tryToExit(xToken, address(this), baseAmount);
 
         // -------------- check results (14 days of 180 were passed)
         assertEq(exitedAmount50, baseAmount * 50 / 100, "exitedAmount 50%");
@@ -112,8 +112,8 @@ contract XstblUpgrade406SonicTest is Test {
         assertEq(exitedAmount20 + pendingRebaseDelta80, baseAmount, "total 100%");
     }
 
-    function testUpgradeXSTBLExitNoStabilityDao() public {
-        IXSTBL xstbl = IXSTBL(SonicConstantsLib.TOKEN_XSTBL);
+    function testUpgradeXTokenExitNoStabilityDao() public {
+        IXToken xToken = IXToken(SonicConstantsLib.TOKEN_XSTBL);
         _upgradePlatform();
 
         // Stability DAO is not initialized
@@ -122,14 +122,14 @@ contract XstblUpgrade406SonicTest is Test {
         // -------------- get STBL on balance
         deal(SonicConstantsLib.TOKEN_STBL, address(this), baseAmount);
 
-        // -------------- enter to xSTBL
-        IERC20(SonicConstantsLib.TOKEN_STBL).approve(address(xstbl), type(uint).max);
-        xstbl.enter(baseAmount);
-        uint xstblBalance = IERC20(address(xstbl)).balanceOf(address(this));
-        assertEq(xstblBalance, baseAmount, "xstbl balance after enter");
+        // -------------- enter to xToken
+        IERC20(SonicConstantsLib.TOKEN_STBL).approve(address(xToken), type(uint).max);
+        xToken.enter(baseAmount);
+        uint xTokenBalance = IERC20(address(xToken)).balanceOf(address(this));
+        assertEq(xTokenBalance, baseAmount, "xToken balance after enter");
 
         // -------------- try to exit vest with penalty 50% and check results
-        (uint exitedAmount50, uint pendingRebaseDelta50) = _tryToExit(xstbl, address(this), baseAmount);
+        (uint exitedAmount50, uint pendingRebaseDelta50) = _tryToExit(xToken, address(this), baseAmount);
 
         // -------------- check results (14 days of 180 were passed)
         assertEq(exitedAmount50, baseAmount * 50 / 100, "exitedAmount 50%");
@@ -139,17 +139,17 @@ contract XstblUpgrade406SonicTest is Test {
 
     //region -------------------------------- Internal logic
     function _tryToExitVest(
-        IXSTBL xstbl,
+        IXToken xToken_,
         address user,
         uint vestId
     ) internal returns (uint exitedAmount, uint pendingRebaseDelta) {
         uint snapshot = vm.snapshotState();
 
-        uint pendingRebaseBefore = IXSTBL(SonicConstantsLib.TOKEN_XSTBL).pendingRebase();
+        uint pendingRebaseBefore = IXToken(SonicConstantsLib.TOKEN_XSTBL).pendingRebase();
         uint balanceBefore = IERC20(SonicConstantsLib.TOKEN_STBL).balanceOf(user);
-        xstbl.exitVest(vestId);
+        xToken_.exitVest(vestId);
         uint balanceAfter = IERC20(SonicConstantsLib.TOKEN_STBL).balanceOf(user);
-        uint pendingRebaseAfter = IXSTBL(SonicConstantsLib.TOKEN_XSTBL).pendingRebase();
+        uint pendingRebaseAfter = IXToken(SonicConstantsLib.TOKEN_XSTBL).pendingRebase();
 
         exitedAmount = balanceAfter - balanceBefore;
         pendingRebaseDelta = pendingRebaseAfter - pendingRebaseBefore;
@@ -158,17 +158,17 @@ contract XstblUpgrade406SonicTest is Test {
     }
 
     function _tryToExit(
-        IXSTBL xstbl,
+        IXToken xToken_,
         address user,
         uint amount
     ) internal returns (uint exitedAmount, uint pendingRebaseDelta) {
         uint snapshot = vm.snapshotState();
 
-        uint pendingRebaseBefore = IXSTBL(SonicConstantsLib.TOKEN_XSTBL).pendingRebase();
+        uint pendingRebaseBefore = IXToken(SonicConstantsLib.TOKEN_XSTBL).pendingRebase();
         uint balanceBefore = IERC20(SonicConstantsLib.TOKEN_STBL).balanceOf(user);
-        xstbl.exit(amount);
+        xToken_.exit(amount);
         uint balanceAfter = IERC20(SonicConstantsLib.TOKEN_STBL).balanceOf(user);
-        uint pendingRebaseAfter = IXSTBL(SonicConstantsLib.TOKEN_XSTBL).pendingRebase();
+        uint pendingRebaseAfter = IXToken(SonicConstantsLib.TOKEN_XSTBL).pendingRebase();
 
         exitedAmount = balanceAfter - balanceBefore;
         pendingRebaseDelta = pendingRebaseAfter - pendingRebaseBefore;
@@ -190,7 +190,7 @@ contract XstblUpgrade406SonicTest is Test {
         proxies[0] = SonicConstantsLib.TOKEN_XSTBL;
         proxies[1] = SonicConstantsLib.PLATFORM;
 
-        implementations[0] = address(new XSTBL());
+        implementations[0] = address(new XToken());
         implementations[1] = address(new Platform());
 
         vm.startPrank(SonicConstantsLib.MULTISIG);
@@ -204,16 +204,16 @@ contract XstblUpgrade406SonicTest is Test {
         vm.stopPrank();
     }
 
-    function _setupStblDao() internal returns (IStabilityDAO) {
-        IStabilityDAO dest = _createStabilityDAOInstance();
+    function _setupStblDao() internal returns (IDAO) {
+        IDAO dest = _createStabilityDAOInstance();
 
         vm.prank(SonicConstantsLib.MULTISIG);
         IPlatform(SonicConstantsLib.PLATFORM).setupStabilityDAO(address(dest));
         return dest;
     }
 
-    function _createStabilityDAOInstance() internal returns (IStabilityDAO) {
-        IStabilityDAO.DaoParams memory p = IStabilityDAO.DaoParams({
+    function _createStabilityDAOInstance() internal returns (IDAO) {
+        IDAO.DaoParams memory p = IDAO.DaoParams({
             minimalPower: 4000e18,
             exitPenalty: 0, // default 50%
             quorum: 15_000,
@@ -222,9 +222,16 @@ contract XstblUpgrade406SonicTest is Test {
         });
 
         Proxy proxy = new Proxy();
-        proxy.initProxy(address(new StabilityDAO()));
-        IStabilityDAO token = IStabilityDAO(address(proxy));
-        token.initialize(SonicConstantsLib.PLATFORM, SonicConstantsLib.TOKEN_STBL, SonicConstantsLib.XSTBL_XSTAKING, p);
+        proxy.initProxy(address(new DAO()));
+        IDAO token = IDAO(address(proxy));
+        token.initialize(
+            SonicConstantsLib.PLATFORM,
+            SonicConstantsLib.TOKEN_STBL,
+            SonicConstantsLib.XSTBL_XSTAKING,
+            p,
+            "Stability DAO",
+            "STBL_DAO"
+        );
 
         return token;
     }

@@ -28,8 +28,8 @@ interface IRevenueRouter {
 
     /// @custom:storage-location erc7201:stability.RevenueRouter
     struct RevenueRouterStorage {
-        address stbl;
-        address xStbl;
+        address token;
+        address xToken;
         address xStaking;
         address feeTreasury;
         uint xShare;
@@ -92,13 +92,13 @@ interface IRevenueRouter {
     /// @notice Process platform fee in form of an vault shares
     function processFeeVault(address vault, uint amount) external;
 
-    /// @notice Claim unit fees and swap to STBL
+    /// @notice Claim unit fees and swap to main-token
     function processUnitRevenue(uint unitIndex) external;
 
-    /// @notice Claim units fees and swap to STBL
+    /// @notice Claim units fees and swap to main-token (STBL)
     function processUnitsRevenue() external;
 
-    /// @notice Withdraw assets from accumulated vaults
+    /// @notice Withdraw assets from accumulated vaults (STBL)
     function processAccumulatedVaults(uint maxVaultsForWithdraw) external;
 
     /// @notice Withdraw assets from accumulated vaults
@@ -121,10 +121,10 @@ interface IRevenueRouter {
     /// @notice Current active period
     function activePeriod() external view returns (uint);
 
-    /// @notice Accumulated STBL amount for next distribution by core unit (vault fees)
+    /// @notice Accumulated main-token amount for next distribution by core unit (vault fees)
     function pendingRevenue() external view returns (uint);
 
-    /// @notice Accumulated STBL amount for next distribution by unit
+    /// @notice Accumulated main-token amount for next distribution by unit
     function pendingRevenue(uint unitIndex) external view returns (uint);
 
     /// @notice Get Aave pool list to mintToTreasury calls
@@ -133,7 +133,7 @@ interface IRevenueRouter {
     /// @notice Get vault addresses that contract hold on balance, but not withdrew yet
     function vaultsAccumulated() external view returns (address[] memory);
 
-    /// @notice Addresses of STBL, xSTBL, xStaking and feeTreasure token
+    /// @notice Addresses of main-token, xToken, xStaking and feeTreasure token
     function addresses() external view returns (address[] memory);
 
     /// @notice Get assets that contract hold on balance
