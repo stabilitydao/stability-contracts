@@ -19,13 +19,21 @@ contract DeployBridgedToken is Script {
         StdConfig config = new StdConfig("./config.toml", false); // read only config
         StdConfig configDeployed = new StdConfig("./config.d.toml", true); // auto-write deployed addresses
 
-        require(configDeployed.get("OAPP_MAIN_TOKEN").toAddress() == address(0), "OAPP_MAIN_TOKEN already deployed");
+        require(
+            uint(configDeployed.get("OAPP_MAIN_TOKEN").ty.kind) == 0,
+            "TokenOFTAdapter is already deployed on this chain"
+        );
+        require(
+            uint(config.get("LAYER_ZERO_V2_ENDPOINT").ty.kind) != 0,
+            "endpoint is not set"
+        );
+        require(
+            uint(config.get("PLATFORM").ty.kind) != 0,
+            "platform is not set"
+        );
 
         address endpoint = config.get("LAYER_ZERO_V2_ENDPOINT").toAddress();
-        require(endpoint != address(0), "endpoint is not set");
-
         address platform = config.get("PLATFORM").toAddress();
-        require(platform != address(0), "platform is not set");
 
         // ---------------------- Deploy
         vm.startBroadcast(deployerPrivateKey);

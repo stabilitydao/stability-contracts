@@ -19,9 +19,21 @@ contract DeployTokenOFTAdapterSonic is Script {
         StdConfig config = new StdConfig("./config.toml", false); // read only config
         StdConfig configDeployed = new StdConfig("./config.d.toml", true); // auto-write deployed addresses
 
-        require(configDeployed.get("OAPP_MAIN_TOKEN").toAddress() == address(0), "OAPP_MAIN_TOKEN already deployed");
         require(
             block.chainid == 146, "TokenOFTAdapter is used on the Sonic only (the chain where native STBL is deployed)"
+        );
+
+        require(
+            uint(configDeployed.get("OAPP_MAIN_TOKEN").ty.kind) == 0,
+            "TokenOFTAdapter is already deployed on Sonic"
+        );
+        require(
+            uint(config.get("LAYER_ZERO_V2_ENDPOINT").ty.kind) != 0,
+            "endpoint is not set"
+        );
+        require(
+            uint(config.get("PLATFORM").ty.kind) != 0,
+            "platform is not set"
         );
 
         // ---------------------- Deploy

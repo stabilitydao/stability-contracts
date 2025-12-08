@@ -19,8 +19,8 @@ import {IDAO} from "../interfaces/IDAO.sol";
 /// @author Jude (https://github.com/iammrjude)
 /// @author Omriss (https://github.com/omriss)
 /// Changelog:
-///  1.2.1: renaming XSTBL to XToken; params name and symbol were added to initialize() - #426
 ///  1.2.0: add list of bridges, sendToBridge, takeFromBridge - #424
+///         renaming XSTBL to XToken; params name and symbol were added to initialize() - #426
 ///  1.1.0: add possibility to change the slashing penalty value - #406
 ///  1.0.1: use SafeERC20.safeTransfer/safeTransferFrom instead of ERC20 transfer/transferFrom
 contract XToken is Controllable, ERC20Upgradeable, IXToken {
@@ -32,7 +32,7 @@ contract XToken is Controllable, ERC20Upgradeable, IXToken {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.2.1";
+    string public constant VERSION = "1.2.0";
 
     /// @inheritdoc IXToken
     uint public constant BASIS = 10_000;
