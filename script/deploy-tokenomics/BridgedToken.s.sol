@@ -23,14 +23,8 @@ contract DeployBridgedToken is Script {
             uint(configDeployed.get("OAPP_MAIN_TOKEN").ty.kind) == 0,
             "TokenOFTAdapter is already deployed on this chain"
         );
-        require(
-            uint(config.get("LAYER_ZERO_V2_ENDPOINT").ty.kind) != 0,
-            "endpoint is not set"
-        );
-        require(
-            uint(config.get("PLATFORM").ty.kind) != 0,
-            "platform is not set"
-        );
+        require(uint(config.get("LAYER_ZERO_V2_ENDPOINT").ty.kind) != 0, "endpoint is not set");
+        require(uint(config.get("PLATFORM").ty.kind) != 0, "platform is not set");
 
         address endpoint = config.get("LAYER_ZERO_V2_ENDPOINT").toAddress();
         address platform = config.get("PLATFORM").toAddress();

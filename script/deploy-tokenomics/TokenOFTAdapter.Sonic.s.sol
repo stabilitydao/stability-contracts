@@ -24,17 +24,10 @@ contract DeployTokenOFTAdapterSonic is Script {
         );
 
         require(
-            uint(configDeployed.get("OAPP_MAIN_TOKEN").ty.kind) == 0,
-            "TokenOFTAdapter is already deployed on Sonic"
+            uint(configDeployed.get("OAPP_MAIN_TOKEN").ty.kind) == 0, "TokenOFTAdapter is already deployed on Sonic"
         );
-        require(
-            uint(config.get("LAYER_ZERO_V2_ENDPOINT").ty.kind) != 0,
-            "endpoint is not set"
-        );
-        require(
-            uint(config.get("PLATFORM").ty.kind) != 0,
-            "platform is not set"
-        );
+        require(uint(config.get("LAYER_ZERO_V2_ENDPOINT").ty.kind) != 0, "endpoint is not set");
+        require(uint(config.get("PLATFORM").ty.kind) != 0, "platform is not set");
 
         // ---------------------- Deploy
         vm.startBroadcast(deployerPrivateKey);

@@ -9,6 +9,8 @@ import {XToken} from "../../src/tokenomics/XToken.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
 
 contract DeployXTokenSystem is Script {
+    uint internal constant SONIC_CHAIN_ID = 146;
+
     function run() external {
         uint deployerPrivateKey = vm.envUint("PRIVATE_KEY");
 
@@ -17,18 +19,21 @@ contract DeployXTokenSystem is Script {
         StdConfig configDeployed = new StdConfig("./config.d.toml", true); // auto-write deployed addresses
 
         // Native STBL is deployed on Sonic. All other chains use bridged versions of STBL
-        address mainToken =
-            block.chainid == 146 ? config.get("TOKEN_STBL").toAddress() : configDeployed.get("OAPP_STBL").toAddress();
-        require(mainToken != address(0), "STBL address is zero");
+        if (block.chainid != SONIC_CHAIN_ID) {
+            require(uint(configDeployed.get("OAPP_MAIN_TOKEN").ty.kind) != 0, "Main token is not deployed on the chain");
+        }
+        address mainToken = block.chainid == SONIC_CHAIN_ID
+            ? config.get("TOKEN_STBL").toAddress()
+            : configDeployed.get("OAPP_MAIN_TOKEN").toAddress();
 
+        require(uint(config.get("PLATFORM").ty.kind) != 0, "Platform is not deployed on the chain");
         address platform = config.get("PLATFORM").toAddress();
-        require(platform != address(0), "PLATFORM address is zero");
 
         address revenueRouter = address(IPlatform(platform).revenueRouter());
         require(revenueRouter != address(0), "RevenueRouter address is zero");
 
-        require(config.get("xToken").toAddress() == address(0), "xToken is already deployed");
-        require(config.get("xStaking").toAddress() == address(0), "xStaking is already deployed");
+        require(uint(configDeployed.get("xToken").ty.kind) == 0, "xToken is already deployed on the chain");
+        require(uint(configDeployed.get("xStaking").ty.kind) == 0, "xStaking is already deployed on the chain");
 
         // ---------------------- Deploy
         vm.startBroadcast(deployerPrivateKey);
