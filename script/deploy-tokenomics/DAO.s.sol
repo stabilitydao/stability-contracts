@@ -1,13 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import "../../src/tokenomics/DAO.sol";
-import {IPlatform} from "../../src/interfaces/IPlatform.sol";
+import {DAO, IDAO} from "../../src/tokenomics/DAO.sol";
 import {Proxy} from "../../src/core/proxy/Proxy.sol";
 import {Script} from "forge-std/Script.sol";
 import {StdConfig} from "forge-std/StdConfig.sol";
-import {XStaking} from "../../src/tokenomics/XStaking.sol";
-import {XToken} from "../../src/tokenomics/XToken.sol";
 
 contract DeployDAO is Script {
     uint internal constant SONIC_CHAIN_ID = 146;
@@ -42,7 +39,11 @@ contract DeployDAO is Script {
         vm.startBroadcast(deployerPrivateKey);
 
         Proxy daoProxy = new Proxy();
-        daoProxy.initProxy(address(new DAO()));
+        {
+            address implementation = address(new DAO());
+            daoProxy.initProxy(implementation);
+            require(daoProxy.implementation() == implementation, "DAO: implementation mismatch");
+        }
 
         DAO(address(daoProxy)).initialize(platform, xToken, address(xStaking), params, "Stability DAO", "STBL_DAO");
 

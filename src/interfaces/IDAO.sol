@@ -22,6 +22,22 @@ interface IDAO is IERC20, IERC20Metadata {
         uint powerAllocationDelay;
     }
 
+    error NonTransferable();
+    error NotDelegatedTo();
+    error AlreadyDelegated();
+    error WrongValue();
+    error NotOtherChainsPowersWhitelisted();
+    error DelegationForbiddenOnTheChain();
+
+    event ConfigUpdated(DaoParams newConfig);
+    event DelegatePower(address from, address to);
+    event UnDelegatePower(address from, address to);
+    event WhitelistOtherChainsPowers(address user, bool whitelisted);
+    event PowersOtherChainsUpdated(uint timestamp);
+    event SetDelegationForbiddenOnTheChain(bool forbidden);
+    event DaoName(string newName);
+    event DaoSymbol(string newSymbol);
+
     //region --------------------------------------- Read functions
     /// @notice Current DAO config
     function config() external view returns (DaoParams memory);
@@ -113,6 +129,12 @@ interface IDAO is IERC20, IERC20Metadata {
 
     /// @notice Forbid or allow delegation of voting power
     function setDelegationForbidden(bool forbidden) external;
+
+    /// @notice Sets a new name for the token.
+    function setName(string calldata newName) external;
+
+    /// @notice Sets a new symbol for the token.
+    function setSymbol(string calldata newSymbol) external;
 
     //endregion --------------------------------------- Write functions
 }

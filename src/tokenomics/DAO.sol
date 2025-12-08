@@ -11,6 +11,7 @@ import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet
 import {EnumerableMap} from "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
 import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import {ConstantsLib} from "../core/libs/ConstantsLib.sol";
+import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
 /// @title Stability DAO Token contract
 /// Amount of tokens for each user represents their voting power in the DAO.
@@ -21,6 +22,7 @@ import {ConstantsLib} from "../core/libs/ConstantsLib.sol";
 ///  1.1.0: getVotes returns total voting power for all chains. Add setOtherChainsPowers + whitelist.
 ///         initialize() has two new params: name and symbol. Contract renamed from StabilityDAO to DAO
 ///         Allow to forbid delegation - #424
+///         Add setName and setSymbol functions.
 ///  1.0.1: userPower is renamed to getVotes (compatibility with OpenZeppelin's ERC20Votes) - #423
 contract DAO is Controllable, ERC20Upgradeable, ERC20BurnableUpgradeable, ReentrancyGuardUpgradeable, IDAO {
     using EnumerableMap for EnumerableMap.AddressToUintMap;
@@ -79,21 +81,12 @@ contract DAO is Controllable, ERC20Upgradeable, ERC20BurnableUpgradeable, Reentr
         /// @notice Is delegation of voting power on the current chain forbidden
         /// Basically delegation must be forbidden on all chains except main one (sonic for Stability)
         bool delegationForbidden;
+
+        /// @dev Changed ERC20 name
+        string changedName;
+        /// @dev Changed ERC20 symbol
+        string changedSymbol;
     }
-
-    error NonTransferable();
-    error NotDelegatedTo();
-    error AlreadyDelegated();
-    error WrongValue();
-    error NotOtherChainsPowersWhitelisted();
-    error DelegationForbiddenOnTheChain();
-
-    event ConfigUpdated(DaoParams newConfig);
-    event DelegatePower(address from, address to);
-    event UnDelegatePower(address from, address to);
-    event WhitelistOtherChainsPowers(address user, bool whitelisted);
-    event PowersOtherChainsUpdated(uint timestamp);
-    event SetDelegationForbiddenOnTheChain(bool forbidden);
 
     //endregion ----------------------------------- Data types
 
@@ -129,7 +122,7 @@ contract DAO is Controllable, ERC20Upgradeable, ERC20BurnableUpgradeable, Reentr
 
     //endregion ----------------------------------- Initialization and modifiers
 
-    //region ----------------------------------- Actions
+    //region ----------------------------------- Restricted actions
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      RESTRICTED ACTIONS                    */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -220,7 +213,21 @@ contract DAO is Controllable, ERC20Upgradeable, ERC20BurnableUpgradeable, Reentr
         emit SetDelegationForbiddenOnTheChain(forbidden);
     }
 
-    //endregion ----------------------------------- Actions
+    /// @inheritdoc IDAO
+    function setName(string calldata newName) external onlyOperator {
+        DaoStorage storage $ = _getDaoStorage();
+        $.changedName = newName;
+        emit DaoName(newName);
+    }
+
+    /// @inheritdoc IDAO
+    function setSymbol(string calldata newSymbol) external onlyOperator {
+        DaoStorage storage $ = _getDaoStorage();
+        $.changedSymbol = newSymbol;
+        emit DaoSymbol(newSymbol);
+    }
+
+    //endregion ----------------------------------- Restricted actions
 
     //region ----------------------------------- ERC20 hooks
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -344,6 +351,26 @@ contract DAO is Controllable, ERC20Upgradeable, ERC20BurnableUpgradeable, Reentr
     /// @inheritdoc IDAO
     function delegationForbidden() external view returns (bool) {
         return _getDaoStorage().delegationForbidden;
+    }
+
+    /// @inheritdoc ERC20Upgradeable
+    function name() public view override(ERC20Upgradeable, IERC20Metadata) returns (string memory) {
+        DaoStorage storage $ = _getDaoStorage();
+        string memory changedName = $.changedName;
+        if (bytes(changedName).length != 0) {
+            return changedName;
+        }
+        return super.name();
+    }
+
+    /// @inheritdoc ERC20Upgradeable
+    function symbol() public view override(ERC20Upgradeable, IERC20Metadata) returns (string memory) {
+        DaoStorage storage $ = _getDaoStorage();
+        string memory changedSymbol = $.changedSymbol;
+        if (bytes(changedSymbol).length != 0) {
+            return changedSymbol;
+        }
+        return super.symbol();
     }
 
     //endregion ----------------------------------- View functions

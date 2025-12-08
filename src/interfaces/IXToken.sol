@@ -38,6 +38,8 @@ interface IXToken {
     event Rebase(address indexed caller, uint amount);
     event SendToBridge(address indexed user, uint amount);
     event ReceivedFromBridge(address indexed user, uint amount);
+    event XTokenName(string newName);
+    event XTokenSymbol(string newSymbol);
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      WRITE FUNCTIONS                       */
@@ -78,6 +80,12 @@ interface IXToken {
     /// @notice Mint given {amount} of xToken for the given {user} after receiving main-token from the main-token-bridge.
     /// @custom:restricted This function can only be called by XTokenBridge contract.
     function takeFromBridge(address user, uint amount) external;
+
+    /// @notice Sets a new name for the token.
+    function setName(string calldata newName) external;
+
+    /// @notice Sets a new symbol for the token.
+    function setSymbol(string calldata newSymbol) external;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      VIEW FUNCTIONS                        */

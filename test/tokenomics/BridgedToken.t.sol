@@ -184,6 +184,33 @@ contract BridgedTokenTest is Test {
         );
     }
 
+    function testSetNameSymbol() public {
+        vm.selectFork(avalanche.fork);
+
+        assertEq(bridgedTokenAvalanche.name(), "Stability STBL", "BridgedToken - default name");
+        assertEq(bridgedTokenAvalanche.symbol(), "STBL", "BridgedToken - default symbol");
+
+        string memory newName = "Bridged Stability Token";
+        string memory newSymbol = "bSTBL";
+
+        vm.expectRevert(IControllable.NotOperator.selector);
+        vm.prank(address(this));
+        bridgedTokenAvalanche.setName(newName);
+
+        vm.expectRevert(IControllable.NotOperator.selector);
+        vm.prank(address(this));
+        bridgedTokenAvalanche.setSymbol(newName);
+
+        vm.prank(avalanche.multisig);
+        bridgedTokenAvalanche.setName(newName);
+
+        vm.prank(avalanche.multisig);
+        bridgedTokenAvalanche.setSymbol(newSymbol);
+
+        assertEq(bridgedTokenAvalanche.name(), newName, "BridgedToken - changed name");
+        assertEq(bridgedTokenAvalanche.symbol(), newSymbol, "BridgedToken - changed symbol");
+    }
+
     //endregion ------------------------------------- Unit tests for bridgetSTBL
 
     //region ------------------------------------- Unit tests for TokenOFTAdapter

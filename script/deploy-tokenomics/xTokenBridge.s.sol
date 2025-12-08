@@ -32,7 +32,11 @@ contract DeployXTokenBridge is Script {
         vm.startBroadcast(deployerPrivateKey);
 
         Proxy proxy = new Proxy();
-        proxy.initProxy(address(new XTokenBridge(endpoint)));
+        {
+            address implementation = address(new XTokenBridge(endpoint));
+            proxy.initProxy(address(new XTokenBridge(endpoint)));
+            require(proxy.implementation() == implementation, "XTokenBridge: implementation mismatch");
+        }
 
         XTokenBridge(address(proxy)).initialize(platform, bridge, address(xToken));
 

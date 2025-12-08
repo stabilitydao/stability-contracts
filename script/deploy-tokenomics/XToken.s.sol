@@ -39,10 +39,18 @@ contract DeployXTokenSystem is Script {
         vm.startBroadcast(deployerPrivateKey);
 
         Proxy xStakingProxy = new Proxy();
-        xStakingProxy.initProxy(address(new XStaking()));
+        {
+            address implementation = address(new XStaking());
+            xStakingProxy.initProxy(implementation);
+            require(xStakingProxy.implementation() == implementation, "XStaking: implementation mismatch");
+        }
 
         Proxy xSTBLProxy = new Proxy();
-        xSTBLProxy.initProxy(address(new XToken()));
+        {
+            address implementation = address(new XToken());
+            xSTBLProxy.initProxy(implementation);
+            require(xSTBLProxy.implementation() == implementation, "XToken: implementation mismatch");
+        }
 
         XStaking(address(xStakingProxy)).initialize(platform, address(xSTBLProxy));
         XToken(address(xSTBLProxy))

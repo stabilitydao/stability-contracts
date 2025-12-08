@@ -21,6 +21,7 @@ import {IDAO} from "../interfaces/IDAO.sol";
 /// Changelog:
 ///  1.2.0: add list of bridges, sendToBridge, takeFromBridge - #424
 ///         renaming XSTBL to XToken; params name and symbol were added to initialize() - #426
+///         Add setName and setSymbol functions.
 ///  1.1.0: add possibility to change the slashing penalty value - #406
 ///  1.0.1: use SafeERC20.safeTransfer/safeTransferFrom instead of ERC20 transfer/transferFrom
 contract XToken is Controllable, ERC20Upgradeable, IXToken {
@@ -76,6 +77,10 @@ contract XToken is Controllable, ERC20Upgradeable, IXToken {
         mapping(address => VestPosition[]) vestInfo;
         /// @dev addresses that are allowed to call transferToBridge
         mapping(address => bool) bridges;
+        /// @dev Changed ERC20 name
+        string changedName;
+        /// @dev Changed ERC20 symbol
+        string changedSymbol;
     }
     //endregion ---------------------------- Data types
 
@@ -195,6 +200,20 @@ contract XToken is Controllable, ERC20Upgradeable, IXToken {
     function setBridge(address bridge_, bool status_) external onlyGovernanceOrMultisig {
         XTokenStorage storage $ = _getXTokenStorage();
         $.bridges[bridge_] = status_;
+    }
+
+    /// @inheritdoc IXToken
+    function setName(string calldata newName) external onlyOperator {
+        XTokenStorage storage $ = _getXTokenStorage();
+        $.changedName = newName;
+        emit XTokenName(newName);
+    }
+
+    /// @inheritdoc IXToken
+    function setSymbol(string calldata newSymbol) external onlyOperator {
+        XTokenStorage storage $ = _getXTokenStorage();
+        $.changedSymbol = newSymbol;
+        emit XTokenSymbol(newSymbol);
     }
 
     //endregion ---------------------------- Restricted actions
@@ -420,6 +439,26 @@ contract XToken is Controllable, ERC20Upgradeable, IXToken {
     /// @inheritdoc IXToken
     function isBridge(address bridge_) external view returns (bool) {
         return _getXTokenStorage().bridges[bridge_];
+    }
+
+    /// @inheritdoc ERC20Upgradeable
+    function name() public view override returns (string memory) {
+        XTokenStorage storage $ = _getXTokenStorage();
+        string memory changedName = $.changedName;
+        if (bytes(changedName).length != 0) {
+            return changedName;
+        }
+        return super.name();
+    }
+
+    /// @inheritdoc ERC20Upgradeable
+    function symbol() public view override returns (string memory) {
+        XTokenStorage storage $ = _getXTokenStorage();
+        string memory changedSymbol = $.changedSymbol;
+        if (bytes(changedSymbol).length != 0) {
+            return changedSymbol;
+        }
+        return super.symbol();
     }
     //endregion ---------------------------- View functions
 

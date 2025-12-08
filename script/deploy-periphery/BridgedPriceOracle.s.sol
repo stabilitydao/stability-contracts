@@ -27,7 +27,11 @@ contract DeployBridgedPriceOracle is Script {
         // ---------------------- Deploy
         vm.startBroadcast(deployerPrivateKey);
         Proxy proxy = new Proxy();
-        proxy.initProxy(address(new BridgedPriceOracle(config.get("LAYER_ZERO_V2_ENDPOINT").toAddress())));
+        {
+            address implementation = address(new BridgedPriceOracle(config.get("LAYER_ZERO_V2_ENDPOINT").toAddress()));
+            proxy.initProxy(implementation);
+            require(proxy.implementation() == implementation, "BridgedPriceOracle: implementation mismatch");
+        }
 
         // @dev assume here that we deploy price oracle for STBL token
         BridgedPriceOracle(address(proxy)).initialize(config.get("PLATFORM").toAddress(), "STBL", delegator);

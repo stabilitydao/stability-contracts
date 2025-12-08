@@ -6,15 +6,18 @@ import {IControllable, Controllable} from "../core/base/Controllable.sol";
 import {IPlatform} from "../interfaces/IPlatform.sol";
 import {IBridgedToken} from "../interfaces/IBridgedToken.sol";
 import {IOFTPausable} from "../interfaces/IOFTPausable.sol";
+import {ERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 
 /// @notice Omnichain Fungible Token - bridged version of main-token from Sonic to other chains
+/// Changelog:
+///  - 1.0.1: Add setName and setSymbol functions
 contract BridgedToken is Controllable, OFTUpgradeable, IBridgedToken {
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         CONSTANTS                          */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.0";
+    string public constant VERSION = "1.0.1";
 
     // keccak256(abi.encode(uint(keccak256("erc7201:stability.BridgedToken")) - 1)) & ~bytes32(uint(0xff));
     bytes32 internal constant BRIDGED_TOKEN_STORAGE_LOCATION =
@@ -24,6 +27,10 @@ contract BridgedToken is Controllable, OFTUpgradeable, IBridgedToken {
     struct BridgedTokenStorage {
         /// @notice Paused state for addresses
         mapping(address => bool) paused;
+        /// @dev Changed ERC20 name
+        string changedName;
+        /// @dev Changed ERC20 symbol
+        string changedSymbol;
     }
 
     //region --------------------------------- Initializers
@@ -64,6 +71,20 @@ contract BridgedToken is Controllable, OFTUpgradeable, IBridgedToken {
         emit Pause(account, paused_);
     }
 
+    /// @inheritdoc IBridgedToken
+    function setName(string calldata newName) external onlyOperator {
+        BridgedTokenStorage storage $ = getBridgedTokenStorage();
+        $.changedName = newName;
+        emit BridgedTokenName(newName);
+    }
+
+    /// @inheritdoc IBridgedToken
+    function setSymbol(string calldata newSymbol) external onlyOperator {
+        BridgedTokenStorage storage $ = getBridgedTokenStorage();
+        $.changedSymbol = newSymbol;
+        emit BridgedTokenSymbol(newSymbol);
+    }
+
     //endregion --------------------------------- Restricted actions
 
     //region --------------------------------- View
@@ -71,6 +92,26 @@ contract BridgedToken is Controllable, OFTUpgradeable, IBridgedToken {
     /// @inheritdoc IOFTPausable
     function paused(address account_) external view returns (bool) {
         return getBridgedTokenStorage().paused[account_];
+    }
+
+    /// @inheritdoc ERC20Upgradeable
+    function name() public view override returns (string memory) {
+        BridgedTokenStorage storage $ = getBridgedTokenStorage();
+        string memory changedName = $.changedName;
+        if (bytes(changedName).length != 0) {
+            return changedName;
+        }
+        return super.name();
+    }
+
+    /// @inheritdoc ERC20Upgradeable
+    function symbol() public view override returns (string memory) {
+        BridgedTokenStorage storage $ = getBridgedTokenStorage();
+        string memory changedSymbol = $.changedSymbol;
+        if (bytes(changedSymbol).length != 0) {
+            return changedSymbol;
+        }
+        return super.symbol();
     }
 
     //endregion --------------------------------- View

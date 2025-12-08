@@ -254,7 +254,7 @@ contract XStakingTest is Test, MockSetup {
         vm.prank(users[0]);
         dao.setPowerDelegation(users[2]);
 
-        vm.expectRevert(DAO.AlreadyDelegated.selector);
+        vm.expectRevert(IDAO.AlreadyDelegated.selector);
         vm.prank(users[0]);
         dao.setPowerDelegation(users[2]);
 

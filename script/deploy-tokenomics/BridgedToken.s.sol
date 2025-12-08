@@ -33,7 +33,7 @@ contract DeployBridgedToken is Script {
         vm.startBroadcast(deployerPrivateKey);
         Proxy proxy = new Proxy();
         proxy.initProxy(address(new BridgedToken(endpoint)));
-        BridgedToken(address(proxy)).initialize(platform, "Stability STBL", "STBL", delegator);
+        BridgedToken(address(proxy)).initialize(platform, "Stability", "STBL", delegator);
 
         // ---------------------- Write results
         vm.stopBroadcast();

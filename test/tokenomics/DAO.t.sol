@@ -174,21 +174,21 @@ contract DAOSonicTest is Test {
         p1.proposalThreshold = 100_000; // 100%
 
         vm.prank(multisig);
-        vm.expectRevert(DAO.WrongValue.selector);
+        vm.expectRevert(IDAO.WrongValue.selector);
         token.updateConfig(p1);
 
         p1.proposalThreshold = 10_000;
         p1.exitPenalty = 100_00; // 100%
 
         vm.prank(multisig);
-        vm.expectRevert(DAO.WrongValue.selector);
+        vm.expectRevert(IDAO.WrongValue.selector);
         token.updateConfig(p1);
 
         p1.exitPenalty = 50_00;
         p1.quorum = 100_000; // 100%
 
         vm.prank(multisig);
-        vm.expectRevert(DAO.WrongValue.selector);
+        vm.expectRevert(IDAO.WrongValue.selector);
         token.updateConfig(p1);
     }
 
@@ -199,7 +199,7 @@ contract DAOSonicTest is Test {
         token.mint(address(0x123), 1e18);
 
         vm.prank(address(0x123));
-        vm.expectRevert(DAO.NonTransferable.selector);
+        vm.expectRevert(IDAO.NonTransferable.selector);
         // slither-disable-next-line erc20-unchecked-transfer
         // forge-lint: disable-next-line(erc20-unchecked-transfer)
         token.transfer(address(0x456), 1e18);
@@ -208,7 +208,7 @@ contract DAOSonicTest is Test {
         token.approve(address(0x456), 1e18);
 
         vm.prank(address(0x456));
-        vm.expectRevert(DAO.NonTransferable.selector);
+        vm.expectRevert(IDAO.NonTransferable.selector);
         // slither-disable-next-line erc20-unchecked-transfer
         // forge-lint: disable-next-line(erc20-unchecked-transfer)
         token.transferFrom(address(0x123), address(0x789), 1e18);
@@ -237,7 +237,7 @@ contract DAOSonicTest is Test {
         vm.prank(user1);
         dao.setPowerDelegation(user2);
 
-        vm.expectRevert(DAO.AlreadyDelegated.selector);
+        vm.expectRevert(IDAO.AlreadyDelegated.selector);
         vm.prank(user1);
         dao.setPowerDelegation(address(this));
 
@@ -311,7 +311,7 @@ contract DAOSonicTest is Test {
         assertEq(token.delegationForbidden(), true, "delegation is forbidden now");
 
         // ---------------------- User is not able to re-delegate power to another user
-        vm.expectRevert(DAO.DelegationForbiddenOnTheChain.selector);
+        vm.expectRevert(IDAO.DelegationForbiddenOnTheChain.selector);
         token.setPowerDelegation(makeAddr("to2"));
 
         {
@@ -370,7 +370,7 @@ contract DAOSonicTest is Test {
             powers[1] = 2000e18;
 
             vm.prank(user1);
-            vm.expectRevert(DAO.NotOtherChainsPowersWhitelisted.selector);
+            vm.expectRevert(IDAO.NotOtherChainsPowersWhitelisted.selector);
             token.updateOtherChainsPowers(users, powers);
 
             vm.prank(multisig);
@@ -386,7 +386,7 @@ contract DAOSonicTest is Test {
             token.updateOtherChainsPowers(users, powers);
 
             // ensure that we cannot call updateOtherChainsPowers on the same block
-            vm.expectRevert(DAO.WrongValue.selector);
+            vm.expectRevert(IDAO.WrongValue.selector);
             vm.prank(user1);
             token.updateOtherChainsPowers(users, powers);
 
@@ -450,7 +450,7 @@ contract DAOSonicTest is Test {
             powers[1] = 2000e18;
 
             vm.prank(user1);
-            vm.expectRevert(DAO.NotOtherChainsPowersWhitelisted.selector);
+            vm.expectRevert(IDAO.NotOtherChainsPowersWhitelisted.selector);
             token.updateOtherChainsPowers(users, powers);
             skip(1); // in next tx we should have different timestamp because it's used as an epoch counter inside token
 

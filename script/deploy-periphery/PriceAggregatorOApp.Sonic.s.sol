@@ -31,7 +31,11 @@ contract DeployPriceAggregatorOAppSonic is Script {
         // ---------------------- Deploy
         vm.startBroadcast(deployerPrivateKey);
         Proxy proxy = new Proxy();
-        proxy.initProxy(address(new PriceAggregatorOApp(config.get("LAYER_ZERO_V2_ENDPOINT").toAddress())));
+        {
+            address implementation = address(new PriceAggregatorOApp(config.get("LAYER_ZERO_V2_ENDPOINT").toAddress()));
+            proxy.initProxy(implementation);
+            require(proxy.implementation() == implementation, "PriceAggregatorOApp: implementation mismatch");
+        }
 
         // @dev assume here that we deploy price oracle for STBL token
         PriceAggregatorOApp(address(proxy))
