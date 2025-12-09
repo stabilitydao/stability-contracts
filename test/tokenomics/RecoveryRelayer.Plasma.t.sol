@@ -1,70 +1,29 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-// import {console} from "forge-std/console.sol";
-import {RecoveryRelayerLib} from "../../src/tokenomics/libs/RecoveryRelayerLib.sol";
-import {IPlatform} from "../../src/interfaces/IPlatform.sol";
+import {RevenueRouter} from "../../src/tokenomics/RevenueRouter.sol";
 import {IControllable} from "../../src/interfaces/IControllable.sol";
-import {Proxy} from "../../src/core/proxy/Proxy.sol";
-import {Test} from "forge-std/Test.sol";
+import {IPlatform} from "../../src/interfaces/IPlatform.sol";
+import {IRecoveryRelayer} from "../../src/interfaces/IRecoveryRelayer.sol";
+import {IRevenueRouter} from "../../src/interfaces/IRevenueRouter.sol";
+import {IStrategy} from "../../src/interfaces/IStrategy.sol";
 import {PlasmaConstantsLib} from "../../chains/plasma/PlasmaConstantsLib.sol";
+import {Proxy} from "../../src/core/proxy/Proxy.sol";
+import {RecoveryRelayerLib} from "../../src/tokenomics/libs/RecoveryRelayerLib.sol";
 import {RecoveryRelayer} from "../../src/tokenomics/RecoveryRelayer.sol";
+import {Test} from "forge-std/Test.sol";
+// import {console} from "forge-std/console.sol";
 
 contract RecoveryRelayerPlasmaTest is Test {
     uint public constant FORK_BLOCK = 8339817; // Dec-9-2025 08:54:48 UTC
     address internal multisig;
 
+    address public constant AMF_STRATEGY = 0x5AC5b2740F77200CCe6562795cFcf4c3c2aC3745;
+
     constructor() {
         vm.selectFork(vm.createFork(vm.envString("PLASMA_RPC_URL"), FORK_BLOCK));
         multisig = IPlatform(PlasmaConstantsLib.PLATFORM).multisig();
     }
-
-    //region --------------------------------- Data types
-    struct SingleTestCase {
-        address pool;
-        address asset;
-        uint amountRecoveryTokenToSwap;
-        uint amountAssetToPutOnRecovery;
-    }
-
-    struct SingleState {
-        int24 tick;
-        uint sqrtPriceX96;
-        uint128 liquidity;
-        uint balanceUserRecoveryToken;
-        uint balanceUserMetaVault;
-        uint balanceMetaVaultTokenInRecovery;
-        uint balanceRecoveryTokenInRecovery;
-        uint totalSupplyRecoveryToken;
-        uint balancePoolRecoveryToken;
-        uint balancePoolMetaVault;
-        uint balanceRecoveryUsdc;
-        uint balanceRecoveryWs;
-    }
-
-    struct MultipleTestCase {
-        address targetPool;
-        address[] pools;
-        uint[] amounts;
-        address[] inputAssets;
-        uint[] inputAmounts;
-    }
-
-    struct MultipleState {
-        int24[] ticks;
-        uint[] sqrtPriceX96s;
-        uint128[] liquidity;
-        uint[] balanceRecoveryTokenUsers;
-        uint[] balanceMetaVaultTokenUsers;
-        uint[] balanceMetaVaultTokenInRecovery;
-        uint[] balanceRecoveryTokenInRecovery;
-    }
-
-    struct SelectedPoolTestCase {
-        uint index;
-    }
-
-    //endregion --------------------------------- Data types
 
     //region --------------------------------- Unit tests
     function testRecoveryStorageLocation() public pure {
@@ -215,7 +174,54 @@ contract RecoveryRelayerPlasmaTest is Test {
         list = recoveryRelayer.getListRegisteredTokens();
         assertEq(list.length, 3);
     }
+
     //endregion --------------------------------- Unit tests
+
+    /// @notice todo setup bridge on Plasma
+    function testUpgrade() internal {
+        // ---------------------- Setup RecoveryRelayer in the platform
+        {
+            Proxy proxy = new Proxy();
+            address implementation = address(new RecoveryRelayer());
+            proxy.initProxy(implementation);
+
+            vm.prank(multisig);
+            IPlatform(PlasmaConstantsLib.PLATFORM).setupRecovery(address(proxy));
+        }
+
+        _upgradeRevenueRouter();
+
+        // ---------------------- Set up revenue router
+        IRevenueRouter revenueRouter = IRevenueRouter(IPlatform(PlasmaConstantsLib.PLATFORM).revenueRouter());
+
+        vm.prank(multisig);
+        revenueRouter.setXShare(100_000); // no transfers to treasury
+
+        //        IFactory factory = IFactory(IPlatform(PlasmaConstantsLib.PLATFORM).factory());
+        //        IFactory.Farm memory farm = factory.farm(0);
+        //        console.log(farm.strategyLogicId); // Aave Merkl Farm
+        //
+        //        address[] memory vaults = factory.deployedVaults();
+        //        for (uint i; i < vaults.length; ++i) {
+        //            console.log("Vault:", vaults[i]);
+        //        }
+
+        // ---------------------- emulate merkl rewards
+        address vault = IStrategy(AMF_STRATEGY).vault();
+        deal(PlasmaConstantsLib.TOKEN_WXPL, AMF_STRATEGY, 1e18);
+
+        // ---------------------- hardwork
+        vm.prank(vault);
+        IStrategy(AMF_STRATEGY).doHardWork();
+
+        vm.prank(multisig);
+        revenueRouter.processAccumulatedAssets(1);
+
+        // ---------------------- RecoveryRelayer receives 20%
+        address[] memory tokens =
+            IRecoveryRelayer(IPlatform(PlasmaConstantsLib.PLATFORM).recovery()).getListRegisteredTokens();
+        assertNotEq(tokens.length, 0, "RecoveryRelayer has registered tokens");
+    }
 
     //region --------------------------------- Utils
 
@@ -226,6 +232,21 @@ contract RecoveryRelayerPlasmaTest is Test {
         recovery.initialize(PlasmaConstantsLib.PLATFORM);
 
         return recovery;
+    }
+
+    function _upgradeRevenueRouter() internal {
+        address revenueRouter = IPlatform(PlasmaConstantsLib.PLATFORM).revenueRouter();
+
+        address[] memory proxies = new address[](1);
+        proxies[0] = address(revenueRouter);
+        address[] memory implementations = new address[](1);
+        implementations[0] = address(new RevenueRouter());
+        vm.startPrank(multisig);
+        IPlatform(PlasmaConstantsLib.PLATFORM).announcePlatformUpgrade("2025.12.0-alpha", proxies, implementations);
+        skip(18 hours);
+        IPlatform(PlasmaConstantsLib.PLATFORM).upgrade();
+        vm.stopPrank();
+        rewind(17 hours);
     }
     //endregion --------------------------------- Utils
 }

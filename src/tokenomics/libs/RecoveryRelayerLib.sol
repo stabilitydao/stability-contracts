@@ -102,15 +102,6 @@ library RecoveryRelayerLib {
         }
     }
 
-    /// @notice Make infinite approve of {token} to {spender} if the approved amount is less than {amount}
-    /// @dev Should NOT be used for third-party pools
-    function _approveIfNeeds(address token, uint amount, address spender) internal {
-        // slither-disable-next-line calls-loop
-        if (IERC20(token).allowance(address(this), spender) < amount) {
-            IERC20(token).forceApprove(spender, type(uint).max);
-        }
-    }
-
     /// @notice Remove zero items from the given array
     function _removeEmpty(address[] memory items, uint countNotZero) internal pure returns (address[] memory dest) {
         uint len = items.length;
