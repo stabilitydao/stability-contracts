@@ -2,6 +2,7 @@
 pragma solidity ^0.8.28;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {Test} from "forge-std/Test.sol";
 import {MockSetup} from "../base/MockSetup.sol";
 import {Proxy} from "../../src/core/proxy/Proxy.sol";
@@ -277,6 +278,31 @@ contract XTokenTest is Test, MockSetup {
         );
         assertEq(IERC20(address(tokenA)).balanceOf(user), 0, "user main-token balance after takeFromBridge");
         assertEq(IERC20(address(tokenA)).balanceOf(bridge), 0, "bridge main-token balance after takeFromBridge");
+    }
+
+    function testSetNameSymbol() public {
+        address multisig = platform.multisig();
+
+        assertEq(keccak256(bytes(IERC20Metadata(address(xToken)).name())), keccak256(bytes("xStability")));
+        assertEq(keccak256(bytes(IERC20Metadata(address(xToken)).symbol())), keccak256(bytes("xSTBL")));
+
+        vm.expectRevert(IControllable.NotOperator.selector);
+        vm.prank(address(2));
+        xToken.setName("NewName");
+
+        vm.prank(multisig);
+        xToken.setName("NewName");
+
+        assertEq(keccak256(bytes(IERC20Metadata(address(xToken)).name())), keccak256(bytes("NewName")));
+
+        vm.expectRevert(IControllable.NotOperator.selector);
+        vm.prank(address(2));
+        xToken.setSymbol("NewSymbol");
+
+        vm.prank(multisig);
+        xToken.setSymbol("NewSymbol");
+
+        assertEq(keccak256(bytes(IERC20Metadata(address(xToken)).symbol())), keccak256(bytes("NewSymbol")));
     }
 
     //endregion --------------------- Tests

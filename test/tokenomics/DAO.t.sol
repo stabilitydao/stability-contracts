@@ -3,6 +3,7 @@ pragma solidity ^0.8.28;
 
 import {console} from "forge-std/console.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
 import {IControllable} from "../../src/interfaces/IControllable.sol";
 import {IDAO} from "../../src/interfaces/IDAO.sol";
@@ -629,6 +630,31 @@ contract DAOSonicTest is Test {
         assertEq(p3.localPower + p3.otherPower, 800e18, "total power of user 3");
 
         assertEq(p2.delegatedLocalPower + p2.delegatedOtherPower, 1900e18 - 350e18, "delegated power of user 2");
+    }
+
+    function testSetNameSymbol() public {
+        IDAO token = _createDAOInstance();
+
+        assertEq(keccak256(bytes(IERC20Metadata(address(token)).name())), keccak256(bytes("Stability DAO")), "name");
+        assertEq(keccak256(bytes(IERC20Metadata(address(token)).symbol())), keccak256(bytes("STBL_DAO")), "symbol");
+
+        vm.expectRevert(IControllable.NotOperator.selector);
+        vm.prank(address(2));
+        token.setName("NewName");
+
+        vm.prank(multisig);
+        token.setName("NewName");
+
+        assertEq(keccak256(bytes(IERC20Metadata(address(token)).name())), keccak256(bytes("NewName")), "new name");
+
+        vm.expectRevert(IControllable.NotOperator.selector);
+        vm.prank(address(2));
+        token.setSymbol("NewSymbol");
+
+        vm.prank(multisig);
+        token.setSymbol("NewSymbol");
+
+        assertEq(keccak256(bytes(IERC20Metadata(address(token)).symbol())), keccak256(bytes("NewSymbol")), "new symbol");
     }
 
     //endregion --------------------------------- Unit tests
