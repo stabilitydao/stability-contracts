@@ -15,8 +15,8 @@ contract PrepareUpgrade25120alpha is Script {
         uint deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(deployerPrivateKey);
 
-        // XStaking 1.1.2
-        new XStaking();
+        //        // XStaking 1.1.2
+        //        new XStaking();
 
         // DAO 1.1.0
         new DAO();
@@ -24,7 +24,7 @@ contract PrepareUpgrade25120alpha is Script {
         // XToken 1.2.0
         new XToken();
 
-        // RevenueRouter 1.7.2
+        // RevenueRouter 1.8.0
         new RevenueRouter();
 
         vm.stopBroadcast();
