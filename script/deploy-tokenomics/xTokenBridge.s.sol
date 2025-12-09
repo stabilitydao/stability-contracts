@@ -14,19 +14,21 @@ contract DeployXTokenBridge is Script {
         StdConfig config = new StdConfig("./config.toml", false); // read only config
         StdConfig configDeployed = new StdConfig("./config.d.toml", true); // auto-write deployed addresses
 
+        require(
+            uint(configDeployed.get("OAPP_MAIN_TOKEN").ty.kind) != 0, "OAPP_MAIN_TOKEN is not deployed on the chain"
+        );
         address bridge = configDeployed.get("OAPP_MAIN_TOKEN").toAddress();
-        require(bridge != address(0), "OAPP is zero");
 
+        require(uint(configDeployed.get("xToken").ty.kind) != 0, "xToken is not deployed on the chain");
         address xToken = configDeployed.get("xToken").toAddress();
-        require(xToken != address(0), "XSTBL address is zero");
 
+        require(uint(config.get("PLATFORM").ty.kind) != 0, "platform is not set");
         address platform = config.get("PLATFORM").toAddress();
-        require(platform != address(0), "PLATFORM address is zero");
 
+        require(uint(config.get("LAYER_ZERO_V2_ENDPOINT").ty.kind) != 0, "endpoint is not set");
         address endpoint = config.get("LAYER_ZERO_V2_ENDPOINT").toAddress();
-        require(endpoint != address(0), "endpoint is not set");
 
-        require(configDeployed.get("XTokenBridge").toAddress() == address(0), "XTokenBridge already deployed");
+        require(uint(configDeployed.get("XTokenBridge").ty.kind) == 0, "XTokenBridge already deployed");
 
         // ---------------------- Deploy
         vm.startBroadcast(deployerPrivateKey);
@@ -34,7 +36,7 @@ contract DeployXTokenBridge is Script {
         Proxy proxy = new Proxy();
         {
             address implementation = address(new XTokenBridge(endpoint));
-            proxy.initProxy(address(new XTokenBridge(endpoint)));
+            proxy.initProxy(implementation);
             require(proxy.implementation() == implementation, "XTokenBridge: implementation mismatch");
         }
 

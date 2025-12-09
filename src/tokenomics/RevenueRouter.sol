@@ -15,11 +15,12 @@ import {IXToken} from "../interfaces/IXToken.sol";
 import {IXStaking} from "../interfaces/IXStaking.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IHardWorker} from "../interfaces/IHardWorker.sol";
-import {IRecovery} from "../interfaces/IRecovery.sol";
+import {IRecoveryBase} from "../interfaces/IRecoveryBase.sol";
 
 /// @title Platform revenue distributor
 /// Changelog:
-///   1.7.2: renaming (STBL => main-token, xSTBL => xToken) - #426
+///   1.8.0: renaming (STBL => main-token, xSTBL => xToken), xShare = 100% by default.
+///          Add setAddresses, getXShare. RevenueRouter uses IRecoveryBase instead of IRecovery - #426
 ///   1.7.1: add addresses()
 ///   1.7.0: improve
 ///   1.6.0: send 20% of earned assets to Recovery
@@ -38,10 +39,13 @@ contract RevenueRouter is Controllable, IRevenueRouter {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.7.2";
+    string public constant VERSION = "1.8.0";
 
     uint internal constant RECOVER_PERCENTAGE = 20_000; // 20%
     uint internal constant DENOMINATOR = 100_000; // 100%
+
+    /// @notice Count of addresses in addresses() and setAddresses
+    uint internal constant COUNT_ADDRESSES = 4;
 
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.RevenueRouter")) - 1)) & ~bytes32(uint256(0xff))
     bytes32 private constant REVENUE_ROUTER_STORAGE_LOCATION =
@@ -58,7 +62,7 @@ contract RevenueRouter is Controllable, IRevenueRouter {
             $.token = IXToken(xToken_).token();
             $.xToken = xToken_;
             $.xStaking = IXToken(xToken_).xStaking();
-            $.xShare = 50_000;
+            $.xShare = 100_000;
         }
         $.feeTreasury = feeTreasury_;
         $.activePeriod = getPeriod();
@@ -125,6 +129,19 @@ contract RevenueRouter is Controllable, IRevenueRouter {
     function setXShare(uint newShare) external onlyGovernanceOrMultisig {
         RevenueRouterStorage storage $ = _getRevenueRouterStorage();
         $.xShare = newShare;
+
+        emit SetXShare(newShare);
+    }
+
+    /// @inheritdoc IRevenueRouter
+    function setAddresses(address[] memory addresses_) external onlyGovernanceOrMultisig {
+        RevenueRouterStorage storage $ = _getRevenueRouterStorage();
+        $.token = addresses_[0];
+        $.xToken = addresses_[1];
+        $.xStaking = addresses_[2];
+        $.feeTreasury = addresses_[3];
+
+        emit SetAddresses(addresses_);
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -282,7 +299,7 @@ contract RevenueRouter is Controllable, IRevenueRouter {
                     IERC20(asset).safeTransfer(_recovery, toRecovery);
                     address[] memory assetsToRegister = new address[](1);
                     assetsToRegister[0] = asset;
-                    IRecovery(_recovery).registerAssets(assetsToRegister);
+                    IRecoveryBase(_recovery).registerAssets(assetsToRegister);
                 }
             }
 
@@ -292,7 +309,9 @@ contract RevenueRouter is Controllable, IRevenueRouter {
                 try swapper.swap(asset, mainToken, amountToSwap, 20_000) {
                     uint mainTokenGot = IERC20(mainToken).balanceOf(address(this)) - mainTokenBalanceWas;
                     uint xGot = mainTokenGot * $.xShare / DENOMINATOR;
-                    IERC20(mainToken).safeTransfer($.feeTreasury, mainTokenGot - xGot);
+                    if (mainTokenGot > xGot) {
+                        IERC20(mainToken).safeTransfer($.feeTreasury, mainTokenGot - xGot);
+                    }
                     $.pendingRevenue += xGot;
                     if (cleanup) {
                         $.assetsAccumulated.remove(_assetsAccumulated[i]);
@@ -386,7 +405,7 @@ contract RevenueRouter is Controllable, IRevenueRouter {
     /// @inheritdoc IRevenueRouter
     function addresses() external view returns (address[] memory) {
         RevenueRouterStorage storage $ = _getRevenueRouterStorage();
-        address[] memory _addresses = new address[](4);
+        address[] memory _addresses = new address[](COUNT_ADDRESSES);
         _addresses[0] = $.token;
         _addresses[1] = $.xToken;
         _addresses[2] = $.xStaking;
@@ -397,6 +416,11 @@ contract RevenueRouter is Controllable, IRevenueRouter {
     /// @inheritdoc IRevenueRouter
     function assetsAccumulated() external view returns (address[] memory) {
         return _getRevenueRouterStorage().assetsAccumulated.values();
+    }
+
+    /// @inheritdoc IRevenueRouter
+    function xShare() external view returns (uint) {
+        return _getRevenueRouterStorage().xShare;
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/

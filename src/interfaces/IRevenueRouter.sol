@@ -13,6 +13,8 @@ interface IRevenueRouter {
     event UpdatedUnit(uint unitIndex, UnitType unitType, string name, address feeTreasury);
     event UnitEpochRevenue(uint periodEnded, string unitName, uint stblRevenue);
     event ProcessUnitRevenue(uint unitIndex, uint stblGot);
+    event SetAddresses(address[] addresses);
+    event SetXShare(uint newShare);
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                        CUSTOM ERRORS                       */
@@ -78,6 +80,9 @@ interface IRevenueRouter {
     /// @notice Change revenue share for Vaults Unit
     function setXShare(uint newShare) external;
 
+    /// @notice Set addresses of main-token, xToken, xStaking and feeTreasure token.
+    function setAddresses(address[] memory addresses_) external;
+
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       USER ACTIONS                         */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -138,4 +143,7 @@ interface IRevenueRouter {
 
     /// @notice Get assets that contract hold on balance
     function assetsAccumulated() external view returns (address[] memory);
+
+    /// @notice Get current xToken revenue share for Vaults Unit
+    function xShare() external view returns (uint);
 }

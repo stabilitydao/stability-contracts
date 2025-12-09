@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-interface IRecovery {
-    /// @dev Init
-    function initialize(address platform_) external;
+import {IRecoveryBase} from "./IRecoveryBase.sol";
 
+interface IRecovery is IRecoveryBase {
     /// @notice Returns the list of registered recovery pools
     function recoveryPools() external view returns (address[] memory);
 
@@ -41,10 +40,6 @@ interface IRecovery {
 
     /// @notice Set receiver of recovedry tokens, 0 - the tokens should be burnt
     function setReceiver(address recoveryToken_, address receiver_) external;
-
-    /// @notice Revenue Router calls this function to notify that some tokens were transferred to this contract
-    /// @param tokens Addresses of the tokens that were transferred
-    function registerAssets(address[] memory tokens) external;
 
     /// @notice Swap registered tokens to meta vault tokens. The meta vault token is selected from the given recovery pool.
     /// @param tokens Addresses of registered tokens to be swapped. They should be asked through {getListTokensToSwap}

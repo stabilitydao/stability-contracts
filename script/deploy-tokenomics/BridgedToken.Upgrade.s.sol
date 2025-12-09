@@ -4,7 +4,6 @@ pragma solidity ^0.8.23;
 import {StdConfig} from "forge-std/StdConfig.sol";
 import {Variable, LibVariable} from "forge-std/LibVariable.sol";
 import {Script} from "forge-std/Script.sol";
-import {Proxy} from "../../src/core/proxy/Proxy.sol";
 import {BridgedToken} from "../../src/tokenomics/BridgedToken.sol";
 
 contract DeployBridgedTokenImplementation is Script {
