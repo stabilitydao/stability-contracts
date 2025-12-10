@@ -18,6 +18,7 @@ import {Proxy} from "../../src/core/proxy/Proxy.sol";
 import {StrategyDeveloperLib} from "../../src/strategies/libs/StrategyDeveloperLib.sol";
 import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
 import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
+import {AaveLeverageMerklFarmStrategy} from "../../src/strategies/AaveLeverageMerklFarmStrategy.sol";
 
 library PlasmaLib {
     function platformDeployParams() internal pure returns (IPlatformDeployer.DeployPlatformParams memory p) {
@@ -57,6 +58,10 @@ library PlasmaLib {
         DeployAdapterLib.deployAmmAdapter(platform, AmmAdapterIdLib.BALANCER_V3_RECLAMM);
         IBalancerAdapter(IPlatform(platform).ammAdapter(keccak256(bytes(AmmAdapterIdLib.BALANCER_V3_RECLAMM))).proxy)
         .setupHelpers(PlasmaConstantsLib.BALANCER_V3_ROUTER);
+        DeployAdapterLib.deployAmmAdapter(platform, AmmAdapterIdLib.UNISWAPV3);
+        IBalancerAdapter(DeployAdapterLib.deployAmmAdapter(platform, AmmAdapterIdLib.BALANCER_V3_STABLE)).setupHelpers(PlasmaConstantsLib.BALANCER_V3_ROUTER);
+        DeployAdapterLib.deployAmmAdapter(platform, AmmAdapterIdLib.CURVE);
+        DeployAdapterLib.deployAmmAdapter(platform, AmmAdapterIdLib.ERC_4626);
         //endregion -- Deploy AMM adapters ----
 
         //region ----- Setup Swapper -----
@@ -73,6 +78,7 @@ library PlasmaLib {
 
         //region ----- Deploy strategies  -----
         factory.setStrategyImplementation(StrategyIdLib.AAVE_MERKL_FARM, address(new AaveMerklFarmStrategy()));
+        factory.setStrategyImplementation(StrategyIdLib.AAVE_LEVERAGE_MERKL_FARM, address(new AaveLeverageMerklFarmStrategy()));
         //endregion
 
         //region ----- Add DeX aggregators -----
@@ -80,7 +86,7 @@ library PlasmaLib {
     }
 
     function routes() public pure returns (ISwapper.AddPoolData[] memory pools) {
-        pools = new ISwapper.AddPoolData[](2);
+        pools = new ISwapper.AddPoolData[](6);
         uint i;
         pools[i++] = _makePoolData(
             PlasmaConstantsLib.POOL_BALANCER_V3_RECLAMM_WXPL_USDT0,
@@ -92,6 +98,30 @@ library PlasmaLib {
             PlasmaConstantsLib.POOL_BALANCER_V3_RECLAMM_WXPL_USDT0,
             AmmAdapterIdLib.BALANCER_V3_RECLAMM,
             PlasmaConstantsLib.TOKEN_WXPL,
+            PlasmaConstantsLib.TOKEN_USDT0
+        );
+        pools[i++] = _makePoolData(
+            PlasmaConstantsLib.POOL_OKU_TRADE_USDT0_WETH,
+            AmmAdapterIdLib.UNISWAPV3,
+            PlasmaConstantsLib.TOKEN_WETH,
+            PlasmaConstantsLib.TOKEN_USDT0
+        );
+        pools[i++] = _makePoolData(
+            PlasmaConstantsLib.POOL_BALANCER_V3_STABLE_WETH_WEETH,
+            AmmAdapterIdLib.BALANCER_V3_STABLE,
+            PlasmaConstantsLib.TOKEN_WEETH,
+            PlasmaConstantsLib.TOKEN_WAPLAWETH
+        );
+        pools[i++] = _makePoolData(
+            PlasmaConstantsLib.POOL_CURVE_SUSDE_USDT0,
+            AmmAdapterIdLib.CURVE,
+            PlasmaConstantsLib.TOKEN_SUSDE,
+            PlasmaConstantsLib.TOKEN_USDT0
+        );
+        pools[i++] = _makePoolData(
+            PlasmaConstantsLib.POOL_CURVE_USDE_USDT0,
+            AmmAdapterIdLib.CURVE,
+            PlasmaConstantsLib.TOKEN_USDE,
             PlasmaConstantsLib.TOKEN_USDT0
         );
     }

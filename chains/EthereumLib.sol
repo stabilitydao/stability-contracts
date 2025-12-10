@@ -16,6 +16,7 @@ import {StrategyDeveloperLib} from "../src/strategies/libs/StrategyDeveloperLib.
 import {CVault} from "../src/core/vaults/CVault.sol";
 import {VaultTypeLib} from "../src/core/libs/VaultTypeLib.sol";
 import {PriceReader, IPriceReader} from "../src/core/PriceReader.sol";
+import {AaveLeverageMerklFarmStrategy} from "../src/strategies/AaveLeverageMerklFarmStrategy.sol";
 
 /// @dev Ethereum network [chainId: 1] data library
 ///   EEEEEEEEEE   TTTTTTTTTT  HHH    HHH   EEEEEEEEEE   RRRRRRRR    EEEEEEEEEE   UU     UU   M       M
@@ -48,6 +49,7 @@ library EthereumLib {
     address public constant POOL_UNISWAPV3_COMP_WETH_3000 = 0xea4Ba4CE14fdd287f380b55419B1C5b6c3f22ab6;
     address public constant POOL_UNISWAPV3_SHFL_USDC_3000 = 0xD0A4c8A1a14530C7C9EfDaD0BA37E8cF4204d230;
     address public constant POOL_UNISWAPV3_WBTC_EBTC_500 = 0xEf9b4FddD861aa2F00eE039C323b7FAbd7AFE239;
+    address public constant POOL_UNISWAPV3_WBTC_USDC_3000 = 0x99ac8cA7087fA4A2A1FB6357269965A2014ABc35;
 
     // Oracles
     address public constant ORACLE_CHAINLINK_USDC_USD = 0x8fFfFfd4AfB6115b954Bd326cbe7B4BA576818f6;
@@ -136,6 +138,7 @@ library EthereumLib {
 
         //region ----- Deploy strategy logics -----
         factory.setStrategyImplementation(StrategyIdLib.COMPOUND_FARM, address(new CompoundFarmStrategy()));
+        factory.setStrategyImplementation(StrategyIdLib.AAVE_LEVERAGE_MERKL_FARM, address(new AaveLeverageMerklFarmStrategy()));
         LogDeployLib.logDeployStrategies(platform, showLog);
         //endregion
 
@@ -158,14 +161,15 @@ library EthereumLib {
         //endregion
 
         //region ----- Pools -----
-        pools = new ISwapper.AddPoolData[](6);
+        pools = new ISwapper.AddPoolData[](7);
         uint i;
         pools[i++] = _makePoolData(POOL_UNISWAPV3_USDC_WETH_500, AmmAdapterIdLib.UNISWAPV3, TOKEN_USDC, TOKEN_WETH);
         pools[i++] = _makePoolData(POOL_UNISWAPV3_WETH_weETH_500, AmmAdapterIdLib.UNISWAPV3, TOKEN_WETH, TOKEN_weETH);
         pools[i++] = _makePoolData(POOL_UNISWAPV3_wstETH_WETH_100, AmmAdapterIdLib.UNISWAPV3, TOKEN_wstETH, TOKEN_WETH);
         pools[i++] = _makePoolData(POOL_UNISWAPV3_COMP_WETH_3000, AmmAdapterIdLib.UNISWAPV3, TOKEN_COMP, TOKEN_WETH);
         pools[i++] = _makePoolData(POOL_UNISWAPV3_SHFL_USDC_3000, AmmAdapterIdLib.UNISWAPV3, TOKEN_SHFL, TOKEN_USDC);
-        pools[i++] = _makePoolData(POOL_UNISWAPV3_WBTC_EBTC_500, AmmAdapterIdLib.UNISWAPV3, TOKEN_WBTC, TOKEN_EBTC);
+        pools[i++] = _makePoolData(POOL_UNISWAPV3_WBTC_EBTC_500, AmmAdapterIdLib.UNISWAPV3, TOKEN_EBTC, TOKEN_WBTC);
+        pools[i++] = _makePoolData(POOL_UNISWAPV3_WBTC_USDC_3000, AmmAdapterIdLib.UNISWAPV3, TOKEN_WBTC, TOKEN_USDC);
         //endregion
     }
 

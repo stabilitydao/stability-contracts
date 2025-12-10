@@ -99,6 +99,7 @@
 ### Periphery
 
 * **Frontend** `0x70e804364175e23F1c30dFa03BFb19d936E5E81c` [plasmascan](https://plasmascan.to/address/0x70e804364175e23F1c30dFa03BFb19d936E5E81c)
+* **UpgradeHelper** `0x932D7bd758214fDF58f7824c09503D9FcD36C089` [plasmascan](https://plasmascan.to/address/0x932D7bd758214fDF58f7824c09503D9FcD36C089)
 
 
 ## Polygon [137]
