@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {console} from "forge-std/console.sol";
 import {ALMFCalcLib} from "./ALMFCalcLib.sol";
 import {ConstantsLib} from "../../core/libs/ConstantsLib.sol";
 import {IAToken} from "../../integrations/aave/IAToken.sol";
@@ -887,7 +886,6 @@ library ALMFLib {
         address vault_,
         uint revenueBaseAssetIndex_
     ) internal view returns (address[] memory assets, uint[] memory amounts) {
-        console.log("getRevenue", oldPrice, newPrice, newPrice > oldPrice);
         amounts = new uint[](1);
         assets = new address[](1);
 
@@ -904,7 +902,6 @@ library ALMFLib {
             if (revenueBaseAssetIndex_ == REVENUE_BASE_ASSET_0) {
                 // revenueBaseAmount is already in collateral asset
                 amounts[0] = revenueBaseAmount;
-                console.log("revenueBaseAmount1", revenueBaseAmount, amounts[0]);
             } else {
                 // revenueBaseAmount is in borrow asset
                 address borrowAsset = $.borrowAsset;
@@ -915,7 +912,6 @@ library ALMFLib {
 
                 // convert amount in borrow asset to amount in collateral asset
                 amounts[0] = revenueBaseAmount * priceB18 * 10 ** decimalsC / priceC18 / 10 ** decimalsB;
-                console.log("revenueBaseAmount2", revenueBaseAmount, amounts[0]);
             }
         }
     }
