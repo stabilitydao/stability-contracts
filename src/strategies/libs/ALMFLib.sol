@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+import {console} from "forge-std/console.sol";
 import {ALMFCalcLib} from "./ALMFCalcLib.sol";
 import {ConstantsLib} from "../../core/libs/ConstantsLib.sol";
 import {IAToken} from "../../integrations/aave/IAToken.sol";
@@ -36,6 +37,12 @@ library ALMFLib {
 
     uint public constant INTEREST_RATE_MODE_VARIABLE = 2;
 
+    /// @notice Value of revenueBaseAssetIndex param indicating that share price is calculated in collateral asset
+    uint internal constant REVENUE_BASE_ASSET_0 = 0;
+
+    /// @notice Value of revenueBaseAssetIndex param indicating that share price is calculated in borrow asset
+    uint internal constant REVENUE_BASE_ASSET_1 = 1;
+
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                          DATA TYPES                        */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -48,12 +55,16 @@ library ALMFLib {
         /// @notice Deposit threshold. Amounts less than the threshold are deposited directly without leverage
         mapping(address asset => uint) thresholds;
 
-        /// @notice Last share price used to calculate profit and loss = [total in collateral asset] / vault.totalSupply()
+        /// @notice Last share price used to calculate profit and loss = [total in collateral/borrow asset] / vault.totalSupply()
         /// @dev This value is initialized at first claim revenue (not at first deposit)
+        /// @dev Share price is calculated in collateral asset if revenueBaseAsset == 0 else in borrow asset
         uint lastSharePrice;
     }
 
+    error CollateralAssetThresholdTooLow();
+
     event SetThreshold(address asset, uint value);
+    event ResetSharePrice();
 
     //region ------------------------------------- Flash loan
     /// @notice token Borrow asset
@@ -311,7 +322,11 @@ library ALMFLib {
         if (valueNow > valueWas) {
             value = ALMFCalcLib.collateralToBase(amount, data) + (valueNow - valueWas);
         } else {
-            value = ALMFCalcLib.collateralToBase(amount, data) - (valueWas - valueNow);
+            // there is a chance that threshold is set too low
+            // in that case we can have negative amount below ... make explicit revert in this case
+            uint base = ALMFCalcLib.collateralToBase(amount, data);
+            require(base >= (valueWas - valueNow), CollateralAssetThresholdTooLow());
+            value = base - (valueWas - valueNow);
         }
 
         _ensureLtvValid(state);
@@ -804,7 +819,8 @@ library ALMFLib {
         AlmfStrategyStorage storage $a,
         IFarmingStrategy.FarmingStrategyBaseStorage storage $f,
         IStrategy.StrategyBaseStorage storage $base,
-        address vault_
+        address vault_,
+        uint revenueBaseAssetIndex_
     )
         external
         returns (
@@ -814,20 +830,20 @@ library ALMFLib {
             uint[] memory __rewardAmounts
         )
     {
-        /// @dev New price in collateral asset
-        uint newPrice = _sharePrice($, vault_);
+        /// @dev New price in base asset
+        uint newPrice = _sharePrice($, vault_, revenueBaseAssetIndex_);
 
-        /// @dev Previous price in collateral asset
+        /// @dev Previous price in base asset
         uint oldPrice = $a.lastSharePrice;
 
         if (oldPrice == 0) {
-            // first initialization of share price
+            // initialization of share price (first one or after reset)
             // we cannot do it in deposit() because total supply is used for calculation
             $a.lastSharePrice = newPrice;
             oldPrice = newPrice;
         }
 
-        (__assets, __amounts) = _getRevenue($, oldPrice, newPrice, vault_);
+        (__assets, __amounts) = _getRevenue($, oldPrice, newPrice, vault_, revenueBaseAssetIndex_);
         $a.lastSharePrice = newPrice;
 
         // ---------------------- collect Merkl rewards
@@ -847,34 +863,60 @@ library ALMFLib {
         $base.total = total($);
     }
 
+    /// @notice revenueBaseAssetIndex_ What asset is used in share price calculation: 0 - collateral asset, 1 - borrow asset
     function getRevenue(
         ILeverageLendingStrategy.LeverageLendingBaseStorage storage $,
         uint oldPrice,
-        address vault_
+        address vault_,
+        uint revenueBaseAssetIndex_
     ) external view returns (address[] memory assets, uint[] memory amounts) {
-        uint newPrice = _sharePrice($, vault_);
-        return _getRevenue($, oldPrice, newPrice, vault_);
+        uint newPrice = _sharePrice($, vault_, revenueBaseAssetIndex_);
+        return _getRevenue($, oldPrice, newPrice, vault_, revenueBaseAssetIndex_);
     }
 
+    /// @notice Calculate revenue based on share price change in terms of strategy asset (== collateral asset)
     /// @param oldPrice Previous share price in collateral asset
     /// @param newPrice New share price in collateral asset
+    /// @param revenueBaseAssetIndex_ What asset is used in share price calculation: 0 - collateral asset, 1 - borrow asset
+    /// @return assets List of strategy assets (collateral asset only in our case)
+    /// @return amounts Corresponding amounts of strategy assets as revenue. If revenue negative return 0.
     function _getRevenue(
         ILeverageLendingStrategy.LeverageLendingBaseStorage storage $,
         uint oldPrice,
         uint newPrice,
-        address vault_
+        address vault_,
+        uint revenueBaseAssetIndex_
     ) internal view returns (address[] memory assets, uint[] memory amounts) {
-        // assume below that there is only 1 asset - collateral asset
+        console.log("getRevenue", oldPrice, newPrice, newPrice > oldPrice);
         amounts = new uint[](1);
         assets = new address[](1);
 
+        // @dev The strategy assets is array with collateral asset only
         assets[0] = $.collateralAsset;
 
         if (newPrice > oldPrice && oldPrice != 0) {
             uint _totalSupply = IVault(vault_).totalSupply();
 
             // share price already takes into account accumulated interest
-            amounts[0] = (newPrice - oldPrice) * _totalSupply / 1e18;
+            uint revenueBaseAmount = (newPrice - oldPrice) * _totalSupply / 1e18;
+
+            // convert revenue-base-asset to collateral asset
+            if (revenueBaseAssetIndex_ == REVENUE_BASE_ASSET_0) {
+                // revenueBaseAmount is already in collateral asset
+                amounts[0] = revenueBaseAmount;
+                console.log("revenueBaseAmount1", revenueBaseAmount, amounts[0]);
+            } else {
+                // revenueBaseAmount is in borrow asset
+                address borrowAsset = $.borrowAsset;
+                address addressProvider = IPool(IAToken($.lendingVault).POOL()).ADDRESSES_PROVIDER();
+                (uint priceC18, uint priceB18) = ALMFLib.getPrices(addressProvider, assets[0], borrowAsset);
+                uint8 decimalsC = IERC20Metadata(assets[0]).decimals();
+                uint8 decimalsB = IERC20Metadata(borrowAsset).decimals();
+
+                // convert amount in borrow asset to amount in collateral asset
+                amounts[0] = revenueBaseAmount * priceB18 * 10 ** decimalsC / priceC18 / 10 ** decimalsB;
+                console.log("revenueBaseAmount2", revenueBaseAmount, amounts[0]);
+            }
         }
     }
 
@@ -910,27 +952,32 @@ library ALMFLib {
         $base.total = total($);
     }
 
-    /// @notice Get share price in collateral asset
+    /// @notice Get share price in collateral or borrow asset
+    /// @param revenueBaseAssetIndex_ If equals to 0, share price is returned in collateral asset; otherwise in borrow asset
     function _sharePrice(
         ILeverageLendingStrategy.LeverageLendingBaseStorage storage $,
-        address vault_
+        address vault_,
+        uint revenueBaseAssetIndex_
     ) internal view returns (uint sharePrice) {
         uint totalSupply = IERC20(vault_).totalSupply();
         if (totalSupply != 0) {
-            address collateralAsset = $.collateralAsset;
+            /// @dev Asset in which share price is calculated
+            address revenueBaseAsset =
+                revenueBaseAssetIndex_ == REVENUE_BASE_ASSET_0 ? $.collateralAsset : $.borrowAsset;
 
             /// @dev Real tvl in USD, decimals 18
             (uint __realTvl,) = realTvl($);
 
             /// @dev Collateral price from AAVE oracle, decimals 8
-            uint collateralPrice8 = IAavePriceOracle(
+            uint revenueBaseAssetPrice8 = IAavePriceOracle(
                     IAaveAddressProvider(IPool(IAToken($.lendingVault).POOL()).ADDRESSES_PROVIDER()).getPriceOracle()
-                ).getAssetPrice(collateralAsset);
+                ).getAssetPrice(revenueBaseAsset);
 
-            /// @dev Real tvl in collateral asset
-            uint amount = __realTvl * 1e8 * 10 ** IERC20Metadata(collateralAsset).decimals() / collateralPrice8 / 1e18;
+            /// @dev Real tvl in base asset
+            uint amount =
+                __realTvl * 1e8 * 10 ** IERC20Metadata(revenueBaseAsset).decimals() / revenueBaseAssetPrice8 / 1e18;
 
-            /// @dev Share price: collateral asset per vault-share, decimals = decimals of collateral asset
+            /// @dev Share price: base asset per vault-share, decimals = decimals of base asset
             sharePrice = amount * 1e18 / totalSupply;
         }
 
@@ -939,7 +986,7 @@ library ALMFLib {
 
     //endregion ------------------------------------- Revenue
 
-    //region ----------------------------------- Additional functionality
+    //region ------------------------------------- Additional functionality
     /// @notice Set threshold for the asset
     function setThreshold(address asset_, uint threshold_) external {
         _getStorage().thresholds[asset_] = threshold_;
@@ -947,7 +994,15 @@ library ALMFLib {
         emit SetThreshold(asset_, threshold_);
     }
 
-    //endregion ----------------------------------- Additional functionality
+    /// @notice Reset share price after changing value of revenueBaseAsset in farm configuration
+    function resetSharePrice() external {
+        AlmfStrategyStorage storage $ = _getStorage();
+        $.lastSharePrice = 0;
+
+        emit ResetSharePrice();
+    }
+
+    //endregion ------------------------------------- Additional functionality
 
     //region ------------------------------------- Internal utils
     function _getFlashLoanAmounts(

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
+import {Vm} from "forge-std/Test.sol";
 import {IControllable} from "../../src/interfaces/IControllable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IFarmingStrategy} from "../../src/interfaces/IFarmingStrategy.sol";
@@ -23,6 +24,7 @@ import {FixedPointMathLib} from "../../lib/solady/src/utils/FixedPointMathLib.so
 import {AmmAdapterIdLib} from "../../src/adapters/libs/AmmAdapterIdLib.sol";
 // import {IAaveDataProvider} from "../../src/integrations/aave/IAaveDataProvider.sol";
 import {AaveLeverageMerklFarmStrategy} from "../../src/strategies/AaveLeverageMerklFarmStrategy.sol";
+import {ALMFLib} from "../../src/strategies/libs/ALMFLib.sol";
 import {console} from "forge-std/console.sol";
 import {SharedFarmMakerLib} from "../../chains/shared/SharedFarmMarketLib.sol";
 import {IAavePool32} from "../../src/integrations/aave32/IPool32.sol";
@@ -77,7 +79,8 @@ contract ALMFStrategyPlasmaTest is PlasmaSetup, UniversalTest {
     uint8 internal constant E_MODE_CATEGORY_ID_WEETH_STABLECOINS = 4;
 
     // uint internal constant FORK_BLOCK = 6452516; // Nov-17-2025 12:36:59 UTC
-    uint internal constant FORK_BLOCK = 7041595; // Nov-24-2025 08:16:08 UTC
+    // uint internal constant FORK_BLOCK = 7041595; // Nov-24-2025 08:16:08 UTC
+    uint internal constant FORK_BLOCK = 8423845; // Dec-10-2025 08:15:16 UTC
 
     /// @notice Farm Id of the farm WETH-USDT0, leverage 3
     uint internal farmIdWethUsdt3;
@@ -114,9 +117,9 @@ contract ALMFStrategyPlasmaTest is PlasmaSetup, UniversalTest {
         farmSusdeUsdt9 = _addFarmSusdeUsdt9();
         farmWeethUsdt2 = _addFarmWeethUsdt2NoRewards();
 
+        _addStrategy(farmWeethWeth10);
         _addStrategy(farmIdWethUsdt3);
         _addStrategy(farmSusdeUsdt9);
-        _addStrategy(farmWeethWeth10);
         _addStrategy(farmWeethUsdt2);
     }
 
@@ -234,25 +237,31 @@ contract ALMFStrategyPlasmaTest is PlasmaSetup, UniversalTest {
     function _preDepositForFarmWeethWeth10() internal {
         // ---------------- thresholds
         vm.prank(platform.multisig());
-        AaveLeverageMerklFarmStrategy(currentStrategy).setThreshold(PlasmaConstantsLib.TOKEN_WEETH, 1e14);
+        AaveLeverageMerklFarmStrategy(currentStrategy).setThreshold(PlasmaConstantsLib.TOKEN_WEETH, 1e15);
         vm.prank(platform.multisig());
-        AaveLeverageMerklFarmStrategy(currentStrategy).setThreshold(PlasmaConstantsLib.TOKEN_WETH, 1e14);
+        AaveLeverageMerklFarmStrategy(currentStrategy).setThreshold(PlasmaConstantsLib.TOKEN_WETH, 1e15);
 
-        // ---------------- Additional tests
-        uint snapshot = vm.snapshotState();
+        // ---------------- Additional test
+        {
+            uint snapshotId = vm.snapshotState();
 
-        _tryToDepositToVault(IStrategy(currentStrategy).vault(), 1e18, REVERT_NO, address(this));
+            _tryToDepositToVault(IStrategy(currentStrategy).vault(), 1e18, REVERT_NO, address(this));
 
-        IAavePool32.EModeCategoryLegacy memory eModeData =
-            IAavePool32(PlasmaConstantsLib.AAVE_V3_POOL).getEModeCategoryData(E_MODE_CATEGORY_ID_WEETH_WETH);
+            IAavePool32.EModeCategoryLegacy memory eModeData =
+                IAavePool32(PlasmaConstantsLib.AAVE_V3_POOL).getEModeCategoryData(E_MODE_CATEGORY_ID_WEETH_WETH);
 
-        (, uint maxLtv,,,,) = AaveLeverageMerklFarmStrategy(currentStrategy).health();
-        assertEq(maxLtv, eModeData.ltv, "max ltv for e-mode matches");
+            (, uint maxLtv,,,,) = AaveLeverageMerklFarmStrategy(currentStrategy).health();
+            assertEq(maxLtv, eModeData.ltv, "max ltv for e-mode matches");
 
-        // see https://app.aave.com/reserve-overview/?underlyingAsset=0x211cc4dd073734da055fbf44a2b4667d5e5fe5d2&marketName=proto_plasma_v3
-        assertEq(maxLtv, 93_00, "max ltv is 93%");
+            // see https://app.aave.com/reserve-overview/?underlyingAsset=0x211cc4dd073734da055fbf44a2b4667d5e5fe5d2&marketName=proto_plasma_v3
+            assertEq(maxLtv, 93_00, "max ltv is 93%");
 
-        vm.revertToState(snapshot);
+            vm.revertToState(snapshotId);
+        }
+
+        // ---------------- More additional tests
+        _testCollateralAssetThresholdTooLow();
+        _testRevenueBaseAsset();
     }
 
     function _preDepositForFarmWeethUsdt2NoRewards() internal {
@@ -319,7 +328,8 @@ contract ALMFStrategyPlasmaTest is PlasmaSetup, UniversalTest {
             minLtv,
             maxLtv,
             uint(ILeverageLendingStrategy.FlashLoanKind.UniswapV3_2),
-            E_MODE_CATEGORY_ID_NOT_USED
+            E_MODE_CATEGORY_ID_NOT_USED,
+            0 // share price is calculated in collateral asset per USD
         );
 
         vm.startPrank(platform.multisig());
@@ -343,7 +353,8 @@ contract ALMFStrategyPlasmaTest is PlasmaSetup, UniversalTest {
             minLtv,
             maxLtv,
             uint(ILeverageLendingStrategy.FlashLoanKind.UniswapV3_2),
-            E_MODE_CATEGORY_ID_WEETH_WETH
+            E_MODE_CATEGORY_ID_WEETH_WETH,
+            0 // share price is calculated in collateral asset per USD
         );
 
         vm.startPrank(platform.multisig());
@@ -368,7 +379,8 @@ contract ALMFStrategyPlasmaTest is PlasmaSetup, UniversalTest {
             minLtv,
             maxLtv,
             uint(ILeverageLendingStrategy.FlashLoanKind.UniswapV3_2),
-            E_MODE_CATEGORY_ID_SUSDE_STABLECOINS
+            E_MODE_CATEGORY_ID_SUSDE_STABLECOINS,
+            0 // share price is calculated in collateral asset per USD
         );
 
         vm.startPrank(platform.multisig());
@@ -392,7 +404,8 @@ contract ALMFStrategyPlasmaTest is PlasmaSetup, UniversalTest {
             minLtv,
             maxLtv,
             uint(ILeverageLendingStrategy.FlashLoanKind.UniswapV3_2),
-            E_MODE_CATEGORY_ID_SUSDE_STABLECOINS
+            E_MODE_CATEGORY_ID_SUSDE_STABLECOINS,
+            0 // share price is calculated in collateral asset per USD
         );
 
         vm.startPrank(platform.multisig());
@@ -416,7 +429,8 @@ contract ALMFStrategyPlasmaTest is PlasmaSetup, UniversalTest {
             minLtv,
             maxLtv,
             uint(ILeverageLendingStrategy.FlashLoanKind.UniswapV3_2),
-            E_MODE_CATEGORY_ID_WEETH_STABLECOINS
+            E_MODE_CATEGORY_ID_WEETH_STABLECOINS,
+            0 // share price is calculated in collateral asset per USD
         );
 
         vm.startPrank(platform.multisig());
@@ -441,6 +455,61 @@ contract ALMFStrategyPlasmaTest is PlasmaSetup, UniversalTest {
     //endregion --------------------------------------- Unit tests
 
     //region --------------------------------------- Additional tests
+    function _testCollateralAssetThresholdTooLow() internal {
+        uint snapshotId = vm.snapshotState();
+        vm.prank(platform.multisig());
+        AaveLeverageMerklFarmStrategy(currentStrategy).setThreshold(PlasmaConstantsLib.TOKEN_WEETH, 1e10);
+
+        IStrategy strategy = IStrategy(currentStrategy);
+
+        // --------------------------------------------- Deposit
+        _tryToDepositToVault(strategy.vault(), 1e18, REVERT_NO, address(this));
+        vm.roll(block.number + 6);
+
+        _skip(1 days, 0);
+
+        // --------------------------------------------- First hardwork to initialize share price
+        vm.prank(platform.multisig());
+        IVault(strategy.vault()).doHardWork();
+        _skip(5 days, 0);
+
+        // --------------------------------------------- Second hardwork to utilize rewards
+        // emulate merkl rewards - tiny amount
+        deal(PlasmaConstantsLib.TOKEN_WXPL, currentStrategy, 1e18);
+
+        address multisig = platform.multisig();
+        address vault = strategy.vault();
+
+        vm.expectRevert(ALMFLib.CollateralAssetThresholdTooLow.selector);
+        vm.prank(multisig);
+        IVault(vault).doHardWork();
+
+        vm.revertToState(snapshotId);
+    }
+
+    function _testRevenueBaseAsset() internal {
+        uint snapshotId = vm.snapshotState();
+        uint earnedUsd18Before = _testRevenueAmount(PlasmaConstantsLib.TOKEN_WXPL, 1e18);
+
+        // change farm params
+        {
+            IFactory factory = IFactory(IPlatform(platform).factory());
+            uint farmId = IFarmingStrategy(currentStrategy).farmId();
+            IFactory.Farm memory farm = factory.farm(farmId);
+            farm.nums[4] = ALMFLib.REVENUE_BASE_ASSET_1; // 1 - revenue-base-asset is borrow asset
+            factory.updateFarm(farmId, farm);
+
+            vm.prank(IPlatform(platform).multisig());
+            AaveLeverageMerklFarmStrategy(currentStrategy).resetSharePrice();
+        }
+
+        uint earnedUsd18After = _testRevenueAmount(PlasmaConstantsLib.TOKEN_WXPL, 1e18);
+
+        assertEq(earnedUsd18Before, earnedUsd18After, "revenue USD same for both revenue base assets");
+
+        vm.revertToState(snapshotId);
+    }
+
     function _testDepositTwoHardworks() internal {
         uint snapshot = vm.snapshotState();
         uint amount = 1e18;
@@ -641,6 +710,44 @@ contract ALMFStrategyPlasmaTest is PlasmaSetup, UniversalTest {
     //endregion --------------------------------------- Additional tests
 
     //region --------------------------------------- Test implementations
+    function _testRevenueAmount(address rewards, uint amountRewards) internal returns (uint earnedUSD18) {
+        uint snapshotId = vm.snapshotState();
+
+        IStrategy strategy = IStrategy(currentStrategy);
+
+        // --------------------------------------------- Deposit
+        _tryToDepositToVault(strategy.vault(), 1e18, REVERT_NO, address(this));
+        vm.roll(block.number + 6);
+
+        _skip(1 days, 0);
+
+        // --------------------------------------------- First hardwork to initialize share price
+        vm.prank(platform.multisig());
+        IVault(strategy.vault()).doHardWork();
+        _skip(5 days, 0);
+
+        // --------------------------------------------- Second hardwork to utilize rewards
+        // emulate merkl rewards
+        deal(rewards, currentStrategy, amountRewards);
+
+        vm.recordLogs();
+        vm.prank(platform.multisig());
+        IVault(strategy.vault()).doHardWork();
+
+        // extract data from event IStrategy.HardWork
+        Vm.Log[] memory logs = vm.getRecordedLogs();
+        bytes32 eventSignature = keccak256("HardWork(uint256,uint256,uint256,uint256,uint256,uint256,uint256[])");
+        for (uint i = 0; i < logs.length; i++) {
+            if (logs[i].topics[0] == eventSignature) {
+                (,, earnedUSD18,,,,) = abi.decode(logs[i].data, (uint, uint, uint, uint, uint, uint, uint[]));
+                break;
+            }
+        }
+        vm.revertToState(snapshotId);
+
+        return earnedUSD18;
+    }
+
     function _depositChangeLtvWithdraw(
         uint minLtv0,
         uint maxLtv0,

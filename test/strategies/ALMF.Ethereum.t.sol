@@ -112,7 +112,8 @@ contract ALMFStrategyEthereumTest is EthereumSetup, UniversalTest {
             49_00, // min target ltv
             50_97, // max target ltv
             uint(ILeverageLendingStrategy.FlashLoanKind.UniswapV3_2),
-            0 // eMode is not used
+            0, // eMode is not used
+            0 // share price is calculated in collateral asset per USD
         );
 
         vm.startPrank(platform.multisig());

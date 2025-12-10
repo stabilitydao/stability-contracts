@@ -27,6 +27,7 @@ import {VaultTypeLib} from "../core/libs/VaultTypeLib.sol";
 /// @title Earns APR by lending assets on AAVE with leverage
 /// @dev ALMF strategy
 /// Changelog:
+///   1.3.0: New strategy param revenueBaseAsset. 0 - share price is calculated in collateral asset, 1 - in borrow asset
 ///   1.2.0: share price is calculated in collateral asset, not in usd
 ///   1.1.0: add support of e-mode
 /// @author omriss (https://github.com/omriss)
@@ -46,7 +47,7 @@ contract AaveLeverageMerklFarmStrategy is
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.2.0";
+    string public constant VERSION = "1.3.0";
 
     //region ----------------------------------- Initialization and restricted actions
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -59,7 +60,7 @@ contract AaveLeverageMerklFarmStrategy is
             revert IControllable.IncorrectInitParams();
         }
         IFactory.Farm memory farm = _getFarm(addresses[0], nums[0]);
-        if (farm.addresses.length != 3 || farm.nums.length != 4 || farm.ticks.length != 0) {
+        if (farm.addresses.length != 3 || farm.nums.length != 5 || farm.ticks.length != 0) {
             revert IFarmingStrategy.BadFarm();
         }
 
@@ -209,7 +210,7 @@ contract AaveLeverageMerklFarmStrategy is
     {
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
         ALMFLib.AlmfStrategyStorage storage $a = ALMFLib._getStorage();
-        (assets_, amounts) = ALMFLib.getRevenue($, $a.lastSharePrice, vault());
+        (assets_, amounts) = ALMFLib.getRevenue($, $a.lastSharePrice, vault(), _getRevenueBaseAssetIndex());
     }
 
     /// @inheritdoc IStrategy
@@ -261,6 +262,11 @@ contract AaveLeverageMerklFarmStrategy is
     /// @notice Set threshold for the asset
     function setThreshold(address asset_, uint threshold_) external onlyOperator {
         ALMFLib.setThreshold(asset_, threshold_);
+    }
+
+    /// @notice Reset share price after changing value of baseAsset in farm configuration
+    function resetSharePrice() external onlyOperator {
+        ALMFLib.resetSharePrice();
     }
 
     //endregion ----------------------------------- Additional functionality
@@ -351,7 +357,8 @@ contract AaveLeverageMerklFarmStrategy is
         FarmingStrategyBaseStorage storage $f = _getFarmingStrategyBaseStorage();
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
 
-        (__assets, __amounts, __rewardAssets, __rewardAmounts) = ALMFLib.claimRevenue($, $a, $f, $base, vault());
+        (__assets, __amounts, __rewardAssets, __rewardAmounts) =
+            ALMFLib.claimRevenue($, $a, $f, $base, vault(), _getRevenueBaseAssetIndex());
     }
 
     /// @inheritdoc StrategyBase
@@ -457,6 +464,12 @@ contract AaveLeverageMerklFarmStrategy is
     function _getAToken() internal view returns (address) {
         FarmingStrategyBaseStorage storage $f = _getFarmingStrategyBaseStorage();
         return _getFarm(platform(), $f.farmId).addresses[0];
+    }
+
+    /// @notice Return revenue-base-asset-index from farm configuration. 0 - collateral asset, 1 - borrow asset
+    function _getRevenueBaseAssetIndex() internal view returns (uint) {
+        IFactory.Farm memory f = _getFarm();
+        return f.nums.length < 5 ? ALMFLib.REVENUE_BASE_ASSET_0 : f.nums[4];
     }
 
     //endregion ----------------------------------- Internal logic

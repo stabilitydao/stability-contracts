@@ -16,6 +16,7 @@ library SharedFarmMakerLib {
     /// @param maxTargetLtv Maximum target loan-to-value ratio (LTV) for leverage management, 85_00 = 0.85
     /// @param flashLoanKind Type of flash loan to be used (see ILeverageLendingStrategy.FlashLoanKind)
     /// @param eModeCategoryId EMode category ID for the farm (optional, can be 0)
+    /// @param revenueBaseAssetIndex Index of the asset for share price calculations. 0 - collateral asset, 1 - borrow asset
     function _makeAaveLeverageMerklFarm(
         address aTokenCollateral,
         address aTokenBorrow,
@@ -24,7 +25,8 @@ library SharedFarmMakerLib {
         uint minTargetLtv,
         uint maxTargetLtv,
         uint flashLoanKind,
-        uint8 eModeCategoryId
+        uint8 eModeCategoryId,
+        uint8 revenueBaseAssetIndex
     ) internal pure returns (IFactory.Farm memory) {
         IFactory.Farm memory farm;
         farm.status = 0;
@@ -36,11 +38,12 @@ library SharedFarmMakerLib {
         farm.addresses[1] = aTokenBorrow;
         farm.addresses[2] = flashLoanVault;
 
-        farm.nums = new uint[](4);
+        farm.nums = new uint[](5);
         farm.nums[0] = minTargetLtv;
         farm.nums[1] = maxTargetLtv;
         farm.nums[2] = flashLoanKind;
         farm.nums[3] = eModeCategoryId;
+        farm.nums[4] = revenueBaseAssetIndex;
 
         return farm;
     }

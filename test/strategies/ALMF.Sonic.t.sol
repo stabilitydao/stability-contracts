@@ -130,7 +130,8 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
             DEFAULT_MIN_LTV, // min target ltv
             DEFAULT_MAX_LTV, // max target ltv
             0, // beets v2 flash loan kind
-            0 // eMode is not used
+            0, // eMode is not used
+            0 // share price is calculated in collateral asset per USD
         );
 
         vm.startPrank(platform.multisig());
@@ -168,6 +169,7 @@ contract ALMFStrategySonicTest is SonicSetup, UniversalTest {
 
         // --------- various deposit - withdraw tests
         _testRevenueAmount();
+
         _testDepositWithdrawWithRewardsOnBalance();
 
         // check direct deposit of small amount without leverage
