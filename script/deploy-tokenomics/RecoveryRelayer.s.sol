@@ -5,7 +5,7 @@ import {StdConfig} from "forge-std/StdConfig.sol";
 import {Script} from "forge-std/Script.sol";
 import {Proxy} from "../../src/core/proxy/Proxy.sol";
 import {RecoveryRelayer} from "../../src/tokenomics/RecoveryRelayer.sol";
-import {console} from "forge-std/console.sol";
+// import {console} from "forge-std/console.sol";
 
 contract DeployRecoveryRelayer is Script {
     uint internal constant SONIC_CHAIN_ID = 146;

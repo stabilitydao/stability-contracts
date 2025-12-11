@@ -12,16 +12,21 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 import {SendParam, MessagingFee, OFTReceipt} from "@layerzerolabs/oft-evm/contracts/interfaces/IOFT.sol";
 import {MessagingReceipt} from "@layerzerolabs/oapp-evm/contracts/oapp/OAppSender.sol";
 import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
+import {OptionsBuilder} from "@layerzerolabs/oapp-evm/contracts/oapp/libs/OptionsBuilder.sol";
 
+/// @notice XTokenBridge - bridge for xToken (i.e. xSTBL) using LayerZero Omnichain Fungible Token (OFT) bridge
+/// Changelog:
+///  - 1.0.1: Add buildOptions function
 contract XTokenBridge is Controllable, IXTokenBridge, IOAppComposer, ReentrancyGuardUpgradeable {
     using SafeERC20 for IERC20;
+    using OptionsBuilder for bytes;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         CONSTANTS                          */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.0";
+    string public constant VERSION = "1.0.1";
 
     // keccak256(abi.encode(uint(keccak256("erc7201:stability.XTokenBridge")) - 1)) & ~bytes32(uint(0xff));
     bytes32 internal constant XTOKEN_BRIDGE_STORAGE_LOCATION =
@@ -118,6 +123,18 @@ contract XTokenBridge is Controllable, IXTokenBridge, IOAppComposer, ReentrancyG
 
         // paying using ZRO token (Layer Zero token) is not supported
         return IOFTPausable($.bridge).quoteSend(sendParam, false);
+    }
+
+    /// @inheritdoc IXTokenBridge
+    function buildOptions(
+        uint128 gasLzReceive_,
+        uint128 valueLzReceive_,
+        uint16 _indexLzCompose,
+        uint128 gasLzCompose,
+        uint128 valueLzCompose_
+    ) external pure returns (bytes memory) {
+        return OptionsBuilder.newOptions().addExecutorLzReceiveOption(gasLzReceive_, valueLzReceive_)
+            .addExecutorLzComposeOption(_indexLzCompose, gasLzCompose, valueLzCompose_);
     }
 
     //endregion --------------------------------- View

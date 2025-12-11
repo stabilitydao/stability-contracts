@@ -6,15 +6,18 @@ import {IControllable, Controllable} from "../core/base/Controllable.sol";
 import {IPlatform} from "../interfaces/IPlatform.sol";
 import {ITokenOFTAdapter} from "../interfaces/ITokenOFTAdapter.sol";
 import {IOFTPausable} from "../interfaces/IOFTPausable.sol";
+import {OptionsBuilder} from "@layerzerolabs/oapp-evm/contracts/oapp/libs/OptionsBuilder.sol";
 
 /// @notice Omnichain Fungible Token Adapter for exist main-token
+/// Changelog:
+///  - 1.0.1: Add buildOptions function
 contract TokenOFTAdapter is Controllable, OFTAdapterUpgradeable, ITokenOFTAdapter {
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         CONSTANTS                          */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.0";
+    string public constant VERSION = "1.0.1";
 
     // keccak256(abi.encode(uint(keccak256("erc7201:stability.TokenOFTAdapter")) - 1)) & ~bytes32(uint(0xff));
     bytes32 internal constant TOKEN_OFT_ADAPTER_STORAGE_LOCATION =
@@ -50,6 +53,11 @@ contract TokenOFTAdapter is Controllable, OFTAdapterUpgradeable, ITokenOFTAdapte
     /// @inheritdoc IOFTPausable
     function paused(address account_) external view returns (bool) {
         return getTokenOftAdapterStorage().paused[account_];
+    }
+
+    /// @inheritdoc IOFTPausable
+    function buildOptions(uint128 gas_, uint128 value_) external pure returns (bytes memory) {
+        return OptionsBuilder.addExecutorLzReceiveOption(OptionsBuilder.newOptions(), gas_, value_);
     }
 
     //endregion --------------------------------- Initializers and view

@@ -232,8 +232,9 @@ contract XTokenBridgeTest is Test {
         {
             uint snapshot = vm.snapshotState();
 
-            bytes memory options = OptionsBuilder.newOptions().addExecutorLzReceiveOption(GAS_LIMIT_LZRECEIVE, 0)
-                .addExecutorLzComposeOption(0, GAS_LIMIT_LZCOMPOSE, 0);
+            bytes memory options = xTokenBridge.buildOptions(GAS_LIMIT_LZRECEIVE, 0, 0, GAS_LIMIT_LZCOMPOSE, 0);
+            //            bytes memory options = OptionsBuilder.newOptions().addExecutorLzReceiveOption(GAS_LIMIT_LZRECEIVE, 0)
+            //                .addExecutorLzComposeOption(0, GAS_LIMIT_LZCOMPOSE, 0);
             MessagingFee memory msgFee =
                 IXTokenBridge(sonic.xTokenBridge).quoteSend(avalanche.endpointId, 1e18, options);
 

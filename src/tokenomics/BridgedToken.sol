@@ -7,9 +7,11 @@ import {IPlatform} from "../interfaces/IPlatform.sol";
 import {IBridgedToken} from "../interfaces/IBridgedToken.sol";
 import {IOFTPausable} from "../interfaces/IOFTPausable.sol";
 import {ERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
+import {OptionsBuilder} from "@layerzerolabs/oapp-evm/contracts/oapp/libs/OptionsBuilder.sol";
 
 /// @notice Omnichain Fungible Token - bridged version of main-token from Sonic to other chains
 /// Changelog:
+///  - 1.0.2: Add buildOptions function
 ///  - 1.0.1: Add setName and setSymbol functions
 contract BridgedToken is Controllable, OFTUpgradeable, IBridgedToken {
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -17,7 +19,7 @@ contract BridgedToken is Controllable, OFTUpgradeable, IBridgedToken {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.1";
+    string public constant VERSION = "1.0.2";
 
     // keccak256(abi.encode(uint(keccak256("erc7201:stability.BridgedToken")) - 1)) & ~bytes32(uint(0xff));
     bytes32 internal constant BRIDGED_TOKEN_STORAGE_LOCATION =
@@ -112,6 +114,11 @@ contract BridgedToken is Controllable, OFTUpgradeable, IBridgedToken {
             return changedSymbol;
         }
         return super.symbol();
+    }
+
+    /// @inheritdoc IOFTPausable
+    function buildOptions(uint128 gas_, uint128 value_) external pure returns (bytes memory) {
+        return OptionsBuilder.addExecutorLzReceiveOption(OptionsBuilder.newOptions(), gas_, value_);
     }
 
     //endregion --------------------------------- View

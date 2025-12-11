@@ -657,7 +657,8 @@ contract BridgedTokenTest is Test {
         IERC20(SonicConstantsLib.TOKEN_STBL).approve(address(adapter), sendAmount);
 
         // ------------------- Prepare send options
-        bytes memory options = OptionsBuilder.newOptions().addExecutorLzReceiveOption(GAS_LIMIT, 0);
+        bytes memory options = adapter.buildOptions(GAS_LIMIT, 0);
+        // bytes memory options = OptionsBuilder.newOptions().addExecutorLzReceiveOption(GAS_LIMIT, 0);
 
         SendParam memory sendParam = SendParam({
             dstEid: target.endpointId,
@@ -730,7 +731,8 @@ contract BridgedTokenTest is Test {
         IERC20(target.oapp).approve(target.oapp, sendAmount);
 
         // ------------------- Prepare send options
-        bytes memory options = OptionsBuilder.newOptions().addExecutorLzReceiveOption(2_000_000, 0);
+        bytes memory options = IOFTPausable(target.oapp).buildOptions(2_000_000, 0);
+        // bytes memory options = OptionsBuilder.newOptions().addExecutorLzReceiveOption(2_000_000, 0);
 
         SendParam memory sendParam = SendParam({
             dstEid: SonicConstantsLib.LAYER_ZERO_V2_ENDPOINT_ID,
@@ -795,7 +797,8 @@ contract BridgedTokenTest is Test {
         IERC20(src.oapp).approve(address(adapter), sendAmount);
 
         // ------------------- Prepare send options
-        bytes memory options = OptionsBuilder.newOptions().addExecutorLzReceiveOption(GAS_LIMIT, 0);
+        bytes memory options = IOFTPausable(src.oapp).buildOptions(GAS_LIMIT, 0);
+        // bytes memory options = OptionsBuilder.newOptions().addExecutorLzReceiveOption(GAS_LIMIT, 0);
 
         SendParam memory sendParam = SendParam({
             dstEid: target.endpointId,
@@ -867,7 +870,7 @@ contract BridgedTokenTest is Test {
             to: bytes32(uint(uint160(receiver))),
             amountLD: sendAmount,
             minAmountLD: sendAmount,
-            extraOptions: OptionsBuilder.newOptions().addExecutorLzReceiveOption(2_000_000, 0),
+            extraOptions: adapter.buildOptions(2_000_000, 0),
             composeMsg: "",
             oftCmd: ""
         });

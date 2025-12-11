@@ -14,4 +14,9 @@ interface IOFTPausable is IOFT {
     /// @param account Address of account
     /// @param paused_ True - set paused, false - unpaused
     function setPaused(address account, bool paused_) external;
+
+    /// @dev See OptionsBuilder.addExecutorLzReceiveOption
+    /// @param gas_ The gasLimit used on the lzReceive() function in the OApp.
+    /// @param value_ The msg.value passed to the lzReceive() function in the OApp (use 0).
+    function buildOptions(uint128 gas_, uint128 value_) external pure returns (bytes memory);
 }

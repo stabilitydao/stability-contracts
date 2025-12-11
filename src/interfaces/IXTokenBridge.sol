@@ -93,4 +93,18 @@ interface IXTokenBridge {
     /// @param amount Amount of tokens to salvage
     /// @param receiver Address to send the salvaged tokens to
     function salvage(address token, uint amount, address receiver) external;
+
+    /// @dev See OptionsBuilder.addExecutorLzReceiveOption.addExecutorLzComposeOption
+    /// @param gasLzReceive_ The gasLimit used on the lzReceive() function in the OApp.
+    /// @param valueLzReceive_ The msg.value passed to the lzReceive() function in the OApp (use 0).
+    /// @param _indexLzCompose The index for the lzCompose() function call (use 0).
+    /// @param gasLzCompose The gasLimit for the lzCompose() function call.
+    /// @param valueLzCompose_ The msg.value for the lzCompose() function call (use 0).
+    function buildOptions(
+        uint128 gasLzReceive_,
+        uint128 valueLzReceive_,
+        uint16 _indexLzCompose,
+        uint128 gasLzCompose,
+        uint128 valueLzCompose_
+    ) external pure returns (bytes memory);
 }
