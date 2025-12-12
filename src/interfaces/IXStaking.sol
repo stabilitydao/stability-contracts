@@ -16,39 +16,37 @@ interface IXStaking {
 
     event NewDuration(uint oldDuration, uint newDuration);
 
-    event InitializeStabilityDAO(address stblDao);
-
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      WRITE FUNCTIONS                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    /// @notice Deposits all xSTBL in the caller's wallet
+    /// @notice Deposits all xToken in the caller's wallet
     function depositAll() external;
 
-    /// @notice Deposit a specified amount of xSTBL
+    /// @notice Deposit a specified amount of xToken
     function deposit(uint amount) external;
 
-    /// @notice Withdraw all xSTBL and claim rewards
+    /// @notice Withdraw all xToken and claim rewards
     function withdrawAll() external;
 
-    /// @notice Withdraw a specified amount of xSTBL
+    /// @notice Withdraw a specified amount of xToken
     function withdraw(uint amount) external;
 
     /// @notice Claims pending rebase rewards
     function getReward() external;
 
-    /// @notice Used to notify pending xSTBL rebases and platform revenue share
-    /// @param amount The amount of STBL to be notified
+    /// @notice Used to notify pending xToken rebases and platform revenue share
+    /// @param amount The amount of main token to be notified
     function notifyRewardAmount(uint amount) external;
 
     /// @notice Change duration period
     function setNewDuration(uint) external;
 
-    /// @notice Updates STBL_DAO balances for the given users.
+    /// @notice Updates DAO-token balances for the given users.
     /// @custom:restricted Only operator
-    /// @dev If a user has less than the minimum staking power of xSTBL, his STBL_DAO balance will be zero.
-    /// Otherwise, the user receives 1 STBL_DAO for each 1 xSTBL staked.
-    function syncStabilityDAOBalances(address[] calldata users) external;
+    /// @dev If a user has less than the minimum staking power of xToken, his DAO-token balance will be zero.
+    /// Otherwise, the user receives 1 DAO-token for each 1 xToken staked.
+    function syncDAOBalances(address[] calldata users) external;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      VIEW FUNCTIONS                        */
@@ -57,9 +55,9 @@ interface IXStaking {
     /// @notice Returns the last time the reward was modified or periodFinish if the reward has ended
     function lastTimeRewardApplicable() external view returns (uint);
 
-    /// @notice The address of the xSTBL token (staking/voting token)
-    /// @return xSTBL address
-    function xSTBL() external view returns (address);
+    /// @notice The address of the xToken token (staking/voting token)
+    /// @return xToken address
+    function xToken() external view returns (address);
 
     /// @notice Returns the total voting power (equal to total supply in the XStaking)
     function totalSupply() external view returns (uint);
@@ -67,7 +65,7 @@ interface IXStaking {
     /// @notice Last time the rewards system was updated
     function lastUpdateTime() external view returns (uint);
 
-    /// @notice The amount of rewards per xSTBL
+    /// @notice The amount of rewards per xToken
     function rewardPerTokenStored() external view returns (uint);
 
     /// @notice When the 1800 seconds after notifying are up
@@ -88,7 +86,7 @@ interface IXStaking {
     /// @return The stored rewards
     function storedRewardsPerUser(address user) external view returns (uint);
 
-    /// @notice Rewards per amount of xSTBL's staked
+    /// @notice Rewards per amount of xToken's staked
     function userRewardPerTokenStored(address user) external view returns (uint);
 
     /// @notice User's earned reward

@@ -3,7 +3,7 @@ pragma solidity ^0.8.28;
 
 import {RecoveryLib} from "./libs/RecoveryLib.sol";
 import {Controllable, IControllable, IPlatform} from "../core/base/Controllable.sol";
-import {IRecovery} from "../interfaces/IRecovery.sol";
+import {IRecovery, IRecoveryBase} from "../interfaces/IRecovery.sol";
 import {IUniswapV3SwapCallback} from "../integrations/uniswapv3/IUniswapV3SwapCallback.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import {ISwapper} from "../interfaces/ISwapper.sol";
@@ -12,6 +12,7 @@ import {IPriceReader} from "../interfaces/IPriceReader.sol";
 /// @title Recovery contract to swap assets on recovery tokens in recovery pools
 /// @author dvpublic (https://github.com/dvpublic)
 /// Changelog:
+///   1.2.3: IRecoveryBase was added - #424
 ///   1.2.2: add swapExplicitly, selectPool tries to avoid pools with price = 1 - #427
 ///   1.2.1: replace event SwapAssets by event SwapAssets2
 ///   1.2.0: getListTokensToSwap excludes meta vault tokens, add getListRegisteredTokens, fix getPoolWithMinPrice logic
@@ -26,13 +27,13 @@ contract Recovery is Controllable, IRecovery, IUniswapV3SwapCallback {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.2.2";
+    string public constant VERSION = "1.2.3";
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      INITIALIZATION                        */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    /// @inheritdoc IRecovery
+    /// @inheritdoc IRecoveryBase
     function initialize(address platform_) public initializer {
         __Controllable_init(platform_);
     }
@@ -150,7 +151,7 @@ contract Recovery is Controllable, IRecovery, IUniswapV3SwapCallback {
     /*                      Actions                               */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    /// @inheritdoc IRecovery
+    /// @inheritdoc IRecoveryBase
     function registerAssets(address[] memory tokens) external override onlyWhitelisted {
         RecoveryLib.registerAssets(tokens);
     }

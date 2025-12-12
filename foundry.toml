@@ -30,8 +30,10 @@ arbitrum = "${ARBITRUM_RPC_URL}"
 ethereum = "${ETHEREUM_RPC_URL}"
 real = "${REAL_RPC_URL}"
 sonic = "${SONIC_RPC_URL}"
+146 = "${SONIC_RPC_URL}" # required for StdConfig
 avalanche = "${AVALANCHE_RPC_URL}"
 plasma = "${PLASMA_RPC_URL}"
+9745 = "${PLASMA_RPC_URL}" # required for StdConfig
 
 [etherscan]
 polygon = { key = "${POLYGONSCAN_API_KEY}", chain = 137  }
