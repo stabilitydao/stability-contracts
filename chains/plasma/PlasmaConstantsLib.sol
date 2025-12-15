@@ -61,4 +61,6 @@ library PlasmaConstantsLib {
     /// @notice aPlaUSDe, see https://app.merkl.xyz/opportunities/plasma/MULTILOG_DUTCH/0x0e4366ce92ab4e9b011f77234922b1a04a9b6ec8BORROW_BL
     address public constant TOKEN_WAPLAUSDE = 0x63dC02BB25E7BF7Eaa0E42E71D785a388AcD740b;
 
+    address public constant POOL_SOLIDLY_WETH_WEETH = 0x355705857c9548E71E866087b01bB5b0A1fd671b;
+
 }
