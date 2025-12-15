@@ -26,8 +26,7 @@ contract SwapperUpgradeRoutesForMetaVaultsSonicTest is Test {
     // wstkscETH
 
     function testUpgradeRoutesForWans() public {
-        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL")));
-        vm.rollFork(49150536); // Oct-03-2025 12:00:30 AM UTC
+        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL"), 49150536)); // Oct-03-2025 12:00:30 AM UTC
 
         address multisig = IPlatform(PLATFORM).multisig();
         IRecovery recovery = IRecovery(IPlatform(PLATFORM).recovery());
@@ -43,8 +42,7 @@ contract SwapperUpgradeRoutesForMetaVaultsSonicTest is Test {
     }
 
     function testUpgradeRoutesForWstkscUSD() public {
-        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL")));
-        vm.rollFork(49150536); // Oct-03-2025 12:00:30 AM UTC
+        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL"), 49150536)); // Oct-03-2025 12:00:30 AM UTC
 
         address multisig = IPlatform(PLATFORM).multisig();
         IRecovery recovery = IRecovery(IPlatform(PLATFORM).recovery());
@@ -60,8 +58,7 @@ contract SwapperUpgradeRoutesForMetaVaultsSonicTest is Test {
     }
 
     function testUpgradeRoutesForWstkscETH() public {
-        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL")));
-        vm.rollFork(49150536); // Oct-03-2025 12:00:30 AM UTC
+        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL"), 49150536)); // Oct-03-2025 12:00:30 AM UTC
 
         address multisig = IPlatform(PLATFORM).multisig();
         IRecovery recovery = IRecovery(IPlatform(PLATFORM).recovery());

@@ -10,7 +10,7 @@ import {ISwapper} from "../../interfaces/ISwapper.sol";
 import {IPriceReader} from "../../interfaces/IPriceReader.sol";
 import {IUniswapV3Pool} from "../../integrations/uniswapv3/IUniswapV3Pool.sol";
 import {IWrappedMetaVault} from "../../interfaces/IWrappedMetaVault.sol";
-import {LibPRNG} from "../../../lib/solady/src/utils/LibPRNG.sol";
+import {LibPRNG} from "@solady/utils/LibPRNG.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 library RecoveryLib {
