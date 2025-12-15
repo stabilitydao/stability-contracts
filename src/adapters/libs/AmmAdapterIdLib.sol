@@ -16,4 +16,5 @@ library AmmAdapterIdLib {
     string public constant META_VAULT = "MetaUSD";
     string public constant BALANCER_V3_RECLAMM = "BalancerV3ReCLAMM";
     string public constant BRUNCH = "Brunch";
+    string public constant AAVE_V3 = "AaveV3";
 }

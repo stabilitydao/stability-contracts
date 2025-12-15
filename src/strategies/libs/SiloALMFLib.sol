@@ -1053,5 +1053,5 @@ library SiloALMFLib {
         // assume that collateral asset is always WrappedMetaVault, i.e. wmetaUSD
         return IMetaVault(IWrappedMetaVault(wrappedMetaVault).metaVault());
     }
-    //region ------------------------------------- Transient prices cache
+    //endregion ------------------------------------- Transient prices cache
 }

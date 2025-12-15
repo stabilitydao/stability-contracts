@@ -99,6 +99,15 @@
 ### Periphery
 
 * **Frontend** `0x70e804364175e23F1c30dFa03BFb19d936E5E81c` [plasmascan](https://plasmascan.to/address/0x70e804364175e23F1c30dFa03BFb19d936E5E81c)
+* **UpgradeHelper** `0x932D7bd758214fDF58f7824c09503D9FcD36C089` [plasmascan](https://plasmascan.to/address/0x932D7bd758214fDF58f7824c09503D9FcD36C089)
+
+### AMM adapters
+*  **BalancerV3ReCLAMM** `0x54Ea393aAc117d67B913F1cC63Df143761519A63` [plasmascan](https://plasmascan.to/address/0x54Ea393aAc117d67B913F1cC63Df143761519A63)
+*  **BalancerV3Stable** `0xc73DBCFFADd43F87c0a37d39FA1460F5D80E3bca` [plasmascan](https://plasmascan.to/address/0xc73DBCFFADd43F87c0a37d39FA1460F5D80E3bca)
+*  **Curve** `0xF93Ee7e1B1C5679974a004ce59DBdECEcB45475e` [plasmascan](https://plasmascan.to/address/0xF93Ee7e1B1C5679974a004ce59DBdECEcB45475e)
+*  **ERC4626** `0x63f83f6807C77FA33ccA12D9422B912C78f6F8ed` [plasmascan](https://plasmascan.to/address/0x63f83f6807C77FA33ccA12D9422B912C78f6F8ed)
+*  **UniswapV3** `0xd901ceCbcD3493C98c9569ea7a41295a180333de` [plasmascan](https://plasmascan.to/address/0xd901ceCbcD3493C98c9569ea7a41295a180333de)
+*  **Solidly** `0x35CcD976BD574fEa00b97d58095bB8e90D26a455` [plasmascan](https://plasmascan.to/address/0x35CcD976BD574fEa00b97d58095bB8e90D26a455)
 
 
 ## Polygon [137]

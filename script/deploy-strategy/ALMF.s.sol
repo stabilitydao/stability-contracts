@@ -2,17 +2,15 @@
 pragma solidity ^0.8.28;
 
 import {Script} from "forge-std/Script.sol";
-import {UpgradeHelper} from "../../src/periphery/UpgradeHelper.sol";
+import {AaveLeverageMerklFarmStrategy} from "../../src/strategies/AaveLeverageMerklFarmStrategy.sol";
 
-contract DeployFrontendSonic is Script {
-    address public constant PLATFORM = 0x4Aca671A420eEB58ecafE83700686a2AD06b20D8;
-
+contract DeployALMF is Script {
     function run() external {
         uint deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(deployerPrivateKey);
-        new UpgradeHelper(PLATFORM);
+        new AaveLeverageMerklFarmStrategy();
         vm.stopBroadcast();
     }
 
-    function testDeployPeriphery() external {}
+    function testDeployStrategy() external {}
 }
