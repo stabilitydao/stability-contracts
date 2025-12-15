@@ -533,6 +533,13 @@ library SonicConstantsLib {
     address public constant BRUNCH_GEN2_ATOKEN_SBUSD = 0xeB9bB589C12A0433B274760E657D549a6973C787;
     address public constant BRUNCH_GEN2_ATOKEN_USDC = 0x958d930E61bdaebbBc0270D88FdBAEE9A13Dc6fd;
 
+    // -------------------------- STBL-USDC isolated market
+    address public constant STABILITY_STBL_USDC_MARKET_ADDRESS_PROVIDER = 0x234888531C4a6AFeF6935DD7DB9F9D5325b68715;
+    address public constant STABILITY_STBL_USDC_MARKET_POOL = 0xb0A06303085aB2F73212C8846CA5388Da5697c31;
+    address public constant STABILITY_STBL_USDC_MARKET_TOKEN_STBL = 0x00886bC6a12d8D5ad0ef51e041a8AB37A0E59251;
+    address public constant STABILITY_STBL_USDC_MARKET_TOKEN_USDC = 0x46b2E96725F03873Cb586a7f84c22545F2835F31;
+
+
     // -------------------------- Shadow
     // address public constant SHADOW_NFT = 0x12E66C8F215DdD5d48d150c8f46aD0c6fB0F4406;
     address public constant SHADOW_ROUTER = 0x1D368773735ee1E678950B7A97bcA2CafB330CDc;

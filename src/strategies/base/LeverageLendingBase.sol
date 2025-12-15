@@ -150,7 +150,7 @@ abstract contract LeverageLendingBase is StrategyBase, ILeverageLendingStrategy 
     }
 
     /// @inheritdoc IStrategy
-    function getRevenue() external pure virtual returns (address[] memory assets_, uint[] memory amounts) {}
+    function getRevenue() external view virtual returns (address[] memory assets_, uint[] memory amounts) {}
 
     /// @inheritdoc ILeverageLendingStrategy
     function getUniversalParams() external view returns (uint[] memory params, address[] memory addresses) {

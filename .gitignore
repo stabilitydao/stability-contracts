@@ -10,10 +10,8 @@ tmp/
 docs/
 
 # Dotenv file
-.env
 
 .idea
-.vscode
 lcov.info
 report.txt
 semgrep.sarif
@@ -32,3 +30,5 @@ report/
 
 # Coverage reports
 coverage-html/
+config.bat
+node_modules

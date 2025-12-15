@@ -3,10 +3,6 @@ pragma solidity ^0.8.28;
 
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 import {Script} from "forge-std/Script.sol";
-import {XStaking} from "../../src/tokenomics/XStaking.sol";
-import {DAO} from "../../src/tokenomics/DAO.sol";
-import {XToken} from "../../src/tokenomics/XToken.sol";
-import {RevenueRouter} from "../../src/tokenomics/RevenueRouter.sol";
 import {Platform} from "../../src/core/Platform.sol";
 import {XTokenBridge} from "../../src/tokenomics/XTokenBridge.sol";
 import {TokenOFTAdapter} from "../../src/tokenomics/TokenOFTAdapter.sol";

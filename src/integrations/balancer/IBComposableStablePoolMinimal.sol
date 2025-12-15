@@ -11,6 +11,7 @@ interface IBComposableStablePoolMinimal {
     function getScalingFactors() external view returns (uint[] memory);
     function getBptIndex() external view returns (uint);
     function getVault() external view returns (address);
+    function getFlashLoanFeePercentage() external view returns (uint256);
 
     function updateTokenRateCache(address token) external;
 }

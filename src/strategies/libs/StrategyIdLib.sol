@@ -37,4 +37,5 @@ library StrategyIdLib {
     string internal constant COMPOUND_V2 = "Compound V2";
     string internal constant SILO_MANAGED_MERKL_FARM = "Silo Managed Merkl Farm";
     string internal constant SILO_MERKL_FARM = "Silo Merkl Farm"; // SiMerklF
+    string internal constant AAVE_LEVERAGE_MERKL_FARM = "Aave Leverage Merkl Farm";
 }

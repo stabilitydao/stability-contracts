@@ -46,6 +46,8 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
     bool public allowZeroApr = false;
     uint public poolVolumeSwapAmount0Multiplier = 2;
     uint public poolVolumeSwapAmount1Multiplier = 2;
+    /// @notice If true, then zero totalRevenueUSD won't cause test failure. False by default.
+    bool internal allowZeroTotalRevenueUSD;
     mapping(address pool => uint multiplier) public poolVolumeSwapAmount0MultiplierForPool;
     mapping(address pool => uint multiplier) public poolVolumeSwapAmount1MultiplierForPool;
 
@@ -412,7 +414,9 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                     if (__assets.length > 0) {
                         (uint totalRevenueUSD,,,) =
                             IPriceReader(platform.priceReader()).getAssetsPrice(__assets, amounts);
-                        assertGt(totalRevenueUSD, 0, "Universal test: estimated totalRevenueUSD is zero");
+                        if (!allowZeroTotalRevenueUSD) {
+                            assertGt(totalRevenueUSD, 0, "Universal test: estimated totalRevenueUSD is zero");
+                        }
                         assertGt(__assets.length, 0, "Universal test: getRevenue assets length is zero");
                         if (totalRevenueUSD == 0) {
                             for (uint x; x < __assets.length; ++x) {
@@ -741,7 +745,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
 
                 vm.prank(platform.multisig());
                 strategy.emergencyStopInvesting();
-                assertEq(strategy.total(), 0);
+                assertEq(strategy.total(), 0, "emergency total 0");
 
                 IVault(vars.vault)
                     .withdrawAssets(assets, IERC20(vars.vault).balanceOf(address(this)), new uint[](assets.length));
