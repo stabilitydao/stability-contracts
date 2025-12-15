@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import {Test, Vm, console} from "forge-std/Test.sol";
+import {Test, Vm} from "forge-std/Test.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {AaveLeverageMerklFarmStrategy} from "../../src/strategies/AaveLeverageMerklFarmStrategy.sol";
 import {IStrategy} from "../../src/interfaces/IStrategy.sol";
@@ -12,7 +12,6 @@ import {IFactory} from "../../src/interfaces/IFactory.sol";
 import {IFarmingStrategy} from "../../src/interfaces/IFarmingStrategy.sol";
 import {PlasmaConstantsLib} from "../../chains/plasma/PlasmaConstantsLib.sol";
 import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
-import {AmmAdapterIdLib} from "../../src/adapters/libs/AmmAdapterIdLib.sol";
 import {ALMFLib} from "../../src/strategies/libs/ALMFLib.sol";
 
 /// @notice Add revenueBaseAssetIndex param to farm, reset share price

@@ -18,9 +18,17 @@ jobs:
     name: Test, coverage
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: recursive
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Ensure submodules are on correct commits
+        run: |
+          git submodule sync --recursive
+          git submodule update --init --recursive
+          git submodule status
 
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
@@ -74,7 +82,7 @@ jobs:
         id: coverage
 
       - name: Upload coverage lcov report to Codecov
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         env:
           CODECOV_TOKEN: ${{secrets.CODECOV_TOKEN}}
 

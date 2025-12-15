@@ -753,7 +753,7 @@ contract MetaVaultMaxDepositMetaUsdSonicTest is Test {
         return wrapped.balanceOf(address(this)) - balanceBefore;
     }
 
-    function _getEmittedConsumedAmount() internal returns (uint amountConsumedEmitted) {
+    function _getEmittedConsumedAmount() internal view returns (uint amountConsumedEmitted) {
         Vm.Log[] memory logs = vm.getRecordedLogs();
         bytes32 eventSig = keccak256("DepositAssets(address,address[],uint256[],uint256)");
 
@@ -770,7 +770,7 @@ contract MetaVaultMaxDepositMetaUsdSonicTest is Test {
         return 0;
     }
 
-    function _getDepositAmountToWrapped() internal returns (uint amountConsumedEmitted) {
+    function _getDepositAmountToWrapped() internal view returns (uint amountConsumedEmitted) {
         Vm.Log[] memory logs = vm.getRecordedLogs();
         bytes32 eventSig = keccak256("Deposit(address,address,uint256,uint256)");
 

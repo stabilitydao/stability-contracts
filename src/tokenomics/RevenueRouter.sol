@@ -11,14 +11,16 @@ import {IPool} from "../integrations/aave/IPool.sol";
 import {IRevenueRouter, EnumerableMap, EnumerableSet} from "../interfaces/IRevenueRouter.sol";
 import {IStabilityVault} from "../interfaces/IStabilityVault.sol";
 import {ISwapper} from "../interfaces/ISwapper.sol";
-import {IXSTBL} from "../interfaces/IXSTBL.sol";
+import {IXToken} from "../interfaces/IXToken.sol";
 import {IXStaking} from "../interfaces/IXStaking.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IHardWorker} from "../interfaces/IHardWorker.sol";
-import {IRecovery} from "../interfaces/IRecovery.sol";
+import {IRecoveryBase} from "../interfaces/IRecoveryBase.sol";
 
 /// @title Platform revenue distributor
 /// Changelog:
+///   1.8.0: renaming (STBL => main-token, xSTBL => xToken), xShare = 100% by default.
+///          Add setAddresses, getXShare. RevenueRouter uses IRecoveryBase instead of IRecovery - #426
 ///   1.7.1: add addresses()
 ///   1.7.0: improve
 ///   1.6.0: send 20% of earned assets to Recovery
@@ -37,10 +39,13 @@ contract RevenueRouter is Controllable, IRevenueRouter {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.7.1";
+    string public constant VERSION = "1.8.0";
 
     uint internal constant RECOVER_PERCENTAGE = 20_000; // 20%
     uint internal constant DENOMINATOR = 100_000; // 100%
+
+    /// @notice Count of addresses in addresses() and setAddresses
+    uint internal constant COUNT_ADDRESSES = 4;
 
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.RevenueRouter")) - 1)) & ~bytes32(uint256(0xff))
     bytes32 private constant REVENUE_ROUTER_STORAGE_LOCATION =
@@ -50,14 +55,14 @@ contract RevenueRouter is Controllable, IRevenueRouter {
     /*                      INITIALIZATION                        */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    function initialize(address platform_, address xStbl_, address feeTreasury_) external initializer {
+    function initialize(address platform_, address xToken_, address feeTreasury_) external initializer {
         __Controllable_init(platform_);
         RevenueRouterStorage storage $ = _getRevenueRouterStorage();
-        if (xStbl_ != address(0)) {
-            $.stbl = IXSTBL(xStbl_).STBL();
-            $.xStbl = xStbl_;
-            $.xStaking = IXSTBL(xStbl_).xStaking();
-            $.xShare = 50_000;
+        if (xToken_ != address(0)) {
+            $.token = IXToken(xToken_).token();
+            $.xToken = xToken_;
+            $.xStaking = IXToken(xToken_).xStaking();
+            $.xShare = 100_000;
         }
         $.feeTreasury = feeTreasury_;
         $.activePeriod = getPeriod();
@@ -124,6 +129,19 @@ contract RevenueRouter is Controllable, IRevenueRouter {
     function setXShare(uint newShare) external onlyGovernanceOrMultisig {
         RevenueRouterStorage storage $ = _getRevenueRouterStorage();
         $.xShare = newShare;
+
+        emit SetXShare(newShare);
+    }
+
+    /// @inheritdoc IRevenueRouter
+    function setAddresses(address[] memory addresses_) external onlyGovernanceOrMultisig {
+        RevenueRouterStorage storage $ = _getRevenueRouterStorage();
+        $.token = addresses_[0];
+        $.xToken = addresses_[1];
+        $.xStaking = addresses_[2];
+        $.feeTreasury = addresses_[3];
+
+        emit SetAddresses(addresses_);
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -138,10 +156,10 @@ contract RevenueRouter is Controllable, IRevenueRouter {
         $.activePeriod = _activePeriod;
         newPeriod = _activePeriod;
         uint periodEnded = newPeriod - 1;
-        address _xstbl = $.xStbl;
-        if (_xstbl != address(0)) {
-            // process PvP rewards (100% xSTBL exit fees)
-            IXSTBL(_xstbl).rebase();
+        address _xToken = $.xToken;
+        if (_xToken != address(0)) {
+            // process PvP rewards (100% xToken exit fees)
+            IXToken(_xToken).rebase();
 
             // process core Unit revenue
             uint _pendingRevenue = $.pendingRevenue;
@@ -160,7 +178,7 @@ contract RevenueRouter is Controllable, IRevenueRouter {
             // put week rewards to XStaking users
             if (_pendingRevenue != 0) {
                 address _xStaking = $.xStaking;
-                IERC20($.stbl).approve(_xStaking, _pendingRevenue);
+                IERC20($.token).approve(_xStaking, _pendingRevenue);
                 IXStaking(_xStaking).notifyRewardAmount(_pendingRevenue);
             }
 
@@ -193,8 +211,8 @@ contract RevenueRouter is Controllable, IRevenueRouter {
         if ($.units[unitIndex].unitType == UnitType.AaveMarkets) {
             (address[] memory outAssets, uint[] memory amounts) = IFeeTreasury($.units[unitIndex].feeTreasury).harvest();
             ISwapper swapper = ISwapper(IPlatform(platform()).swapper());
-            address stbl = $.stbl;
-            uint stblBalanceWas = IERC20(stbl).balanceOf(address(this));
+            address _mainToken = $.token;
+            uint mainTokenBalanceWas = IERC20(_mainToken).balanceOf(address(this));
 
             for (uint i; i < outAssets.length; ++i) {
                 address asset = IAToken(outAssets[i]).UNDERLYING_ASSET_ADDRESS();
@@ -203,15 +221,15 @@ contract RevenueRouter is Controllable, IRevenueRouter {
                     amounts[i] = IERC20(outAssets[i]).balanceOf(address(this));
                     try IPool(IAToken(outAssets[i]).POOL()).withdraw(asset, amounts[i], address(this)) {
                         IERC20(asset).forceApprove(address(swapper), amounts[i]);
-                        try swapper.swap(asset, stbl, amounts[i], 20_000) {} catch {}
+                        try swapper.swap(asset, _mainToken, amounts[i], 20_000) {} catch {}
                     } catch {}
                 }
             }
 
-            uint stblGot = IERC20(stbl).balanceOf(address(this)) - stblBalanceWas;
-            $.units[unitIndex].pendingRevenue += stblGot;
+            uint mainTokenGot = IERC20(_mainToken).balanceOf(address(this)) - mainTokenBalanceWas;
+            $.units[unitIndex].pendingRevenue += mainTokenGot;
 
-            emit ProcessUnitRevenue(unitIndex, stblGot);
+            emit ProcessUnitRevenue(unitIndex, mainTokenGot);
         }
     }
 
@@ -270,7 +288,7 @@ contract RevenueRouter is Controllable, IRevenueRouter {
             }
 
             uint amountToSwap = amount;
-            address stbl = $.stbl;
+            address mainToken = $.token;
             ISwapper swapper = ISwapper(IPlatform(platform()).swapper());
 
             {
@@ -281,17 +299,19 @@ contract RevenueRouter is Controllable, IRevenueRouter {
                     IERC20(asset).safeTransfer(_recovery, toRecovery);
                     address[] memory assetsToRegister = new address[](1);
                     assetsToRegister[0] = asset;
-                    IRecovery(_recovery).registerAssets(assetsToRegister);
+                    IRecoveryBase(_recovery).registerAssets(assetsToRegister);
                 }
             }
 
-            if (stbl != address(0)) {
-                uint stblBalanceWas = IERC20(stbl).balanceOf(address(this));
+            if (mainToken != address(0)) {
+                uint mainTokenBalanceWas = IERC20(mainToken).balanceOf(address(this));
                 IERC20(asset).forceApprove(address(swapper), amountToSwap);
-                try swapper.swap(asset, stbl, amountToSwap, 20_000) {
-                    uint stblGot = IERC20(stbl).balanceOf(address(this)) - stblBalanceWas;
-                    uint xGot = stblGot * $.xShare / DENOMINATOR;
-                    IERC20(stbl).safeTransfer($.feeTreasury, stblGot - xGot);
+                try swapper.swap(asset, mainToken, amountToSwap, 20_000) {
+                    uint mainTokenGot = IERC20(mainToken).balanceOf(address(this)) - mainTokenBalanceWas;
+                    uint xGot = mainTokenGot * $.xShare / DENOMINATOR;
+                    if (mainTokenGot > xGot) {
+                        IERC20(mainToken).safeTransfer($.feeTreasury, mainTokenGot - xGot);
+                    }
                     $.pendingRevenue += xGot;
                     if (cleanup) {
                         $.assetsAccumulated.remove(_assetsAccumulated[i]);
@@ -385,9 +405,9 @@ contract RevenueRouter is Controllable, IRevenueRouter {
     /// @inheritdoc IRevenueRouter
     function addresses() external view returns (address[] memory) {
         RevenueRouterStorage storage $ = _getRevenueRouterStorage();
-        address[] memory _addresses = new address[](4);
-        _addresses[0] = $.stbl;
-        _addresses[1] = $.xStbl;
+        address[] memory _addresses = new address[](COUNT_ADDRESSES);
+        _addresses[0] = $.token;
+        _addresses[1] = $.xToken;
         _addresses[2] = $.xStaking;
         _addresses[3] = $.feeTreasury;
         return _addresses;
@@ -396,6 +416,11 @@ contract RevenueRouter is Controllable, IRevenueRouter {
     /// @inheritdoc IRevenueRouter
     function assetsAccumulated() external view returns (address[] memory) {
         return _getRevenueRouterStorage().assetsAccumulated.values();
+    }
+
+    /// @inheritdoc IRevenueRouter
+    function xShare() external view returns (uint) {
+        return _getRevenueRouterStorage().xShare;
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/

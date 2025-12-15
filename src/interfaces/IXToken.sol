@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-interface IXSTBL {
+interface IXToken {
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         DATA TYPES                         */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     struct VestPosition {
-        /// @dev amount of xSTBL
+        /// @dev amount of xToken
         uint amount;
         /// @dev start unix timestamp
         uint start;
@@ -36,19 +36,23 @@ interface IXSTBL {
     event ExemptionFrom(address indexed candidate, bool status, bool success);
     event ExemptionTo(address indexed candidate, bool status, bool success);
     event Rebase(address indexed caller, uint amount);
+    event SendToBridge(address indexed user, uint amount);
+    event ReceivedFromBridge(address indexed user, uint amount);
+    event XTokenName(string newName);
+    event XTokenSymbol(string newSymbol);
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      WRITE FUNCTIONS                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    /// @dev Mints xSTBL for each STBL
+    /// @dev Mints xToken for each main-token
     function enter(uint amount_) external;
 
     /// @dev Exit instantly with a penalty
-    /// @param amount_ Amount of xSTBL to exit
+    /// @param amount_ Amount of xToken to exit
     function exit(uint amount_) external returns (uint exitedAmount);
 
-    /// @dev Vesting xSTBL --> STBL functionality
+    /// @dev Vesting xToken --> main token functionality
     function createVest(uint amount_) external;
 
     /// @dev Handles all situations regarding exiting vests
@@ -60,8 +64,28 @@ interface IXSTBL {
     /// @notice Set exemption status for to address
     function setExemptionTo(address[] calldata exemptee, bool[] calldata exempt) external;
 
+    /// @notice Set or unset an address as XTokenBridge contract
+    /// @param bridge_ Address of the bridge contract
+    /// @param status_ Allow/disallow the bridge to call bridge-related functions
+    function setBridge(address bridge_, bool status_) external;
+
     /// @notice Function called by the RevenueRouter to send the rebases once a week
     function rebase() external;
+
+    /// @notice Burn given {amount} of xToken for the given {user} and transfer main-token to the main-token-bridge.
+    /// The {user} will receive same amount of xToken on the different chain in return.
+    /// @custom:restricted This function can only be called by XTokenBridge contract.
+    function sendToBridge(address user, uint amount) external;
+
+    /// @notice Mint given {amount} of xToken for the given {user} after receiving main-token from the main-token-bridge.
+    /// @custom:restricted This function can only be called by XTokenBridge contract.
+    function takeFromBridge(address user, uint amount) external;
+
+    /// @notice Sets a new name for the token.
+    function setName(string calldata newName) external;
+
+    /// @notice Sets a new symbol for the token.
+    function setSymbol(string calldata newSymbol) external;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      VIEW FUNCTIONS                        */
@@ -79,10 +103,10 @@ interface IXSTBL {
     /// @notice The maximum vesting length
     function MAX_VEST() external view returns (uint);
 
-    /// @notice STBL address
-    function STBL() external view returns (address);
+    /// @notice Main token address (i.e. STBL)
+    function token() external view returns (address);
 
-    /// @notice xSTBL staking contract
+    /// @notice xToken staking contract
     function xStaking() external view returns (address);
 
     /// @notice Revenue distributor contract
@@ -99,4 +123,7 @@ interface IXSTBL {
 
     /// @notice The last period rebases were distributed
     function lastDistributedPeriod() external view returns (uint);
+
+    /// @notice Checks if an address is set as XTokenBridge contract
+    function isBridge(address bridge_) external view returns (bool);
 }

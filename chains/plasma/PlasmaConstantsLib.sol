@@ -43,6 +43,7 @@ library PlasmaConstantsLib {
     address public constant AAVE_V3_POOL_DATA_PROVIDER = 0xf2D6E38B407e31E7E7e4a16E6769728b76c7419F;
     address public constant AAVE_V3_POOL = 0x925a2A7214Ed92428B5b1B090F80b25700095e12;
     address public constant AAVE_V3_POOL_USDT0 = 0x5D72a9d9A9510Cd8cBdBA12aC62593A58930a948;
+
     address public constant AAVE_V3_POOL_WETH = 0xf1aB7f60128924d69f6d7dE25A20eF70bBd43d07;
     address public constant AAVE_V3_POOL_SUSDE = 0xC1A318493fF07a68fE438Cee60a7AD0d0DBa300E;
     address public constant AAVE_V3_POOL_WEETH = 0xAf1a7a488c8348b41d5860C04162af7d3D38A996;
@@ -63,4 +64,18 @@ library PlasmaConstantsLib {
 
     address public constant POOL_SOLIDLY_WETH_WEETH = 0x355705857c9548E71E866087b01bB5b0A1fd671b;
 
+    // ---------------------------------- LayerZero-v2 https://docs.layerzero.network/v2/deployments/chains/plasma
+    uint32 public constant LAYER_ZERO_V2_ENDPOINT_ID = 30383;
+    address public constant LAYER_ZERO_V2_ENDPOINT = 0x6F475642a6e85809B1c36Fa62763669b1b48DD5B;
+    address public constant LAYER_ZERO_V2_SEND_ULN_302 = 0xC39161c743D0307EB9BCc9FEF03eeb9Dc4802de7;
+    address public constant LAYER_ZERO_V2_RECEIVE_ULN_302 = 0xe1844c5D63a9543023008D332Bd3d2e6f1FE1043;
+    address public constant LAYER_ZERO_V2_READ_LIB_1002 = 0x860E8D714944E7accE4F9e6247923ec5d30c0471;
+    address public constant LAYER_ZERO_V2_EXECUTOR = 0x4208D6E27538189bB48E603D6123A94b8Abe0A0b;
+    address public constant LAYER_ZERO_V2_BLOCKED_MESSAGE_LIBRARY = 0xC1cE56B2099cA68720592583C7984CAb4B6d7E7a;
+    address public constant LAYER_ZERO_V2_DEAD_DVN = 0x6788f52439ACA6BFF597d3eeC2DC9a44B8FEE842;
+
+    // https://docs.layerzero.network/v2/deployments/chains/plasma
+    address internal constant PLASMA_DVN_LAYER_ZERO_PUSH = 0x282b3386571f7f794450d5789911a9804FA346b4; // LayerZero Labs (push based)
+    address internal constant PLASMA_DVN_NETHERMIND_PUSH = 0xa51cE237FaFA3052D5d3308Df38A024724Bb1274; // Nethermind (push based)
+    address internal constant PLASMA_DVN_HORIZON_PUSH = 0xd4CE45957FBCb88b868ad2c759C7DB9BC2741e56; // Horizen (push based)
 }
