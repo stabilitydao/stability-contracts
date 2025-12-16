@@ -21,7 +21,11 @@ library AvalancheConstantsLib {
     address public constant TOKEN_AUSD = 0x00000000eFE302BEAA2b3e6e1b18d08D69a9012a;
     address public constant TOKEN_xBTC = 0x6eAf19b2FC24552925dB245F9Ff613157a7dbb4C;
     address public constant TOKEN_savBTS = 0x649342c6bff544d82DF1B2bA3C93e0C22cDeBa84;
-    address public constant TOKEN_savUSDC = 0x06d47F3fb376649c3A9Dafe069B3D6E35572219E;
+    address public constant TOKEN_savUSD = 0x06d47F3fb376649c3A9Dafe069B3D6E35572219E;
+    address public constant TOKEN_avUSD = 0x24dE8771bC5DdB3362Db529Fc3358F2df3A0E346;
+    address public constant TOKEN_sUSDp = 0x9D92c21205383651610f90722131655A5B8ED3E0;
+    address public constant TOKEN_USDp = 0x9eE1963f05553eF838604Dd39403be21ceF26AA4;
+
 
     // Oracles
     address public constant ORACLE_CHAINLINK_USDC_USD = 0xF096872672F44d6EBA71458D74fe67F9a77a23B9;
@@ -52,17 +56,32 @@ library AvalancheConstantsLib {
     address public constant AAVE_V3_POOL = 0x794a61358D6845594F94dc1DB02A252b5b4814aD;
     address public constant AAVE_aAvaUSDC = 0x625E7708f30cA75bfd92586e17077590C60eb4cD;
 
+    // Balancer
+    address public constant BEETS_VAULT = 0xBA12222222228d8Ba445958a75a0704d566BF2C8;
+    address public constant BEETS_VAULT_V3 = 0xbA1333333333a1BA1108E8412f11850A5C319bA9;
+    address public constant BEETS_V3_ROUTER = 0xF39CA6ede9BF7820a952b52f3c94af526bAB9015;
+
+    // DEX
+    address public constant POOL_PHARAOH_V3_AVUSD_USDC = 0xc9bFC3cDA285a75B32d5B787618128dB963dE675;
+    address public constant POOL_PHARAOH_V3_USDT_USDC = 0x9bFE3108Cc16D17a9Ec65545a0f50B2CA1C970c0;
+    address public constant POOL_ALGEBRA_SAVUSD_USDC = 0x86364634157b4247c1dD54c5945832eAF691Af79;
+
     // Silo
+    address public constant SILO_LENS = 0x319f7155cC65F693E84689535aFb1343C704C0B8;
     address public constant SILO_VAULT_USDC_125 = 0xE0345f66318F482aCCcd67244A921C7FDC410957;
     address public constant SILO_VAULT_BTCb_130 = 0x7437ac81457Fa98fFB2d0C8f9943ecfE4813e2f1;
     address public constant SILO_VAULT_BTCb_121 = 0xD8a26DFEba3E9B558Bd79d10722636Dfb4dc2bF4;
-    address public constant SILO_VAULT_USDC_142 = 0x606fe9a70338e798a292CA22C1F28C829F24048E;
+    address public constant SILO_VAULT_142_USDC = 0x606fe9a70338e798a292CA22C1F28C829F24048E;
+    address public constant SILO_VAULT_142_SAVUSDC = 0xDcFFACBed111BA9d59b5e96A85934Db91117BDD9;
     address public constant SILO_VAULT_USDC_129 = 0x672b77f0538b53Dc117C9dDfEb7377A678d321a6;
+    address public constant SILO_VAULT_153_USDC = 0x2775631eA39d8d6e9A89C299387Ea55CfFC18b0b;
+    address public constant SILO_VAULT_153_SUSDP = 0x69F3B55E4001214EA54319cDCdD4e2Ae904440Af;
 
     address public constant SILO_MANAGED_VAULT_USDC_MEV = 0x4dc1ce9b9f9EF00c144BfAD305f16c62293dC0E8;
     address public constant SILO_MANAGED_VAULT_BTCb_MEV = 0x1f8E769B5B6010B2C2BBCd68629EA1a0a0Eda7E3;
     address public constant SILO_MANAGED_VAULT_AUSD_VARLAMOURE = 0x3d7B0c3997E48fA3FC96cd057d1fb4E5F891835B;
     address public constant SILO_MANAGED_VAULT_USDt_VARLAMOURE = 0x6c09bfdc1df45D6c4Ff78Dc9F1C13aF29eB335d4;
+
 
     // ---------------------------------- LayerZero-v2 https://docs.layerzero.network/v2/deployments/chains/avalanche
     uint32 public constant LAYER_ZERO_V2_ENDPOINT_ID = 30106;

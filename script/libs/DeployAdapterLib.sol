@@ -18,6 +18,7 @@ import {MetaVaultAdapter} from "../../src/adapters/MetaVaultAdapter.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
 import {IAmmAdapter} from "../../src/interfaces/IAmmAdapter.sol";
 import {BalancerV3ReClammAdapter} from "../../src/adapters/BalancerV3ReClammAdapter.sol";
+import {PharaohV3Adapter} from "../../src/adapters/PharaohV3Adapter.sol";
 
 library DeployAdapterLib {
     function deployAmmAdapter(address platform, string memory id) internal returns (address) {
@@ -78,6 +79,10 @@ library DeployAdapterLib {
 
         if (eq(id, AmmAdapterIdLib.BALANCER_V3_RECLAMM)) {
             proxy.initProxy(address(new BalancerV3ReClammAdapter()));
+        }
+
+        if (eq(id, AmmAdapterIdLib.PHARAOH_V3)) {
+            proxy.initProxy(address(new PharaohV3Adapter()));
         }
 
         require(proxy.implementation() != address(0), string.concat("Unknown AmmAdapter:", id));

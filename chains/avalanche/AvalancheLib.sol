@@ -11,6 +11,7 @@ import {ChainlinkAdapter} from "../../src/adapters/ChainlinkAdapter.sol";
 import {DeployAdapterLib} from "../../script/libs/DeployAdapterLib.sol";
 import {EulerMerklFarmStrategy} from "../../src/strategies/EulerMerklFarmStrategy.sol";
 import {EulerStrategy} from "../../src/strategies/EulerStrategy.sol";
+import {IBalancerAdapter} from "../../src/interfaces/IBalancerAdapter.sol";
 import {IFactory} from "../../src/interfaces/IFactory.sol";
 import {IPlatformDeployer} from "../../src/interfaces/IPlatformDeployer.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
@@ -23,6 +24,7 @@ import {SiloStrategy} from "../../src/strategies/SiloStrategy.sol";
 import {StrategyDeveloperLib} from "../../src/strategies/libs/StrategyDeveloperLib.sol";
 import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
 import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
+import {SiloAdvancedLeverageStrategy} from "../../src/strategies/SiloAdvancedLeverageStrategy.sol";
 
 /// @dev Avalanche network [chainId: 43114] deploy library
 //    ,---,                               ,--,                                       ,---,
@@ -81,7 +83,13 @@ library AvalancheLib {
 
         //region ----- Deploy AMM adapters -----
         DeployAdapterLib.deployAmmAdapter(platform, AmmAdapterIdLib.UNISWAPV3);
+        DeployAdapterLib.deployAmmAdapter(platform, AmmAdapterIdLib.PHARAOH_V3);
         DeployAdapterLib.deployAmmAdapter(platform, AmmAdapterIdLib.ALGEBRA_V4);
+        DeployAdapterLib.deployAmmAdapter(platform, AmmAdapterIdLib.ALGEBRA);
+        DeployAdapterLib.deployAmmAdapter(platform, AmmAdapterIdLib.ERC_4626);
+        DeployAdapterLib.deployAmmAdapter(platform, AmmAdapterIdLib.BALANCER_V3_STABLE);
+        IBalancerAdapter(IPlatform(platform).ammAdapter(keccak256(bytes(AmmAdapterIdLib.BALANCER_V3_STABLE))).proxy).setupHelpers(AvalancheConstantsLib.BEETS_V3_ROUTER);
+
         //endregion -- Deploy AMM adapters ----
 
         //region ----- Setup Swapper -----
@@ -129,6 +137,7 @@ library AvalancheLib {
         factory.setStrategyImplementation(StrategyIdLib.EULER_MERKL_FARM, address(new EulerMerklFarmStrategy()));
         factory.setStrategyImplementation(StrategyIdLib.SILO_MANAGED_MERKL_FARM, address(new SiloManagedMerklFarmStrategy()));
         factory.setStrategyImplementation(StrategyIdLib.SILO_MERKL_FARM, address(new SiloMerklFarmStrategy()));
+        factory.setStrategyImplementation(StrategyIdLib.SILO_ADVANCED_LEVERAGE, address(new SiloAdvancedLeverageStrategy()));
         //endregion
 
         //region ----- Add DeX aggregators -----
@@ -196,7 +205,7 @@ library AvalancheLib {
         _farms[i++] = AvalancheFarmMakerLib._makeSiloManagedMerklFarm(AvalancheConstantsLib.SILO_MANAGED_VAULT_USDt_VARLAMOURE); // 7
 
         _farms[i++] = AvalancheFarmMakerLib._makeSiloMerklFarm(AvalancheConstantsLib.SILO_VAULT_BTCb_130, AvalancheConstantsLib.TOKEN_WAVAX, address(0), true); // 8
-        _farms[i++] = AvalancheFarmMakerLib._makeSiloMerklFarm(AvalancheConstantsLib.SILO_VAULT_USDC_142, AvalancheConstantsLib.TOKEN_WAVAX, address(0), true); // 9
+        _farms[i++] = AvalancheFarmMakerLib._makeSiloMerklFarm(AvalancheConstantsLib.SILO_VAULT_142_USDC, AvalancheConstantsLib.TOKEN_WAVAX, address(0), true); // 9
         _farms[i++] = AvalancheFarmMakerLib._makeSiloMerklFarm(AvalancheConstantsLib.SILO_VAULT_BTCb_121, AvalancheConstantsLib.TOKEN_WAVAX, address(0), true); // 10
         _farms[i++] = AvalancheFarmMakerLib._makeSiloMerklFarm(AvalancheConstantsLib.SILO_VAULT_USDC_129, AvalancheConstantsLib.TOKEN_WAVAX, address(0), true); // 11
     }

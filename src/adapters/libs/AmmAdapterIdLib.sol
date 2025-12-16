@@ -17,4 +17,5 @@ library AmmAdapterIdLib {
     string public constant BALANCER_V3_RECLAMM = "BalancerV3ReCLAMM";
     string public constant BRUNCH = "Brunch";
     string public constant AAVE_V3 = "AaveV3";
+    string public constant PHARAOH_V3 = "PharaohV3";
 }
