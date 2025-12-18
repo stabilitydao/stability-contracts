@@ -61,6 +61,8 @@ library AvalancheConstantsLib {
     address public constant BEETS_VAULT_V3 = 0xbA1333333333a1BA1108E8412f11850A5C319bA9;
     address public constant BEETS_V3_ROUTER = 0xF39CA6ede9BF7820a952b52f3c94af526bAB9015;
 
+    address public constant BEETS_STABLE_POOL_USDp_GAMI_USDC = 0x1fED8401C145f64dA567881d272D0DF233118dCa;
+
     // DEX
     address public constant POOL_PHARAOH_V3_AVUSD_USDC = 0xc9bFC3cDA285a75B32d5B787618128dB963dE675;
     address public constant POOL_PHARAOH_V3_USDT_USDC = 0x9bFE3108Cc16D17a9Ec65545a0f50B2CA1C970c0;
@@ -76,6 +78,8 @@ library AvalancheConstantsLib {
     address public constant SILO_VAULT_USDC_129 = 0x672b77f0538b53Dc117C9dDfEb7377A678d321a6;
     address public constant SILO_VAULT_153_USDC = 0x2775631eA39d8d6e9A89C299387Ea55CfFC18b0b;
     address public constant SILO_VAULT_153_SUSDP = 0x69F3B55E4001214EA54319cDCdD4e2Ae904440Af;
+
+    address public constant SILO_MANAGED_VAULT_GAMI_USDC = 0x1F0570a081FeE0e4dF6eAC470f9d2D53CDEDa1c5;
 
     address public constant SILO_MANAGED_VAULT_USDC_MEV = 0x4dc1ce9b9f9EF00c144BfAD305f16c62293dC0E8;
     address public constant SILO_MANAGED_VAULT_BTCb_MEV = 0x1f8E769B5B6010B2C2BBCd68629EA1a0a0Eda7E3;

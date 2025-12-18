@@ -15,7 +15,7 @@ import {PharaohV3Adapter} from "../../src/adapters/PharaohV3Adapter.sol";
 import {SiloAdvancedLeverageStrategy} from "../../src/strategies/SiloAdvancedLeverageStrategy.sol";
 
 contract SiALStrategyAvalancheTest is AvalancheSetup, UniversalTest {
-    uint public constant FORK_BLOCK_C_CHAIN = 73844753; // Dec-16-2025 11:35:12 UTC
+    uint public constant FORK_BLOCK_C_CHAIN = 73957229; // Dec-18-2025 06:27:32 AM +UTC
 
     constructor() {
         vm.selectFork(vm.createFork(vm.envString("AVALANCHE_RPC_URL"), FORK_BLOCK_C_CHAIN));
@@ -31,16 +31,16 @@ contract SiALStrategyAvalancheTest is AvalancheSetup, UniversalTest {
     function testSiALAvalanche() public universalTest {
         // Let's test same strategy twice: with and without whitelisting
         // max ltv = 87%, liquidation threshold = 90% => max leverage = 1/(1-0.9) = 10
-        _addStrategy(
-            AvalancheConstantsLib.SILO_VAULT_142_SAVUSDC,
-            AvalancheConstantsLib.SILO_VAULT_142_USDC,
-            85_00
-        );
 //        _addStrategy(
-//            AvalancheConstantsLib.SILO_VAULT_153_SUSDP,
-//            AvalancheConstantsLib.SILO_VAULT_153_USDC,
+//            AvalancheConstantsLib.SILO_VAULT_142_SAVUSDC,
+//            AvalancheConstantsLib.SILO_VAULT_142_USDC,
 //            85_00
 //        );
+        _addStrategy(
+            AvalancheConstantsLib.SILO_VAULT_153_SUSDP,
+            AvalancheConstantsLib.SILO_VAULT_153_USDC,
+            85_00
+        );
     }
 
     function _preDeposit() internal override {
@@ -74,31 +74,37 @@ contract SiALStrategyAvalancheTest is AvalancheSetup, UniversalTest {
     function _addRoutes() internal {
         // add routes
         ISwapper swapper = ISwapper(IPlatform(platform).swapper());
-        ISwapper.PoolData[] memory pools = new ISwapper.PoolData[](2);
-        pools[0] = ISwapper.PoolData({
-            pool: AvalancheConstantsLib.POOL_ALGEBRA_SAVUSD_USDC,
-            ammAdapter: (IPlatform(platform).ammAdapter(keccak256(bytes(AmmAdapterIdLib.ALGEBRA_V4)))).proxy,
-            tokenIn: AvalancheConstantsLib.TOKEN_savUSD,
-            tokenOut: AvalancheConstantsLib.TOKEN_avUSD
-        });
-        pools[1] = ISwapper.PoolData({
-            pool: AvalancheConstantsLib.POOL_PHARAOH_V3_AVUSD_USDC,
-            ammAdapter: (IPlatform(platform).ammAdapter(keccak256(bytes(AmmAdapterIdLib.PHARAOH_V3)))).proxy,
-            tokenIn: AvalancheConstantsLib.TOKEN_avUSD,
-            tokenOut: AvalancheConstantsLib.TOKEN_USDC
-        });
-//        pools[2] = ISwapper.PoolData({
-//            pool: AvalancheConstantsLib.TOKEN_sUSDp,
-//            ammAdapter: (IPlatform(platform).ammAdapter(keccak256(bytes(AmmAdapterIdLib.ERC_4626)))).proxy,
-//            tokenIn: AvalancheConstantsLib.TOKEN_sUSDp,
-//            tokenOut: AvalancheConstantsLib.TOKEN_USDp
+        ISwapper.PoolData[] memory pools = new ISwapper.PoolData[](3);
+//        pools[0] = ISwapper.PoolData({
+//            pool: AvalancheConstantsLib.POOL_ALGEBRA_SAVUSD_USDC,
+//            ammAdapter: (IPlatform(platform).ammAdapter(keccak256(bytes(AmmAdapterIdLib.ALGEBRA_V4)))).proxy,
+//            tokenIn: AvalancheConstantsLib.TOKEN_savUSD,
+//            tokenOut: AvalancheConstantsLib.TOKEN_avUSD
 //        });
-//        pools[3] = ISwapper.PoolData({
-//            pool: AvalancheConstantsLib.BEETS_VAULT_V3,
-//            ammAdapter: (IPlatform(platform).ammAdapter(keccak256(bytes(AmmAdapterIdLib.BALANCER_V3_STABLE)))).proxy,
-//            tokenIn: AvalancheConstantsLib.TOKEN_USDp,
+//        pools[1] = ISwapper.PoolData({
+//            pool: AvalancheConstantsLib.POOL_PHARAOH_V3_AVUSD_USDC,
+//            ammAdapter: (IPlatform(platform).ammAdapter(keccak256(bytes(AmmAdapterIdLib.PHARAOH_V3)))).proxy,
+//            tokenIn: AvalancheConstantsLib.TOKEN_avUSD,
 //            tokenOut: AvalancheConstantsLib.TOKEN_USDC
 //        });
+        pools[0] = ISwapper.PoolData({
+            pool: AvalancheConstantsLib.TOKEN_sUSDp,
+            ammAdapter: (IPlatform(platform).ammAdapter(keccak256(bytes(AmmAdapterIdLib.ERC_4626)))).proxy,
+            tokenIn: AvalancheConstantsLib.TOKEN_sUSDp,
+            tokenOut: AvalancheConstantsLib.TOKEN_USDp
+        });
+        pools[1] = ISwapper.PoolData({
+            pool: AvalancheConstantsLib.BEETS_STABLE_POOL_USDp_GAMI_USDC,
+            ammAdapter: (IPlatform(platform).ammAdapter(keccak256(bytes(AmmAdapterIdLib.BALANCER_V3_STABLE)))).proxy,
+            tokenIn: AvalancheConstantsLib.TOKEN_USDp,
+            tokenOut: AvalancheConstantsLib.SILO_MANAGED_VAULT_GAMI_USDC
+        });
+        pools[2] = ISwapper.PoolData({
+            pool: AvalancheConstantsLib.SILO_MANAGED_VAULT_GAMI_USDC,
+            ammAdapter: (IPlatform(platform).ammAdapter(keccak256(bytes(AmmAdapterIdLib.ERC_4626)))).proxy,
+            tokenIn: AvalancheConstantsLib.SILO_MANAGED_VAULT_GAMI_USDC,
+            tokenOut: AvalancheConstantsLib.TOKEN_USDC
+        });
         swapper.addPools(pools, false);
     }
 
