@@ -15,7 +15,8 @@ import {PharaohV3Adapter} from "../../src/adapters/PharaohV3Adapter.sol";
 import {SiloAdvancedLeverageStrategy} from "../../src/strategies/SiloAdvancedLeverageStrategy.sol";
 
 contract SiALStrategyAvalancheTest is AvalancheSetup, UniversalTest {
-    uint public constant FORK_BLOCK_C_CHAIN = 73957229; // Dec-18-2025 06:27:32 AM +UTC
+    //uint public constant FORK_BLOCK_C_CHAIN = 73957229; // Dec-18-2025 06:27:32 AM +UTC
+    uint public constant FORK_BLOCK_C_CHAIN = 74277251; // Dec-23-2025 09:53:48 AM +UTC
 
     constructor() {
         vm.selectFork(vm.createFork(vm.envString("AVALANCHE_RPC_URL"), FORK_BLOCK_C_CHAIN));
@@ -46,6 +47,7 @@ contract SiALStrategyAvalancheTest is AvalancheSetup, UniversalTest {
     function _preDeposit() internal override {
         _addRoutes();
         _setFlashLoanVault(SiloAdvancedLeverageStrategy(payable(currentStrategy)), AvalancheConstantsLib.POOL_PHARAOH_V3_USDT_USDC, address(0), uint(ILeverageLendingStrategy.FlashLoanKind.UniswapV3_2));
+        // _setFlashLoanVault(SiloAdvancedLeverageStrategy(payable(currentStrategy)), AvalancheConstantsLib.BEETS_VAULT_V3, address(0), uint(ILeverageLendingStrategy.FlashLoanKind.BalancerV3_1));
     }
 
     function _addStrategy(
