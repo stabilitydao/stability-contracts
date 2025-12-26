@@ -53,6 +53,7 @@ library AvalancheConstantsLib {
     address public constant AAVE_aAvaUSDC = 0x625E7708f30cA75bfd92586e17077590C60eb4cD;
 
     // Silo
+    address public constant SILO_LENS = 0x228A8688C0d8Fd6D4834c33664E5Fa775C91d11c; // old version 0x319f7155cC65F693E84689535aFb1343C704C0B8;
     address public constant SILO_VAULT_USDC_125 = 0xE0345f66318F482aCCcd67244A921C7FDC410957;
     address public constant SILO_VAULT_BTCb_130 = 0x7437ac81457Fa98fFB2d0C8f9943ecfE4813e2f1;
     address public constant SILO_VAULT_BTCb_121 = 0xD8a26DFEba3E9B558Bd79d10722636Dfb4dc2bF4;
