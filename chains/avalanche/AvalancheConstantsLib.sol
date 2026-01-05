@@ -21,7 +21,8 @@ library AvalancheConstantsLib {
     address public constant TOKEN_AUSD = 0x00000000eFE302BEAA2b3e6e1b18d08D69a9012a;
     address public constant TOKEN_xBTC = 0x6eAf19b2FC24552925dB245F9Ff613157a7dbb4C;
     address public constant TOKEN_savBTS = 0x649342c6bff544d82DF1B2bA3C93e0C22cDeBa84;
-    address public constant TOKEN_savUSDC = 0x06d47F3fb376649c3A9Dafe069B3D6E35572219E;
+    address public constant TOKEN_savUSD = 0x06d47F3fb376649c3A9Dafe069B3D6E35572219E;
+    address public constant TOKEN_avUSD = 0x24dE8771bC5DdB3362Db529Fc3358F2df3A0E346;
 
     // Oracles
     address public constant ORACLE_CHAINLINK_USDC_USD = 0xF096872672F44d6EBA71458D74fe67F9a77a23B9;
@@ -63,6 +64,12 @@ library AvalancheConstantsLib {
     address public constant SILO_MANAGED_VAULT_BTCb_MEV = 0x1f8E769B5B6010B2C2BBCd68629EA1a0a0Eda7E3;
     address public constant SILO_MANAGED_VAULT_AUSD_VARLAMOURE = 0x3d7B0c3997E48fA3FC96cd057d1fb4E5F891835B;
     address public constant SILO_MANAGED_VAULT_USDt_VARLAMOURE = 0x6c09bfdc1df45D6c4Ff78Dc9F1C13aF29eB335d4;
+
+    // Liquidity book - https://github.com/lfj-gg
+    // Router and quoter are taken for the savUSDC-pool: 0x7a5b4e301fc2b148cefe57257a236eb845082797
+    address public constant LFJ_ROUTER_V2 = 0x18556DA13313f3532c54711497A8FedAC273220E;
+    address public constant LFJ_QUOTER_V2 = 0x9A550a522BBaDFB69019b0432800Ed17855A51C3;
+    address public constant LFJ_LBPAIR_savUSDC_avUSD = 0xb768091A8e6FFCdc215767937Bd9fb039CB06577;
 
     // ---------------------------------- LayerZero-v2 https://docs.layerzero.network/v2/deployments/chains/avalanche
     uint32 public constant LAYER_ZERO_V2_ENDPOINT_ID = 30106;
