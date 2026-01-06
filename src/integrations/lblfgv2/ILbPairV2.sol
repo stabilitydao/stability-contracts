@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-interface ILbPair {
+interface ILbPairV2 {
     function approveForAll(address spender, bool approved) external;
 
     function balanceOf(address account, uint256 id)
