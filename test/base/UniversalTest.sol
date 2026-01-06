@@ -775,8 +775,11 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                 /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
                 /*                       INIT VARIANTS                        */
                 /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
-                (string[] memory variants,,,) = strategy.initVariants(address(platform));
-                assertGt(variants.length, 0, "initVariants returns empty arrays");
+
+                // initVariants aren't used anymore
+
+                // (string[] memory variants,,,) = strategy.initVariants(address(platform));
+                // assertGt(variants.length, 0, "initVariants returns empty arrays");
             }
         }
     }
