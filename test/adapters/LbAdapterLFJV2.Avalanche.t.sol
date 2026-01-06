@@ -45,7 +45,7 @@ contract LbAdapterLFJV2Test is AvalancheSetup {
     }
 
     function testPoolTokens() public view {
-        address[] memory poolTokens = adapter.poolTokens(AvalancheConstantsLib.LFJ_LBPAIR_savUSDC_avUSD);
+        address[] memory poolTokens = adapter.poolTokens(AvalancheConstantsLib.POOL_LB_LFJ_LBPAIR_savUSDC_avUSD);
         assertEq(poolTokens.length, 2);
         assertEq(poolTokens[0], AvalancheConstantsLib.TOKEN_savUSD);
         assertEq(poolTokens[1], AvalancheConstantsLib.TOKEN_avUSD);
@@ -65,7 +65,7 @@ contract LbAdapterLFJV2Test is AvalancheSetup {
     }
 
     function testGetPriceDirectBadPaths() public view {
-        address pool = AvalancheConstantsLib.LFJ_LBPAIR_savUSDC_avUSD;
+        address pool = AvalancheConstantsLib.POOL_LB_LFJ_LBPAIR_savUSDC_avUSD;
 
         // --------------------- Incorrect tokens
         assertEq(
@@ -119,7 +119,7 @@ contract LbAdapterLFJV2Test is AvalancheSetup {
         // --------------------- Incorrect tokens
         vm.expectRevert(LbAdapterLFJV2.IncorrectTokens.selector);
         adapter.swap(
-            AvalancheConstantsLib.LFJ_LBPAIR_savUSDC_avUSD,
+            AvalancheConstantsLib.POOL_LB_LFJ_LBPAIR_savUSDC_avUSD,
             AvalancheConstantsLib.TOKEN_savUSD,
             AvalancheConstantsLib.TOKEN_USDC,
             address(this),
@@ -128,7 +128,7 @@ contract LbAdapterLFJV2Test is AvalancheSetup {
 
         vm.expectRevert(LbAdapterLFJV2.IncorrectTokens.selector);
         adapter.swap(
-            AvalancheConstantsLib.LFJ_LBPAIR_savUSDC_avUSD,
+            AvalancheConstantsLib.POOL_LB_LFJ_LBPAIR_savUSDC_avUSD,
             AvalancheConstantsLib.TOKEN_USDC,
             AvalancheConstantsLib.TOKEN_savUSD,
             address(this),
@@ -139,7 +139,7 @@ contract LbAdapterLFJV2Test is AvalancheSetup {
         deal(AvalancheConstantsLib.TOKEN_avUSD, address(address(adapter)), 1e30);
 
         try adapter.swap(
-            AvalancheConstantsLib.LFJ_LBPAIR_savUSDC_avUSD,
+            AvalancheConstantsLib.POOL_LB_LFJ_LBPAIR_savUSDC_avUSD,
             AvalancheConstantsLib.TOKEN_avUSD,
             AvalancheConstantsLib.TOKEN_savUSD,
             address(this),
@@ -164,7 +164,7 @@ contract LbAdapterLFJV2Test is AvalancheSetup {
 
         // --------------------- swap avUSD to savUSD
         uint expectedAmount = adapter.getPrice(
-            AvalancheConstantsLib.LFJ_LBPAIR_savUSDC_avUSD,
+            AvalancheConstantsLib.POOL_LB_LFJ_LBPAIR_savUSDC_avUSD,
             AvalancheConstantsLib.TOKEN_avUSD,
             AvalancheConstantsLib.TOKEN_savUSD,
             amount
@@ -175,7 +175,7 @@ contract LbAdapterLFJV2Test is AvalancheSetup {
         IERC20(AvalancheConstantsLib.TOKEN_avUSD).safeTransfer(address(adapter), amount == 0 ? 1e18 : amount);
 
         adapter.swap(
-            AvalancheConstantsLib.LFJ_LBPAIR_savUSDC_avUSD,
+            AvalancheConstantsLib.POOL_LB_LFJ_LBPAIR_savUSDC_avUSD,
             AvalancheConstantsLib.TOKEN_avUSD,
             AvalancheConstantsLib.TOKEN_savUSD,
             address(this),
@@ -195,7 +195,7 @@ contract LbAdapterLFJV2Test is AvalancheSetup {
 
         // --------------------- swap savUSD to avUSD
         expectedAmount = adapter.getPrice(
-            AvalancheConstantsLib.LFJ_LBPAIR_savUSDC_avUSD,
+            AvalancheConstantsLib.POOL_LB_LFJ_LBPAIR_savUSDC_avUSD,
             AvalancheConstantsLib.TOKEN_savUSD,
             AvalancheConstantsLib.TOKEN_avUSD,
             state1.userBalanceStakedAvUSD
@@ -203,7 +203,7 @@ contract LbAdapterLFJV2Test is AvalancheSetup {
 
         IERC20(AvalancheConstantsLib.TOKEN_savUSD).safeTransfer(address(adapter), state1.userBalanceStakedAvUSD);
         adapter.swap(
-            AvalancheConstantsLib.LFJ_LBPAIR_savUSDC_avUSD,
+            AvalancheConstantsLib.POOL_LB_LFJ_LBPAIR_savUSDC_avUSD,
             AvalancheConstantsLib.TOKEN_savUSD,
             AvalancheConstantsLib.TOKEN_avUSD,
             address(this),

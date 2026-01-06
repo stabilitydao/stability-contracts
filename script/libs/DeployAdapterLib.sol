@@ -1,23 +1,25 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import {Proxy} from "../../src/core/proxy/Proxy.sol";
-import {AmmAdapterIdLib} from "../../src/adapters/libs/AmmAdapterIdLib.sol";
-import {UniswapV3Adapter} from "../../src/adapters/UniswapV3Adapter.sol";
+import "../../src/adapters/LbAdapterLFJV2.sol";
 import {AlgebraAdapter} from "../../src/adapters/AlgebraAdapter.sol";
-import {KyberAdapter} from "../../src/adapters/KyberAdapter.sol";
-import {CurveAdapter} from "../../src/adapters/CurveAdapter.sol";
-import {BalancerComposableStableAdapter} from "../../src/adapters/BalancerComposableStableAdapter.sol";
-import {BalancerWeightedAdapter} from "../../src/adapters/BalancerWeightedAdapter.sol";
-import {SolidlyAdapter} from "../../src/adapters/SolidlyAdapter.sol";
 import {AlgebraV4Adapter} from "../../src/adapters/AlgebraV4Adapter.sol";
-import {ERC4626Adapter} from "../../src/adapters/ERC4626Adapter.sol";
-import {BalancerV3StableAdapter} from "../../src/adapters/BalancerV3StableAdapter.sol";
-import {PendleAdapter} from "../../src/adapters/PendleAdapter.sol";
-import {MetaVaultAdapter} from "../../src/adapters/MetaVaultAdapter.sol";
-import {IPlatform} from "../../src/interfaces/IPlatform.sol";
-import {IAmmAdapter} from "../../src/interfaces/IAmmAdapter.sol";
+import {AmmAdapterIdLib} from "../../src/adapters/libs/AmmAdapterIdLib.sol";
+import {BalancerComposableStableAdapter} from "../../src/adapters/BalancerComposableStableAdapter.sol";
 import {BalancerV3ReClammAdapter} from "../../src/adapters/BalancerV3ReClammAdapter.sol";
+import {BalancerV3StableAdapter} from "../../src/adapters/BalancerV3StableAdapter.sol";
+import {BalancerWeightedAdapter} from "../../src/adapters/BalancerWeightedAdapter.sol";
+import {CurveAdapter} from "../../src/adapters/CurveAdapter.sol";
+import {ERC4626Adapter} from "../../src/adapters/ERC4626Adapter.sol";
+import {IAmmAdapter} from "../../src/interfaces/IAmmAdapter.sol";
+import {IPlatform} from "../../src/interfaces/IPlatform.sol";
+import {KyberAdapter} from "../../src/adapters/KyberAdapter.sol";
+import {MetaVaultAdapter} from "../../src/adapters/MetaVaultAdapter.sol";
+import {PendleAdapter} from "../../src/adapters/PendleAdapter.sol";
+import {Proxy} from "../../src/core/proxy/Proxy.sol";
+import {SolidlyAdapter} from "../../src/adapters/SolidlyAdapter.sol";
+import {UniswapV3Adapter} from "../../src/adapters/UniswapV3Adapter.sol";
+import {LbAdapterLFJV2} from "../../src/adapters/LbAdapterLFJV2.sol";
 
 library DeployAdapterLib {
     function deployAmmAdapter(address platform, string memory id) internal returns (address) {
@@ -78,6 +80,10 @@ library DeployAdapterLib {
 
         if (eq(id, AmmAdapterIdLib.BALANCER_V3_RECLAMM)) {
             proxy.initProxy(address(new BalancerV3ReClammAdapter()));
+        }
+
+        if (eq(id, AmmAdapterIdLib.LBLFJ_V2)) {
+            proxy.initProxy(address(new LbAdapterLFJV2()));
         }
 
         require(proxy.implementation() != address(0), string.concat("Unknown AmmAdapter:", id));
