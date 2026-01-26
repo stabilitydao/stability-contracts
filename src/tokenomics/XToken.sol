@@ -277,7 +277,8 @@ contract XToken is Controllable, ERC20Upgradeable, IXToken {
         uint vestLength = $.vestInfo[msg.sender].length;
 
         /// @dev push new position
-        $.vestInfo[msg.sender].push(
+        $.vestInfo[msg.sender]
+        .push(
             VestPosition({
                 amount: amount_, start: block.timestamp, maxEnd: block.timestamp + MAX_VEST, vestID: vestLength
             })
