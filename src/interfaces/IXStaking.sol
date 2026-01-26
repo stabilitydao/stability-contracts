@@ -133,5 +133,4 @@ interface IXStaking {
     /// @param token Address of reward token
     /// @param account Address of user
     function earnedToken(address token, address account) external view returns (uint);
-
 }

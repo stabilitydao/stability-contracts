@@ -59,7 +59,6 @@ contract XStakingUpgrade438SonicTest is Test {
         vm.prank(USER1);
         xStaking.getRewardToken(SonicConstantsLib.TOKEN_USDC);
         assertEq(IERC20(SonicConstantsLib.TOKEN_USDC).balanceOf(USER1), user1Earned);
-
     }
 
     //region --------------------------------- Internal logic
@@ -84,7 +83,6 @@ contract XStakingUpgrade438SonicTest is Test {
 
         vm.prank(multisig);
         xStaking.allowRewardToken(SonicConstantsLib.TOKEN_USDC, true);
-
     }
 
     //endregion --------------------------------- Internal logic
