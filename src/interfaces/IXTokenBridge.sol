@@ -27,7 +27,7 @@ interface IXTokenBridge {
     /// @param srcEid The source chain endpoint ID
     /// @param amount The amount of xToken received
     /// @param guidId The unique GUID identifier for the received message
-    event Staked(address indexed userTo, uint32 indexed srcEid, uint amount, bytes32 guidId);
+    event Staked(address indexed userTo, uint32 indexed srcEid, uint amount, bytes32 indexed guidId);
 
     event SetXTokenBridges(uint32[] dstEids, address[] xTokenBridges);
 

@@ -16,6 +16,7 @@ import {OptionsBuilder} from "@layerzerolabs/oapp-evm/contracts/oapp/libs/Option
 
 /// @notice XTokenBridge - bridge for xToken (i.e. xSTBL) using LayerZero Omnichain Fungible Token (OFT) bridge
 /// Changelog:
+///  - 1.0.2: Fix Staked event (indexed guid)
 ///  - 1.0.1: Add buildOptions function
 contract XTokenBridge is Controllable, IXTokenBridge, IOAppComposer, ReentrancyGuardUpgradeable {
     using SafeERC20 for IERC20;
