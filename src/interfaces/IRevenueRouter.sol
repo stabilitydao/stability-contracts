@@ -15,6 +15,7 @@ interface IRevenueRouter {
     event ProcessUnitRevenue(uint unitIndex, uint stblGot);
     event SetAddresses(address[] addresses);
     event SetXShare(uint newShare);
+    event BuyBackRate(uint bbRate);
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                        CUSTOM ERRORS                       */
@@ -43,6 +44,11 @@ interface IRevenueRouter {
         EnumerableSet.AddressSet assetsAccumulated;
         EnumerableMap.AddressToUintMap minSwapAmount;
         EnumerableMap.AddressToUintMap maxSwapAmount;
+
+        // todo use DAO parameter
+        uint bbRate;
+        EnumerableMap.AddressToUintMap pendingRevenueAsset;
+
     }
 
     enum UnitType {
@@ -82,6 +88,9 @@ interface IRevenueRouter {
 
     /// @notice Set addresses of main-token, xToken, xStaking and feeTreasure token.
     function setAddresses(address[] memory addresses_) external;
+
+    /// @notice Set buy-back rate for rewards
+    function setBuyBackRate(uint bbRate) external;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       USER ACTIONS                         */
@@ -146,4 +155,14 @@ interface IRevenueRouter {
 
     /// @notice Get current xToken revenue share for Vaults Unit
     function xShare() external view returns (uint);
+
+    /// @notice Buy-back rate for generated revenue
+    function buyBackRate() external view returns (uint);
+
+    /// @notice Asset with pending revenue for distribution
+    function pendingRevenueAssets() external view returns (address[] memory);
+
+    /// @notice Pending revenue in form of asset
+    /// @param asset Allowed asset address
+    function pendingRevenueAsset(address asset) external view returns (uint);
 }

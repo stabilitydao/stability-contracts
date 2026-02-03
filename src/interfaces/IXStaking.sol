@@ -129,6 +129,9 @@ interface IXStaking {
 
     // reward tokens data
 
+    /// @notice Is token allowed for rewards
+    function isTokenAllowed(address token) external view returns (bool);
+
     /// @notice User's earned reward of token
     /// @param token Address of reward token
     /// @param account Address of user

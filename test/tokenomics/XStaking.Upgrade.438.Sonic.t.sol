@@ -1,18 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {console} from "forge-std/console.sol";
 import {Test} from "forge-std/Test.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
-import {Proxy} from "../../src/core/proxy/Proxy.sol";
 import {XStaking} from "../../src/tokenomics/XStaking.sol";
-import {XToken} from "../../src/tokenomics/XToken.sol";
 import {IXToken} from "../../src/interfaces/IXToken.sol";
 import {IXStaking} from "../../src/interfaces/IXStaking.sol";
-import {Platform} from "../../src/core/Platform.sol";
-import {RevenueRouter} from "../../src/tokenomics/RevenueRouter.sol";
 
 contract XStakingUpgrade438SonicTest is Test {
     uint public constant FORK_BLOCK = 61200000; // Jan-26-2026 03:00:37 PM +UTC
@@ -43,6 +38,9 @@ contract XStakingUpgrade438SonicTest is Test {
         _mintAndDepositToStaking(USER1, 500000e18);
         _mintAndDepositToStaking(USER2, 3000e18);
 
+        assertEq(xStaking.isTokenAllowed(SonicConstantsLib.TOKEN_USDC), true);
+        assertEq(xStaking.isTokenAllowed(SonicConstantsLib.TOKEN_USDT), false);
+
         vm.startPrank(SonicConstantsLib.REVENUE_ROUTER);
         IERC20(SonicConstantsLib.TOKEN_USDC).approve(address(xStaking), type(uint).max);
         xStaking.notifyRewardAmountToken(SonicConstantsLib.TOKEN_USDC, 100e6);
@@ -54,14 +52,12 @@ contract XStakingUpgrade438SonicTest is Test {
         vm.warp(block.timestamp + 1 hours);
         user1Earned = xStaking.earnedToken(SonicConstantsLib.TOKEN_USDC, USER1);
         assertGt(user1Earned, 10e6);
-        //console.log(user1Earned);
 
         vm.prank(USER1);
         xStaking.getRewardToken(SonicConstantsLib.TOKEN_USDC);
         assertEq(IERC20(SonicConstantsLib.TOKEN_USDC).balanceOf(USER1), user1Earned);
     }
 
-    //region --------------------------------- Internal logic
     function _mintAndDepositToStaking(address user, uint amount) internal {
         deal(SonicConstantsLib.TOKEN_STBL, user, amount);
 
@@ -85,9 +81,6 @@ contract XStakingUpgrade438SonicTest is Test {
         xStaking.allowRewardToken(SonicConstantsLib.TOKEN_USDC, true);
     }
 
-    //endregion --------------------------------- Internal logic
-
-    //region --------------------------------- Helpers
     function _upgradePlatform() internal {
         rewind(1 days);
 
@@ -112,5 +105,4 @@ contract XStakingUpgrade438SonicTest is Test {
         vm.stopPrank();
     }
 
-    //endregion --------------------------------- Helpers
 }

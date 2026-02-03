@@ -396,6 +396,11 @@ contract XStaking is Controllable, ReentrancyGuardUpgradeable, IXStaking {
 
     // custom token rewards
 
+    /// @inheritdoc IXStaking
+    function isTokenAllowed(address token) external view returns (bool) {
+        return _getXStakingStorage().tokenRewards[token].allowed;
+    }
+
     function earnedToken(address token, address account) public view returns (uint) {
         XStakingStorage storage $ = _getXStakingStorage();
         TokenRewards storage $$ = $.tokenRewards[token];

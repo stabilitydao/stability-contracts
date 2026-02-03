@@ -86,15 +86,19 @@
 
 ### Core
 
-* **Platform** `0xd4d6ad656f64e8644afa18e7ccc9372e0cd256f0` [plasmascan](https://plasmascan.to/address/0xd4D6ad656f64E8644AFa18e7CCc9372E0Cd256f0/contract/9745/readProxyContract)
-* **Factory** `0x4c5758e3c454a260d98238706ca6f4802cc52746` [plasmascan](https://plasmascan.to/address/0x4C5758e3c454A260D98238706cA6F4802cc52746)
-* **MetaVaultFactory** `0xbd5296dc2603942f116b375c8ee373674be86f56` [plasmascan](https://plasmascan.to/address/0xbd5296dc2603942f116b375c8ee373674be86f56)
-* **PriceReader** `0xd4af1b538c826e1e90b695314042ab6fd0e7f4aa` [plasmascan](https://plasmascan.to/address/0xd4af1b538c826e1e90b695314042ab6fd0e7f4aa)
-* **Swapper** `0x54f22378e03bea25a05a071b60357d31ce535bb9` [plasmascan](https://plasmascan.to/address/0x54f22378e03bea25a05a071b60357d31ce535bb9)
-* **HardWorker** `0x73ae48f75ea304ff229d2a1374654672fa8388e7` [plasmascan](https://plasmascan.to/address/0x73ae48f75ea304ff229d2a1374654672fa8388e7)
-* **VaultManager** `0x22d031e45a02d6472786b9d7a4fd78f1733d6990` [plasmascan](https://plasmascan.to/address/0x22d031e45a02d6472786b9d7a4fd78f1733d6990)
-* **StrategyLogic** `0x5e670b7a1740e8a11aff06335984d696d537b7bc` [plasmascan](https://plasmascan.to/address/0x5e670b7a1740e8a11aff06335984d696d537b7bc)
-* **Zap** `0xbc4ff9766074b53c7a4cb91964836c83188f333d` [plasmascan](https://plasmascan.to/address/0xbc4ff9766074b53c7a4cb91964836c83188f333d)
+* **Platform** `0xd4d6ad656f64e8644afa18e7ccc9372e0cd256f0` [plasmascan](https://plasmascan.to/address/0xd4D6ad656f64E8644AFa18e7CCc9372E0Cd256f0#readProxyContract)
+* **Factory** `0x4c5758e3c454a260d98238706ca6f4802cc52746` [plasmascan](https://plasmascan.to/address/0x4C5758e3c454A260D98238706cA6F4802cc52746#readProxyContract)
+* **MetaVaultFactory** `0xbd5296dc2603942f116b375c8ee373674be86f56` [plasmascan](https://plasmascan.to/address/0xbd5296dc2603942f116b375c8ee373674be86f56#readProxyContract)
+* **PriceReader** `0xd4af1b538c826e1e90b695314042ab6fd0e7f4aa` [plasmascan](https://plasmascan.to/address/0xd4af1b538c826e1e90b695314042ab6fd0e7f4aa#readProxyContract)
+* **Swapper** `0x54f22378e03bea25a05a071b60357d31ce535bb9` [plasmascan](https://plasmascan.to/address/0x54f22378e03bea25a05a071b60357d31ce535bb9#readProxyContract)
+* **HardWorker** `0x73ae48f75ea304ff229d2a1374654672fa8388e7` [plasmascan](https://plasmascan.to/address/0x73ae48f75ea304ff229d2a1374654672fa8388e7#readProxyContract)
+* **VaultManager** `0x22d031e45a02d6472786b9d7a4fd78f1733d6990` [plasmascan](https://plasmascan.to/address/0x22d031e45a02d6472786b9d7a4fd78f1733d6990#readProxyContract)
+* **StrategyLogic** `0x5e670b7a1740e8a11aff06335984d696d537b7bc` [plasmascan](https://plasmascan.to/address/0x5e670b7a1740e8a11aff06335984d696d537b7bc#readProxyContract)
+* **Zap** `0xbc4ff9766074b53c7a4cb91964836c83188f333d` [plasmascan](https://plasmascan.to/address/0xbc4ff9766074b53c7a4cb91964836c83188f333d#readProxyContract)
+
+### Tokenomics
+
+* **RevenueRouter** `0xAf95468B1a624605bbFb862B0FB6e9C73Ad847b8` [plasmascan](https://plasmascan.to/address/0xAf95468B1a624605bbFb862B0FB6e9C73Ad847b8#readProxyContract)
 
 ### Periphery
 
