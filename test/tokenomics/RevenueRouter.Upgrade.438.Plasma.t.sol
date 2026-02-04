@@ -57,7 +57,6 @@ contract RevenueRouterUpgrade438PlasmaTest is Test {
         vm.prank(USER1);
         xStaking.getRewardToken(PlasmaConstantsLib.TOKEN_WEETH);
         assertEq(IERC20(PlasmaConstantsLib.TOKEN_WEETH).balanceOf(USER1), earnedUser1);
-
     }
 
     function _mintAndDepositToStaking(address user, uint amount) internal {
@@ -118,5 +117,4 @@ contract RevenueRouterUpgrade438PlasmaTest is Test {
         platform.upgrade();
         vm.stopPrank();
     }
-
 }

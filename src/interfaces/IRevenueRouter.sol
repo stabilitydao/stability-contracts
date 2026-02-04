@@ -48,7 +48,6 @@ interface IRevenueRouter {
         // todo use DAO parameter
         uint bbRate;
         EnumerableMap.AddressToUintMap pendingRevenueAsset;
-
     }
 
     enum UnitType {

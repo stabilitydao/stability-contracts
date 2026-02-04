@@ -49,7 +49,6 @@ contract RevenueRouterUpgrade438SonicTest is Test {
         assertGt(IERC20(SonicConstantsLib.TOKEN_STBL).balanceOf(address(revenueRouter)), 0);
         revenueRouter.updatePeriod();
         assertEq(IERC20(SonicConstantsLib.TOKEN_STBL).balanceOf(address(revenueRouter)), 0);
-
     }
 
     function testHalfBuyBackRate() public {
@@ -79,11 +78,9 @@ contract RevenueRouterUpgrade438SonicTest is Test {
         assertEq(revenueRouter.pendingRevenueAsset(SonicConstantsLib.TOKEN_PT_AUSDC_14AUG2025), 1600000);
         assertGt(revenueRouter.pendingRevenue(), pendingRevenueWas);
 
-
         vm.prank(multisig);
         revenueRouter.processAccumulatedAssets(40);
         assertEq(revenueRouter.pendingRevenueAsset(SonicConstantsLib.TOKEN_PT_AUSDC_14AUG2025), 3200000);
-
 
         vm.startPrank(multisig);
         revenueRouter.processAccumulatedAssets(40);
@@ -108,9 +105,7 @@ contract RevenueRouterUpgrade438SonicTest is Test {
         vm.prank(USER1);
         xStaking.getRewardToken(SonicConstantsLib.TOKEN_PT_AUSDC_14AUG2025);
         assertEq(IERC20(SonicConstantsLib.TOKEN_PT_AUSDC_14AUG2025).balanceOf(USER1), earnedUser1);
-
     }
-
 
     function _mintAndDepositToStaking(address user, uint amount) internal {
         deal(SonicConstantsLib.TOKEN_STBL, user, amount);
@@ -167,5 +162,4 @@ contract RevenueRouterUpgrade438SonicTest is Test {
         platform.upgrade();
         vm.stopPrank();
     }
-
 }

@@ -203,10 +203,9 @@ contract RevenueRouter is Controllable, IRevenueRouter {
                 address asset = _pendingRevenueAssets[i];
                 uint revenue = $.pendingRevenueAsset.get(asset);
                 IERC20(asset).approve(_xStaking, revenue);
-                IXStaking(_xStaking).notifyRewardAmountToken(asset,revenue);
+                IXStaking(_xStaking).notifyRewardAmountToken(asset, revenue);
             }
             $.pendingRevenueAsset.clear();
-
         }
     }
 

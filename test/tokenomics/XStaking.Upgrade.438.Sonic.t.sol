@@ -104,5 +104,4 @@ contract XStakingUpgrade438SonicTest is Test {
         platform.upgrade();
         vm.stopPrank();
     }
-
 }
