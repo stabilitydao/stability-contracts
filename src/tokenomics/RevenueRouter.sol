@@ -19,7 +19,7 @@ import {IRecoveryBase} from "../interfaces/IRecoveryBase.sol";
 
 /// @title Platform revenue distributor
 /// Changelog:
-///   2.0.0: buy-back rate
+///   2.0.0: buy-back rate; remove xShare
 ///   1.8.0: renaming (STBL => main-token, xSTBL => xToken), xShare = 100% by default.
 ///          Add setAddresses, getXShare. RevenueRouter uses IRecoveryBase instead of IRecovery - #426
 ///   1.7.1: add addresses()
@@ -65,7 +65,6 @@ contract RevenueRouter is Controllable, IRevenueRouter {
             $.token = IXToken(xToken_).token();
             $.xToken = xToken_;
             $.xStaking = IXToken(xToken_).xStaking();
-            $.xShare = 100_000;
         }
         $.feeTreasury = feeTreasury_;
         $.activePeriod = getPeriod();
@@ -126,14 +125,6 @@ contract RevenueRouter is Controllable, IRevenueRouter {
         for (uint i; i < len; ++i) {
             $.maxSwapAmount.set(assets[i], maxAmounts[i]);
         }
-    }
-
-    /// @inheritdoc IRevenueRouter
-    function setXShare(uint newShare) external onlyGovernanceOrMultisig {
-        RevenueRouterStorage storage $ = _getRevenueRouterStorage();
-        $.xShare = newShare;
-
-        emit SetXShare(newShare);
     }
 
     /// @inheritdoc IRevenueRouter
@@ -465,11 +456,6 @@ contract RevenueRouter is Controllable, IRevenueRouter {
     /// @inheritdoc IRevenueRouter
     function assetsAccumulated() external view returns (address[] memory) {
         return _getRevenueRouterStorage().assetsAccumulated.values();
-    }
-
-    /// @inheritdoc IRevenueRouter
-    function xShare() external view returns (uint) {
-        return _getRevenueRouterStorage().xShare;
     }
 
     /// @inheritdoc IRevenueRouter
