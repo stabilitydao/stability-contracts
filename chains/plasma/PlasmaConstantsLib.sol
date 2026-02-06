@@ -4,8 +4,13 @@ pragma solidity ^0.8.28;
 library PlasmaConstantsLib {
     address public constant MULTISIG = 0xE929438B5B53984FdBABf8562046e141e90E8099;
     address public constant PLATFORM = 0xd4D6ad656f64E8644AFa18e7CCc9372E0Cd256f0;
+    address public constant REVENUE_ROUTER = 0xAf95468B1a624605bbFb862B0FB6e9C73Ad847b8;
+    address public constant XSTBL_XSTAKING = 0x601572b91DC054Be500392A6d3e15c690140998D;
+    address public constant RECOVERY = 0x046e7a007C331e0d4DafA66104744dB14a52bBBb;
 
     // ERC20
+    address public constant TOKEN_STBL = 0xfdf91362B7E9330F232e500c0236a02B0DE3e492;
+    address public constant TOKEN_XSTBL = 0xF40D0724599282CaF9dfb66feB630e936bC0CFBE;
     address public constant TOKEN_USDT0 = 0xB8CE59FC3717ada4C02eaDF9682A9e934F625ebb;
     address public constant TOKEN_USDE = 0x5d3a1Ff2b6BAb83b63cd9AD0787074081a52ef34;
     address public constant TOKEN_SUSDE = 0x211Cc4DD073734dA055fbF44a2b4667d5E5fE5d2;

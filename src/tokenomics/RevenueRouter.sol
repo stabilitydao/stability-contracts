@@ -19,6 +19,7 @@ import {IRecoveryBase} from "../interfaces/IRecoveryBase.sol";
 
 /// @title Platform revenue distributor
 /// Changelog:
+///   2.0.0: buy-back rate; remove xShare
 ///   1.8.0: renaming (STBL => main-token, xSTBL => xToken), xShare = 100% by default.
 ///          Add setAddresses, getXShare. RevenueRouter uses IRecoveryBase instead of IRecovery - #426
 ///   1.7.1: add addresses()
@@ -39,9 +40,11 @@ contract RevenueRouter is Controllable, IRevenueRouter {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.8.0";
+    string public constant VERSION = "2.0.0";
 
+    // todo get from DAO parameters
     uint internal constant RECOVER_PERCENTAGE = 20_000; // 20%
+
     uint internal constant DENOMINATOR = 100_000; // 100%
 
     /// @notice Count of addresses in addresses() and setAddresses
@@ -62,7 +65,6 @@ contract RevenueRouter is Controllable, IRevenueRouter {
             $.token = IXToken(xToken_).token();
             $.xToken = xToken_;
             $.xStaking = IXToken(xToken_).xStaking();
-            $.xShare = 100_000;
         }
         $.feeTreasury = feeTreasury_;
         $.activePeriod = getPeriod();
@@ -126,14 +128,6 @@ contract RevenueRouter is Controllable, IRevenueRouter {
     }
 
     /// @inheritdoc IRevenueRouter
-    function setXShare(uint newShare) external onlyGovernanceOrMultisig {
-        RevenueRouterStorage storage $ = _getRevenueRouterStorage();
-        $.xShare = newShare;
-
-        emit SetXShare(newShare);
-    }
-
-    /// @inheritdoc IRevenueRouter
     function setAddresses(address[] memory addresses_) external onlyGovernanceOrMultisig {
         RevenueRouterStorage storage $ = _getRevenueRouterStorage();
         $.token = addresses_[0];
@@ -142,6 +136,13 @@ contract RevenueRouter is Controllable, IRevenueRouter {
         $.feeTreasury = addresses_[3];
 
         emit SetAddresses(addresses_);
+    }
+
+    /// @inheritdoc IRevenueRouter
+    function setBuyBackRate(uint bbRate) external onlyOperator {
+        RevenueRouterStorage storage $ = _getRevenueRouterStorage();
+        $.bbRate = bbRate;
+        emit BuyBackRate(bbRate);
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -176,13 +177,26 @@ contract RevenueRouter is Controllable, IRevenueRouter {
             }
 
             // put week rewards to XStaking users
+            address _xStaking = $.xStaking;
+
+            // buy-back rewards
             if (_pendingRevenue != 0) {
-                address _xStaking = $.xStaking;
                 IERC20($.token).approve(_xStaking, _pendingRevenue);
                 IXStaking(_xStaking).notifyRewardAmount(_pendingRevenue);
             }
-
+            // not used now
             emit EpochFlip(periodEnded, _pendingRevenue);
+
+            // other tokens rewards
+            address[] memory _pendingRevenueAssets = $.pendingRevenueAsset.keys();
+            len = _pendingRevenueAssets.length;
+            for (uint i; i < len; ++i) {
+                address asset = _pendingRevenueAssets[i];
+                uint revenue = $.pendingRevenueAsset.get(asset);
+                IERC20(asset).approve(_xStaking, revenue);
+                IXStaking(_xStaking).notifyRewardAmountToken(asset, revenue);
+            }
+            $.pendingRevenueAsset.clear();
         }
     }
 
@@ -252,77 +266,103 @@ contract RevenueRouter is Controllable, IRevenueRouter {
         }
     }
 
+    struct ProcessAssetVars {
+        address asset;
+        uint amountOnBalance;
+        uint amountPending;
+        uint amountToProcess;
+        uint amountToBuyBack;
+        uint amountToPending;
+        bool cleanup;
+        bool finish;
+    }
+
     /// @inheritdoc IRevenueRouter
     function processAccumulatedAssets(uint maxAssetsForProcess) external onlyOperatorAgent {
         RevenueRouterStorage storage $ = _getRevenueRouterStorage();
+        uint bbRate = $.bbRate;
 
         address[] memory _assetsAccumulated = $.assetsAccumulated.values();
         uint len = _assetsAccumulated.length;
         for (uint i; i < len; ++i) {
-            address asset = _assetsAccumulated[i];
             if (i == maxAssetsForProcess) {
                 break;
             }
 
-            uint amount = IERC20(asset).balanceOf(address(this));
+            ProcessAssetVars memory v;
+            v.asset = _assetsAccumulated[i];
+            v.amountOnBalance = IERC20(v.asset).balanceOf(address(this));
+            (, v.amountPending) = $.pendingRevenueAsset.tryGet(v.asset);
 
-            {
-                (bool minAmountExist, uint minSwapAmount) = $.minSwapAmount.tryGet(asset);
-                if (!minAmountExist || amount < minSwapAmount) {
+            v.amountToProcess = v.amountOnBalance - v.amountPending;
+            v.amountToBuyBack = v.amountToProcess * bbRate / 100;
+
+            // when buy-back rate is zero not need to check min/max swap amount settings
+            if (v.amountToBuyBack != 0) {
+                (bool minAmountExist, uint minSwapAmount) = $.minSwapAmount.tryGet(v.asset);
+                (bool maxAmountExist, uint maxSwapAmount) = $.maxSwapAmount.tryGet(v.asset);
+                if (!minAmountExist || v.amountToBuyBack < minSwapAmount || !maxAmountExist) {
                     continue;
                 }
-            }
 
-            bool cleanup;
-            {
-                (bool maxAmountExist, uint maxSwapAmount) = $.maxSwapAmount.tryGet(asset);
-                if (!maxAmountExist) {
-                    continue;
-                }
-
-                if (amount > maxSwapAmount) {
-                    amount = maxSwapAmount;
+                if (v.amountToBuyBack > maxSwapAmount) {
+                    v.amountToBuyBack = maxSwapAmount;
+                    v.amountToProcess = v.amountToBuyBack * 100 / bbRate;
                 } else {
-                    cleanup = true;
+                    v.cleanup = true;
                 }
+            } else {
+                v.cleanup = true;
             }
 
-            uint amountToSwap = amount;
-            address mainToken = $.token;
-            ISwapper swapper = ISwapper(IPlatform(platform()).swapper());
+            if (bbRate < 100 && !IXStaking($.xStaking).isTokenAllowed(v.asset)) {
+                continue;
+            }
 
             {
                 address _recovery = IPlatform(platform()).recovery();
                 if (_recovery != address(0)) {
-                    uint toRecovery = amountToSwap * RECOVER_PERCENTAGE / DENOMINATOR;
-                    amountToSwap -= toRecovery;
-                    IERC20(asset).safeTransfer(_recovery, toRecovery);
+                    uint toRecovery = v.amountToProcess * RECOVER_PERCENTAGE / DENOMINATOR;
+                    v.amountToProcess -= toRecovery;
+                    v.amountToBuyBack = v.amountToProcess * bbRate / 100;
+                    IERC20(v.asset).safeTransfer(_recovery, toRecovery);
                     address[] memory assetsToRegister = new address[](1);
-                    assetsToRegister[0] = asset;
+                    assetsToRegister[0] = v.asset;
                     IRecoveryBase(_recovery).registerAssets(assetsToRegister);
                 }
             }
 
-            if (mainToken != address(0)) {
+            address mainToken = $.token;
+            require(mainToken != address(0), "SetupMainToken");
+            ISwapper swapper = ISwapper(IPlatform(platform()).swapper());
+
+            if (v.amountToBuyBack != 0) {
                 uint mainTokenBalanceWas = IERC20(mainToken).balanceOf(address(this));
-                IERC20(asset).forceApprove(address(swapper), amountToSwap);
-                try swapper.swap(asset, mainToken, amountToSwap, 20_000) {
-                    uint mainTokenGot = IERC20(mainToken).balanceOf(address(this)) - mainTokenBalanceWas;
-                    uint xGot = mainTokenGot * $.xShare / DENOMINATOR;
-                    if (mainTokenGot > xGot) {
-                        IERC20(mainToken).safeTransfer($.feeTreasury, mainTokenGot - xGot);
-                    }
+
+                IERC20(v.asset).forceApprove(address(swapper), v.amountToBuyBack);
+                try swapper.swap(v.asset, mainToken, v.amountToBuyBack, 40_000) {
+                    uint xGot = IERC20(mainToken).balanceOf(address(this)) - mainTokenBalanceWas;
                     $.pendingRevenue += xGot;
-                    if (cleanup) {
-                        $.assetsAccumulated.remove(_assetsAccumulated[i]);
-                    }
-                    return;
+                    v.finish = true;
                 } catch {}
-            } else {
-                // swap to exchange asset and bridge to sonic
-                // todo
+            }
+
+            v.amountToPending = v.amountToProcess - v.amountToBuyBack;
+
+            if (v.amountToPending != 0) {
+                $.pendingRevenueAsset.set(v.asset, v.amountPending + v.amountToPending);
+                v.finish = true;
+            }
+
+            if (v.cleanup) {
+                $.assetsAccumulated.remove(v.asset);
+            }
+
+            if (v.finish) {
+                return;
             }
         }
+
         revert CantProcessAction();
     }
 
@@ -419,8 +459,19 @@ contract RevenueRouter is Controllable, IRevenueRouter {
     }
 
     /// @inheritdoc IRevenueRouter
-    function xShare() external view returns (uint) {
-        return _getRevenueRouterStorage().xShare;
+    function buyBackRate() external view returns (uint) {
+        return _getRevenueRouterStorage().bbRate;
+    }
+
+    /// @inheritdoc IRevenueRouter
+    function pendingRevenueAssets() external view returns (address[] memory) {
+        return _getRevenueRouterStorage().pendingRevenueAsset.keys();
+    }
+
+    /// @inheritdoc IRevenueRouter
+    function pendingRevenueAsset(address asset) external view returns (uint) {
+        (, uint amount) = _getRevenueRouterStorage().pendingRevenueAsset.tryGet(asset);
+        return amount;
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/

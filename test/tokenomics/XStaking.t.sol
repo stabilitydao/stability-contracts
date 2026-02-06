@@ -122,7 +122,7 @@ contract XStakingTest is Test, MockSetup {
 
         // ------------------------------- Bad paths
         vm.prank(platform.multisig());
-        vm.expectRevert(XStaking.DaoNotInitialized.selector);
+        vm.expectRevert(IXStaking.DaoNotInitialized.selector);
         xStaking.syncDAOBalances(users);
 
         // ------------------------------- Mint xToken and deposit to staking

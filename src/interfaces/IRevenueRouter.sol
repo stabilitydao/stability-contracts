@@ -14,7 +14,7 @@ interface IRevenueRouter {
     event UnitEpochRevenue(uint periodEnded, string unitName, uint stblRevenue);
     event ProcessUnitRevenue(uint unitIndex, uint stblGot);
     event SetAddresses(address[] addresses);
-    event SetXShare(uint newShare);
+    event BuyBackRate(uint bbRate);
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                        CUSTOM ERRORS                       */
@@ -34,7 +34,7 @@ interface IRevenueRouter {
         address xToken;
         address xStaking;
         address feeTreasury;
-        uint xShare;
+        uint __deprecated_xShare;
         uint activePeriod;
         uint pendingRevenue;
         Unit[] units;
@@ -43,6 +43,10 @@ interface IRevenueRouter {
         EnumerableSet.AddressSet assetsAccumulated;
         EnumerableMap.AddressToUintMap minSwapAmount;
         EnumerableMap.AddressToUintMap maxSwapAmount;
+
+        // todo use DAO parameter
+        uint bbRate;
+        EnumerableMap.AddressToUintMap pendingRevenueAsset;
     }
 
     enum UnitType {
@@ -77,11 +81,11 @@ interface IRevenueRouter {
     /// @notice Set max swap amounts for assets
     function setMaxSwapAmounts(address[] calldata assets, uint[] calldata maxAmounts) external;
 
-    /// @notice Change revenue share for Vaults Unit
-    function setXShare(uint newShare) external;
-
     /// @notice Set addresses of main-token, xToken, xStaking and feeTreasure token.
     function setAddresses(address[] memory addresses_) external;
+
+    /// @notice Set buy-back rate for rewards
+    function setBuyBackRate(uint bbRate) external;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       USER ACTIONS                         */
@@ -144,6 +148,13 @@ interface IRevenueRouter {
     /// @notice Get assets that contract hold on balance
     function assetsAccumulated() external view returns (address[] memory);
 
-    /// @notice Get current xToken revenue share for Vaults Unit
-    function xShare() external view returns (uint);
+    /// @notice Buy-back rate for generated revenue
+    function buyBackRate() external view returns (uint);
+
+    /// @notice Asset with pending revenue for distribution
+    function pendingRevenueAssets() external view returns (address[] memory);
+
+    /// @notice Pending revenue in form of asset
+    /// @param asset Allowed asset address
+    function pendingRevenueAsset(address asset) external view returns (uint);
 }

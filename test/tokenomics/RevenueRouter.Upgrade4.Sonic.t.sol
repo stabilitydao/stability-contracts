@@ -59,12 +59,6 @@ contract RevenueRouterUpgrade4TestSonic is Test {
             assertEq(assetsAccumulated[0], asset1);
         }
 
-        // setup xShare
-        vm.expectRevert(IControllable.NotGovernanceAndNotMultisig.selector);
-        revenueRouter.setXShare(50_000);
-        vm.prank(multisig);
-        revenueRouter.setXShare(50_000);
-
         // test buy-back without setup
         vm.expectRevert(IControllable.IncorrectMsgSender.selector);
         revenueRouter.processAccumulatedAssets(50);
@@ -106,6 +100,7 @@ contract RevenueRouterUpgrade4TestSonic is Test {
         IPlatform(PLATFORM).announcePlatformUpgrade("2025.11.0-alpha", proxies, implementations);
         skip(18 hours);
         IPlatform(PLATFORM).upgrade();
+        revenueRouter.setBuyBackRate(100);
         vm.stopPrank();
         rewind(17 hours);
     }
