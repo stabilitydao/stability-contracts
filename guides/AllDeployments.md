@@ -99,6 +99,7 @@
 ### Tokenomics
 
 * **RevenueRouter** `0xAf95468B1a624605bbFb862B0FB6e9C73Ad847b8` [plasmascan](https://plasmascan.to/address/0xAf95468B1a624605bbFb862B0FB6e9C73Ad847b8#readProxyContract)
+* **XStaking** `0x601572b91DC054Be500392A6d3e15c690140998D` [plasmascan](https://plasmascan.to/address/0x601572b91DC054Be500392A6d3e15c690140998D#readProxyContract)
 
 ### Periphery
 
