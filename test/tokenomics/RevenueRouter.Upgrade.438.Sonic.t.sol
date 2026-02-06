@@ -1,18 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {console} from "forge-std/console.sol";
+//import {console} from "forge-std/console.sol";
 import {Test} from "forge-std/Test.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
-import {Proxy} from "../../src/core/proxy/Proxy.sol";
 import {XStaking, IXStaking} from "../../src/tokenomics/XStaking.sol";
-import {XToken} from "../../src/tokenomics/XToken.sol";
 import {IXToken} from "../../src/interfaces/IXToken.sol";
-import {Platform} from "../../src/core/Platform.sol";
 import {RevenueRouter, IRevenueRouter} from "../../src/tokenomics/RevenueRouter.sol";
-import {IRecovery} from "../../src/interfaces/IRecovery.sol";
 
 contract RevenueRouterUpgrade438SonicTest is Test {
     uint public constant FORK_BLOCK = 61773869; // Feb-02-2026 01:37:35 PM +UTC
