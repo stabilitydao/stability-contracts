@@ -1,20 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import {console} from "forge-std/console.sol";
-import {Test, Vm} from "forge-std/Test.sol";
+import {Test} from "forge-std/Test.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {AaveLeverageMerklFarmStrategy} from "../../src/strategies/AaveLeverageMerklFarmStrategy.sol";
-import {IStrategy} from "../../src/interfaces/IStrategy.sol";
 import {IVault} from "../../src/interfaces/IVault.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
 import {IStabilityVault} from "../../src/interfaces/IStabilityVault.sol";
 import {ILeverageLendingStrategy} from "../../src/interfaces/ILeverageLendingStrategy.sol";
 import {IFactory} from "../../src/interfaces/IFactory.sol";
-import {IFarmingStrategy} from "../../src/interfaces/IFarmingStrategy.sol";
 import {PlasmaConstantsLib} from "../../chains/plasma/PlasmaConstantsLib.sol";
 import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
-import {ALMFLib} from "../../src/strategies/libs/ALMFLib.sol";
 
 /// @notice #441: Use depositParam1 and withdrawParam1 to set deposit/withdraw fee
 contract ALMFUpgrade441PlasmaTest is Test {
