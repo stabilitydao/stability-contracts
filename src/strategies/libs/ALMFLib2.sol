@@ -115,8 +115,9 @@ library ALMFLib2 {
         // ------------------------------ Set up all params in use
         //        // Multiplier of flash amount for borrow on deposit. Default is 100_00 = 100%
         //        $.depositParam0 = 100_00;
-        //        // Multiplier of borrow amount to take into account max flash loan fee in maxDeposit. Default is 99_80 = 99.8%
-        //        $.depositParam1 = 99_80;
+
+        // Deposit fee, percent, 1e4; i.e. 0001 = 0.01%
+        // $.depositParam1 = 0;
 
         // Multiplier of debt diff
         $.increaseLtvParam0 = 100_80;
@@ -132,8 +133,9 @@ library ALMFLib2 {
         // Leverage correction coefficient, INTERNAL_PRECISION. Default is 300 = 0.03
         $.withdrawParam0 = 300;
 
-        //        // Multiplier of amount allowed to be deposited after withdraw. Default is 100_00 == 100% (deposit forbidden)
-        //        $.withdrawParam1 = 100_00;
+        // Withdraw fee, percent, 1e4; i.e. 0001 = 0.01%
+        // $.withdrawParam1 = 0;
+
         //        // withdrawParam2 allows to disable withdraw through increasing ltv if leverage is near to target
         //        $.withdrawParam2 = 100_00;
 
