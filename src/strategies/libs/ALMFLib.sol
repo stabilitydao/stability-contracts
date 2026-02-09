@@ -925,18 +925,6 @@ library ALMFLib {
         }
     }
 
-    function liquidateRewards(
-        address platform_,
-        address exchangeAsset,
-        address[] memory rewardAssets_,
-        uint[] memory rewardAmounts_,
-        uint priceImpactTolerance
-    ) external returns (uint earnedExchangeAsset) {
-        earnedExchangeAsset = StrategyLib.liquidateRewards(
-            platform_, exchangeAsset, rewardAssets_, rewardAmounts_, priceImpactTolerance
-        );
-    }
-
     function compound(
         address platform_,
         ILeverageLendingStrategy.LeverageLendingBaseStorage storage $,

@@ -439,7 +439,7 @@ contract AaveLeverageMerklFarmStrategy is
         address[] memory rewardAssets_,
         uint[] memory rewardAmounts_
     ) internal override(FarmingStrategyBase, StrategyBase, LeverageLendingBase) returns (uint earnedExchangeAsset) {
-        return ALMFLib.liquidateRewards(
+        return ALMFLib2.liquidateRewards(
             platform(), exchangeAsset, rewardAssets_, rewardAmounts_, customPriceImpactTolerance()
         );
     }

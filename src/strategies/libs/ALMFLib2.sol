@@ -13,6 +13,7 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 import {SharedLib} from "./SharedLib.sol";
 import {StrategyIdLib} from "./StrategyIdLib.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
+import {StrategyLib} from "./StrategyLib.sol";
 
 /// @notice Several standalone functions were moved here to reduce size of ALMFLib
 library ALMFLib2 {
@@ -143,4 +144,16 @@ library ALMFLib2 {
     }
 
     //endregion ------------------------------------- Init vars, desc
+
+    function liquidateRewards(
+        address platform_,
+        address exchangeAsset,
+        address[] memory rewardAssets_,
+        uint[] memory rewardAmounts_,
+        uint priceImpactTolerance
+    ) external returns (uint earnedExchangeAsset) {
+        earnedExchangeAsset = StrategyLib.liquidateRewards(
+            platform_, exchangeAsset, rewardAssets_, rewardAmounts_, priceImpactTolerance
+        );
+    }
 }
