@@ -10,6 +10,7 @@ import {IFeeTreasury} from "../interfaces/IFeeTreasury.sol";
 
 /// @title Performance fee treasury that distribute fees to claimers
 /// Changelog:
+///   1.1.1: fix removeAssets, add assets()
 ///   1.1.0: assets, harvest, fixes
 /// @author Alien Deployer (https://github.com/a17)
 contract FeeTreasury is Controllable, IFeeTreasury {
@@ -22,7 +23,7 @@ contract FeeTreasury is Controllable, IFeeTreasury {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.1.0";
+    string public constant VERSION = "1.1.1";
 
     uint public constant TOTAL_SHARES = 100;
 
@@ -114,7 +115,7 @@ contract FeeTreasury is Controllable, IFeeTreasury {
 
     function removeAssets(address[] memory assets_) external onlyOperator {
         FeeTreasuryStorage storage $ = _getTreasuryStorage();
-        uint len = $.assets.length();
+        uint len = assets_.length;
         for (uint i; i < len; ++i) {
             $.assets.remove(assets_[i]);
         }
@@ -152,13 +153,13 @@ contract FeeTreasury is Controllable, IFeeTreasury {
         }
     }
 
-    function claim(address[] memory assets) external onlyClaimer {
+    function claim(address[] memory assets_) external onlyClaimer {
         FeeTreasuryStorage storage $ = _getTreasuryStorage();
-        uint len = assets.length;
+        uint len = assets_.length;
         for (uint i; i < len; ++i) {
-            uint toClaim = $.toClaim[assets[i]][msg.sender];
+            uint toClaim = $.toClaim[assets_[i]][msg.sender];
             if (toClaim != 0) {
-                _claimAsset($, assets[i], toClaim);
+                _claimAsset($, assets_[i], toClaim);
             }
         }
     }
@@ -180,6 +181,12 @@ contract FeeTreasury is Controllable, IFeeTreasury {
         for (uint i; i < len; ++i) {
             (claimerAddresses[i], shares[i]) = $.claimers.at(i);
         }
+    }
+
+    /// @notice Get list of all registered assets
+    function assets() external view returns (address[] memory) {
+        FeeTreasuryStorage storage $ = _getTreasuryStorage();
+        return $.assets.values();
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/

@@ -41,7 +41,7 @@ contract BridgedPriceOracleSetupPlasmaScript is Test {
 
         address[] memory requiredDVNs = new address[](2);
         requiredDVNs[0] = PlasmaConstantsLib.PLASMA_DVN_LAYER_ZERO_PUSH;
-        requiredDVNs[1] = PlasmaConstantsLib.PLASMA_DVN_NETHERMIND_PUSH;
+        requiredDVNs[1] = PlasmaConstantsLib.PLASMA_DVN_HORIZON_PUSH;
         //        requiredDVNs[2] = PLASMA_DVN_HORIZON;
 
         BridgeTestLib._setupOAppOnChain(
