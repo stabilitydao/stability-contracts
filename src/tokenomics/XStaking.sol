@@ -17,6 +17,7 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 /// @author Alien Deployer (https://github.com/a17)
 /// @author Jude (https://github.com/iammrjude)
 /// Changelog:
+///  2.0.0: rewards by any allowed token
 ///  1.1.2: renaming xSTBL => xToken, StabilityDAO => DAO, syncStabilityDAOBalances => syncDAOBalances
 ///  1.1.1: syncStabilityDAOBalances - only operator
 ///  1.1.0: Integration with STBLDAO
@@ -29,7 +30,7 @@ contract XStaking is Controllable, ReentrancyGuardUpgradeable, IXStaking {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.1.2";
+    string public constant VERSION = "2.0.0";
 
     /// @notice decimal precision of 1e18
     uint public constant PRECISION = 10 ** 18;
@@ -64,9 +65,20 @@ contract XStaking is Controllable, ReentrancyGuardUpgradeable, IXStaking {
         mapping(address user => uint rewardPerToken) userRewardPerTokenStored;
         /// @inheritdoc IXStaking
         mapping(address user => uint amount) balanceOf;
+
+        // custom token rewards
+        mapping(address token => TokenRewards) tokenRewards;
     }
 
-    error DaoNotInitialized();
+    struct TokenRewards {
+        bool allowed;
+        uint lastUpdateTime;
+        uint rewardPerTokenStored;
+        uint periodFinish;
+        uint rewardRate;
+        mapping(address user => uint rewards) storedRewardsPerUser;
+        mapping(address user => uint rewardPerToken) userRewardPerTokenStored;
+    }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      INITIALIZATION                        */
@@ -87,6 +99,11 @@ contract XStaking is Controllable, ReentrancyGuardUpgradeable, IXStaking {
     /// @dev common multirewarder-esque modifier for updating on interactions
     modifier updateReward(address account) {
         _updateReward(account);
+        _;
+    }
+
+    modifier updateRewardForToken(address token, address account) {
+        _updateRewardForToken(token, account);
         _;
     }
 
@@ -116,6 +133,12 @@ contract XStaking is Controllable, ReentrancyGuardUpgradeable, IXStaking {
         for (uint i; i < len; ++i) {
             _syncUser($, dao, users[i], threshold);
         }
+    }
+
+    function allowRewardToken(address token, bool allowed) external onlyOperator {
+        TokenRewards storage $$ = _getXStakingStorage().tokenRewards[token];
+        $$.allowed = allowed;
+        emit RewardTokenAllowed(token, allowed);
     }
 
     //endregion ----------------------------------- Restricted actions
@@ -228,6 +251,57 @@ contract XStaking is Controllable, ReentrancyGuardUpgradeable, IXStaking {
         emit NotifyReward(msg.sender, amount);
     }
 
+    /// @inheritdoc IXStaking
+    function getRewardToken(address token) external updateRewardForToken(token, msg.sender) nonReentrant {
+        /// @dev claim all the rewards
+        _claimToken(token, msg.sender);
+    }
+
+    /// @inheritdoc IXStaking
+    function notifyRewardAmountToken(
+        address token,
+        uint amount
+    ) external updateRewardForToken(token, address(0)) nonReentrant {
+        /// @dev ensure > 0
+        require(amount != 0, IncorrectZeroArgument());
+
+        XStakingStorage storage $ = _getXStakingStorage();
+        TokenRewards storage $$ = $.tokenRewards[token];
+
+        require($$.allowed, TokenNotAllowed(token));
+
+        address _xToken = $.xToken;
+
+        /// @dev only callable by xToken and RevenueRouter contract
+        require(msg.sender == _xToken || msg.sender == IXToken(_xToken).revenueRouter(), IncorrectMsgSender());
+
+        /// @dev take the token from a contract to the XStaking
+        // slither-disable-next-line unchecked-transfer
+        IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
+
+        uint _periodFinish = $$.periodFinish;
+        uint _duration = $.duration;
+
+        if (block.timestamp >= _periodFinish) {
+            /// @dev the new reward rate being the amount divided by the duration
+            $$.rewardRate = amount / _duration;
+        } else {
+            /// @dev remaining seconds until the period finishes
+            uint remaining = _periodFinish - block.timestamp;
+            /// @dev remaining tokens to stream via t * rate
+            uint _left = remaining * $$.rewardRate;
+            /// @dev update the rewardRate to the notified amount plus what is left, divided by the duration
+            $$.rewardRate = (amount + _left) / _duration;
+        }
+
+        /// @dev update timestamp for the rebase
+        $$.lastUpdateTime = block.timestamp;
+        /// @dev update periodFinish (when all rewards are streamed)
+        $$.periodFinish = block.timestamp + _duration;
+
+        emit NotifyRewardForToken(token, msg.sender, amount);
+    }
+
     //endregion ----------------------------------- User actions
 
     //region ----------------------------------- View functions
@@ -320,6 +394,27 @@ contract XStaking is Controllable, ReentrancyGuardUpgradeable, IXStaking {
             + $.storedRewardsPerUser[account];
     }
 
+    // custom token rewards
+
+    /// @inheritdoc IXStaking
+    function isTokenAllowed(address token) external view returns (bool) {
+        return _getXStakingStorage().tokenRewards[token].allowed;
+    }
+
+    function earnedToken(address token, address account) public view returns (uint) {
+        XStakingStorage storage $ = _getXStakingStorage();
+        TokenRewards storage $$ = $.tokenRewards[token];
+        return
+        /// @dev the vote balance of the account
+        (($.balanceOf[account]
+                    /// @dev current global reward per token, subtracted from the stored reward per token for the user
+                    * (_rewardPerTokenForToken(token) - $$.userRewardPerTokenStored[account]))
+                /// @dev divide by the 1e18 precision
+                / PRECISION)
+            /// @dev add the existing stored rewards for the account to the total
+            + $$.storedRewardsPerUser[account];
+    }
+
     //endregion ----------------------------------- View functions
 
     //region ----------------------------------- Internal logic
@@ -402,6 +497,77 @@ contract XStaking is Controllable, ReentrancyGuardUpgradeable, IXStaking {
 
             emit ClaimRewards(user, reward);
         }
+    }
+
+    // custom token rewards
+    function _updateRewardForToken(address token, address account) internal {
+        TokenRewards storage $$ = _getXStakingStorage().tokenRewards[token];
+
+        /// @dev fetch and store the new rewardPerToken
+        $$.rewardPerTokenStored = _rewardPerTokenForToken(token);
+
+        /// @dev fetch and store the new last update time
+        $$.lastUpdateTime = _lastTimeRewardApplicableForToken(token);
+        /// @dev check for address(0) calls from notifyRewardAmount
+        if (account != address(0)) {
+            /// @dev update the individual account's mapping for stored rewards
+            $$.storedRewardsPerUser[account] = earnedToken(token, account);
+            /// @dev update account's mapping for rewardsPerTokenStored
+            $$.userRewardPerTokenStored[account] = $$.rewardPerTokenStored;
+        }
+    }
+
+    function _claimToken(address token, address user) internal {
+        XStakingStorage storage $ = _getXStakingStorage();
+        TokenRewards storage $$ = $.tokenRewards[token];
+
+        /// @dev fetch the stored rewards (updated by modifier)
+        uint reward = $$.storedRewardsPerUser[user];
+        if (reward > 0) {
+            /// @dev zero out the stored rewards
+            $$.storedRewardsPerUser[user] = 0;
+
+            // todo use TokenRewards for xToken too
+            //address _xToken = $.xToken;
+            //address mainToken = IXToken(_xToken).token();
+            /// @dev approve MainToken to xToken
+            //IERC20(mainToken).approve(_xToken, reward);
+            /// @dev convert
+            //IXToken(_xToken).enter(reward);
+            /// @dev transfer xToken to the user
+            //IERC20(_xToken).safeTransfer(user, reward);
+
+            // slither-disable-next-line unchecked-transfer
+            IERC20(token).safeTransfer(user, reward);
+
+            emit ClaimRewardsForToken(token, user, reward);
+        }
+    }
+
+    /// @dev Current calculated reward per token for token
+    /// @param token Address of reward token
+    /// @return The return value is scaled (multiplied) by PRECISION = 10 ** 18
+    function _rewardPerTokenForToken(address token) internal view returns (uint) {
+        XStakingStorage storage $ = _getXStakingStorage();
+        TokenRewards storage $$ = $.tokenRewards[token];
+        uint _totalSupply = $.totalSupply;
+        return
+        /// @dev if there's no staked xToken
+        _totalSupply == 0
+            /// @dev return the existing value
+            ? $$.rewardPerTokenStored
+            /// @dev else add the existing value
+            : $$.rewardPerTokenStored
+                /// @dev to remaining time (since update) multiplied by the current reward rate
+                /// @dev scaled to precision of 1e18, then divided by the total supply
+                + (_lastTimeRewardApplicableForToken(token) - $$.lastUpdateTime) * $$.rewardRate * PRECISION
+                / _totalSupply;
+    }
+
+    /// @notice Returns the last time the reward for token was modified or periodFinish if the reward has ended
+    /// @param token Address of reward token
+    function _lastTimeRewardApplicableForToken(address token) internal view returns (uint) {
+        return Math.min(block.timestamp, _getXStakingStorage().tokenRewards[token].periodFinish);
     }
 
     function _getXStakingStorage() internal pure returns (XStakingStorage storage $) {

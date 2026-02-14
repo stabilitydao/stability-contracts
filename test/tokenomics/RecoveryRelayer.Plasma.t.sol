@@ -194,9 +194,6 @@ contract RecoveryRelayerPlasmaTest is Test {
         // ---------------------- Set up revenue router
         IRevenueRouter revenueRouter = IRevenueRouter(IPlatform(PlasmaConstantsLib.PLATFORM).revenueRouter());
 
-        vm.prank(multisig);
-        revenueRouter.setXShare(100_000); // no transfers to treasury
-
         //        IFactory factory = IFactory(IPlatform(PlasmaConstantsLib.PLATFORM).factory());
         //        IFactory.Farm memory farm = factory.farm(0);
         //        console.log(farm.strategyLogicId); // Aave Merkl Farm
