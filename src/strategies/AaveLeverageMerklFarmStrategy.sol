@@ -27,6 +27,7 @@ import {VaultTypeLib} from "../core/libs/VaultTypeLib.sol";
 /// @title Earns APR by lending assets on AAVE with leverage
 /// @dev ALMF strategy
 /// Changelog:
+///   1.4.0: depositParam1 and withdrawParam1 are used to set deposit/withdraw fee % (decimals 1e4) - #441
 ///   1.3.0: New strategy param revenueBaseAsset. 0 - share price is calculated in collateral asset, 1 - in borrow asset
 ///   1.2.0: share price is calculated in collateral asset, not in usd
 ///   1.1.0: add support of e-mode
@@ -47,7 +48,7 @@ contract AaveLeverageMerklFarmStrategy is
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.3.0";
+    string public constant VERSION = "1.4.0";
 
     //region ----------------------------------- Initialization and restricted actions
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -438,7 +439,7 @@ contract AaveLeverageMerklFarmStrategy is
         address[] memory rewardAssets_,
         uint[] memory rewardAmounts_
     ) internal override(FarmingStrategyBase, StrategyBase, LeverageLendingBase) returns (uint earnedExchangeAsset) {
-        return ALMFLib.liquidateRewards(
+        return ALMFLib2.liquidateRewards(
             platform(), exchangeAsset, rewardAssets_, rewardAmounts_, customPriceImpactTolerance()
         );
     }

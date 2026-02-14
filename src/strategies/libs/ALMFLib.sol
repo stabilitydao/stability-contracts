@@ -18,6 +18,7 @@ import {IStrategy} from "../../interfaces/IStrategy.sol";
 import {ISwapper} from "../../interfaces/ISwapper.sol";
 import {IVaultMainV3} from "../../integrations/balancerv3/IVaultMainV3.sol";
 import {IVault} from "../../interfaces/IVault.sol";
+import {IRevenueRouter} from "../../interfaces/IRevenueRouter.sol";
 import {LeverageLendingLib} from "./LeverageLendingLib.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -305,6 +306,9 @@ library ALMFLib {
         ALMFCalcLib.StaticData memory data = _getStaticData(platform_, $, farm);
         ALMFCalcLib.State memory state = _getState(data);
 
+        /// @dev Reduce input amount on deposit fee, send fee amount to revenue router
+        amount = _takeFee($, amount, true, data.collateralAsset, platform_);
+
         uint valueWas = ALMFCalcLib.collateralToBase(StrategyLib.balance(data.collateralAsset), data) + calcTotal(state);
 
         uint threshold = _getStorage().thresholds[data.collateralAsset];
@@ -451,19 +455,24 @@ library ALMFLib {
         }
 
         // ---------------------- Transfer required amount to the user
-        uint balance = StrategyLib.balance(data.collateralAsset);
-        uint valueNow = ALMFCalcLib.collateralToBase(balance, data) + calcTotal(state);
+        {
+            uint balance = StrategyLib.balance(data.collateralAsset);
+            uint valueNow = ALMFCalcLib.collateralToBase(balance, data) + calcTotal(state);
 
-        amountsOut = new uint[](1);
-        if (valueWas > valueNow) {
-            amountsOut[0] = Math.min(ALMFCalcLib.baseToCollateral(value - (valueWas - valueNow), data), balance);
-        } else {
-            amountsOut[0] = Math.min(ALMFCalcLib.baseToCollateral(value + (valueNow - valueWas), data), balance);
+            amountsOut = new uint[](1);
+            if (valueWas > valueNow) {
+                amountsOut[0] = Math.min(ALMFCalcLib.baseToCollateral(value - (valueWas - valueNow), data), balance);
+            } else {
+                amountsOut[0] = Math.min(ALMFCalcLib.baseToCollateral(value + (valueNow - valueWas), data), balance);
+            }
         }
 
         // we can have dust amounts of collateral on strategy balance here
 
         if (receiver != address(this)) {
+            /// @dev Reduce output amount on withdraw fee, send fee amount to revenue router
+            amountsOut[0] = _takeFee($, amountsOut[0], false, data.collateralAsset, platform);
+
             IERC20(data.collateralAsset).safeTransfer(receiver, amountsOut[0]);
         }
 
@@ -916,18 +925,6 @@ library ALMFLib {
         }
     }
 
-    function liquidateRewards(
-        address platform_,
-        address exchangeAsset,
-        address[] memory rewardAssets_,
-        uint[] memory rewardAmounts_,
-        uint priceImpactTolerance
-    ) external returns (uint earnedExchangeAsset) {
-        earnedExchangeAsset = StrategyLib.liquidateRewards(
-            platform_, exchangeAsset, rewardAssets_, rewardAmounts_, priceImpactTolerance
-        );
-    }
-
     function compound(
         address platform_,
         ILeverageLendingStrategy.LeverageLendingBaseStorage storage $,
@@ -1001,6 +998,38 @@ library ALMFLib {
     //endregion ------------------------------------- Additional functionality
 
     //region ------------------------------------- Internal utils
+    /// @dev Take deposit/withdraw fee from amount, send fee to revenue router and return amount after fee deduction.
+    /// Fee percent should be set in depositParam1/withdrawParam1 with precision 1e4.
+    /// @param amount Amount of collateral asset to take fee from
+    /// @param isDeposit If true, deposit fee is taken; otherwise, withdraw fee is taken.
+    /// @param collateralAsset_ Collateral asset address, needed for fee transfer
+    /// @return amountOut Amount after fee deduction. If fee is 0, amountOut is equal to amount.
+    function _takeFee(
+        ILeverageLendingStrategy.LeverageLendingBaseStorage storage $,
+        uint amount,
+        bool isDeposit,
+        address collateralAsset_,
+        address platform_
+    ) internal returns (uint amountOut) {
+        amountOut = amount;
+
+        /// @dev Fee percent with precision 1e4, should be set in depositParam1/withdrawParam1
+        uint feePercent = isDeposit ? $.depositParam1 : $.withdrawParam1;
+
+        /// @dev Fee amount in collateral asset
+        uint feeAmount = amount * feePercent / ALMFCalcLib.INTERNAL_PRECISION;
+
+        // assume below that feePercent < ALMFCalcLib.INTERNAL_PRECISION and so amount > feeAmount always
+
+        /// @dev Take a fee in the same way as doHardwork does
+        if (feeAmount != 0) {
+            amountOut = amount - feeAmount;
+            address revenueRouter = IPlatform(platform_).revenueRouter();
+            IERC20(collateralAsset_).forceApprove(revenueRouter, feeAmount);
+            IRevenueRouter(revenueRouter).processFeeAsset(collateralAsset_, feeAmount);
+        }
+    }
+
     function _getFlashLoanAmounts(
         uint borrowAmount,
         address borrowAsset

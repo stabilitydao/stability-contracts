@@ -22,6 +22,9 @@ library PlasmaConstantsLib {
     address public constant TOKEN_EUL = 0xca632FA58397391C750c13F935DAA61AbBe0BaA6;
     address public constant TOKEN_REUL = 0xe2011F2bF6556863c3bacE991Efc8DaC26CD84c2;
 
+    // Stability vaults
+    address public constant STABILITY_VAULT_ALMF_WEETH_USDT0 = 0xab0087D6fbC877246A4Ba33636f80E5dCbd5BE01;
+
     // Oracles
     // address public constant ORACLE_CHAINLINK_USDT0_USD = 0xdBbB0b5DD13E7AC9C56624834ef193df87b022c3;
     address public constant ORACLE_CHAINLINK_USDT0_USD = 0x70b77FcdbE2293423e41AdD2FB599808396807BC;
