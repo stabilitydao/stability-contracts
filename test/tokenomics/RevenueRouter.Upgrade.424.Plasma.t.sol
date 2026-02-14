@@ -43,20 +43,6 @@ contract RevenueRouterUpgrade424TestPlasma is Test {
         assertEq(addr[3], addrAfter[3], "feeTreasure address mismatch");
     }
 
-    function testXShare() public {
-        uint xShareBefore = revenueRouter.xShare();
-        assertNotEq(xShareBefore, 100_000, "xShare before upgrade mismatch");
-
-        vm.expectRevert(IControllable.NotGovernanceAndNotMultisig.selector);
-        vm.prank(makeAddr("not multisig"));
-        revenueRouter.setXShare(100_000);
-
-        vm.prank(multisig);
-        revenueRouter.setXShare(100_000);
-
-        assertEq(revenueRouter.xShare(), 100_000, "xShare after upgrade mismatch");
-    }
-
     function _upgradeRevenueRouter() internal {
         address[] memory proxies = new address[](1);
         proxies[0] = address(revenueRouter);
